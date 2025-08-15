@@ -8,6 +8,8 @@ import { ArrowLeft, Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
 import type { TaskTag } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 const tagIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-8 w-8 text-muted-foreground" />,
@@ -24,6 +26,8 @@ export default function TaskPage() {
   if (!task) {
     notFound();
   }
+
+  const [description, setDescription] = useState(task.description);
 
   const dependencyOptions = tasks
     .filter((t) => t.id !== task.id)
@@ -56,9 +60,17 @@ export default function TaskPage() {
             </div>
             <CardTitle className="font-headline text-2xl font-bold tracking-tight">{task.taskName}</CardTitle>
           </div>
-          <CardDescription className="pt-2">Task description</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter a description for the task."
+            />
+          </div>
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Dependencies</h3>
             <Combobox
