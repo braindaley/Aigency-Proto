@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, ThumbsUp, Sparkles } from 'lucide-react';
+import { Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
 import type { Task, TaskStatus } from '@/lib/types';
 
 const statusIcons: Record<TaskStatus, React.ReactNode> = {
   waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
   approved: <ThumbsUp className="h-4 w-4 text-muted-foreground" />,
   ai: <Sparkles className="h-4 w-4 text-muted-foreground" />,
+  manual: <User className="h-4 w-4 text-muted-foreground" />,
 };
 
 const TaskItem = ({ task }: { task: Task }) => (
@@ -31,7 +32,7 @@ const TaskItem = ({ task }: { task: Task }) => (
 
 export default function Home() {
   const needsAttentionTasks = tasks.filter((task) => task.status === 'ai');
-  const upcomingTasks = tasks.filter((task) => task.status === 'waiting');
+  const upcomingTasks = tasks.filter((task) => task.status === 'waiting' || task.status === 'manual');
   const completeTasks = tasks.filter((task) => task.status === 'approved');
 
   return (

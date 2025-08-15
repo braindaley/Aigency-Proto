@@ -1,4 +1,4 @@
-export type TaskStatus = 'waiting' | 'approved' | 'ai';
+export type TaskStatus = 'waiting' | 'approved' | 'ai' | 'manual';
 
 export interface Task {
   id: string;
