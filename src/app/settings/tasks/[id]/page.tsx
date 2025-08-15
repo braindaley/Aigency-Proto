@@ -1,3 +1,4 @@
+
 'use client';
 import { tasks } from '@/lib/data';
 import { notFound, useParams } from 'next/navigation';
@@ -108,18 +109,6 @@ export default function TaskPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {task.tag === 'ai' && (
-            <div className="space-y-2">
-              <Label htmlFor="systemPrompt">System prompt</Label>
-              <Textarea
-                id="systemPrompt"
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="Enter a system prompt for the AI task."
-                className="min-h-[120px]"
-              />
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="dependencies">Dependencies</Label>
             <Combobox
@@ -169,6 +158,18 @@ export default function TaskPage() {
               placeholder="Enter a description for the task."
             />
           </div>
+          {task.tag === 'ai' && (
+            <div className="space-y-2">
+              <Label htmlFor="systemPrompt">System prompt</Label>
+              <Textarea
+                id="systemPrompt"
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Enter a system prompt for the AI task."
+                className="min-h-[120px]"
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
