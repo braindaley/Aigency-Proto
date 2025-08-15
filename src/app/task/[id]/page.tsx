@@ -20,7 +20,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
           Back to tasks
         </Link>
       </div>
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="font-headline text-2xl font-bold tracking-tight">{task.taskName}</CardTitle>
           <CardDescription>{task.description}</CardDescription>
