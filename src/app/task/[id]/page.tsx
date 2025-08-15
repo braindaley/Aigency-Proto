@@ -3,7 +3,15 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
+import type { TaskTag } from '@/lib/types';
+
+const tagIcons: Record<TaskTag, React.ReactNode> = {
+  waiting: <Clock className="h-8 w-8 text-muted-foreground" />,
+  approved: <ThumbsUp className="h-8 w-8 text-muted-foreground" />,
+  ai: <Sparkles className="h-8 w-8 text-muted-foreground" />,
+  manual: <User className="h-8 w-8 text-muted-foreground" />,
+};
 
 export default function TaskPage({ params }: { params: { id: string } }) {
   const task = tasks.find((task) => task.id === parseInt(params.id));
@@ -26,14 +34,15 @@ export default function TaskPage({ params }: { params: { id: string } }) {
             <p className="font-bold uppercase text-base leading-4">ID {task.id}</p>
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
-          <CardTitle className="font-headline text-2xl font-bold tracking-tight pt-2">{task.taskName}</CardTitle>
-          <CardDescription>{task.description}</CardDescription>
+          <div className="flex items-center gap-4 pt-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              {tagIcons[task.tag]}
+            </div>
+            <CardTitle className="font-headline text-2xl font-bold tracking-tight">{task.taskName}</CardTitle>
+          </div>
+          <CardDescription className="pt-2">{task.description}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div>
-            <h3 className="font-medium">Tag</h3>
-            <Badge variant="outline">{task.tag}</Badge>
-          </div>
           <div>
             <h3 className="font-medium">Status</h3>
             <Badge>{task.status}</Badge>
