@@ -42,7 +42,7 @@ const TaskGroup = ({ category, tasks }: { category: TaskCategory; tasks: Task[] 
 
 export default function Home() {
   const needsAttentionTasks = tasks.filter((task) => task.status === 'ai');
-  const upcomingTasks = tasks.filter((task) => task.status === 'waiting' || task.status === 'manual');
+  const upcomingTasks = tasks.filter((task) => task.status === 'waiting' || task.status === 'manual' || task.status === 'ai');
   const completeTasks = tasks.filter((task) => task.status === 'approved');
 
   const upcomingTasksByCat = upcomingTasks.reduce((acc, task) => {
