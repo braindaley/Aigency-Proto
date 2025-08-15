@@ -3,7 +3,7 @@ import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
-import type { Task, TaskTag, TaskPhase } from '@/lib/types';
+import type { Task, TaskTag, TaskPhase, TaskStatus } from '@/lib/types';
 
 const statusIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
@@ -21,11 +21,6 @@ const TaskItem = ({ task }: { task: Task }) => (
         </div>
         <p>{task.taskName}</p>
       </div>
-      <Button asChild variant="outline" className="h-8 px-4">
-        <Link href={`/tasks/${task.id}`}>
-          View
-        </Link>
-      </Button>
     </CardContent>
   </Card>
 );
@@ -41,9 +36,9 @@ const TaskGroup = ({ category, tasks }: { category: TaskPhase; tasks: Task[] }) 
 
 
 export default function Home() {
-  const needsAttentionTasks = tasks.filter((task) => task.tag === 'ai');
-  const upcomingTasks = tasks.filter((task) => task.tag === 'waiting' || task.tag === 'manual' || task.tag === 'ai');
-  const completeTasks = tasks.filter((task) => task.tag === 'approved');
+  const needsAttentionTasks = tasks.filter((task) => task.status === 'Needs attention');
+  const upcomingTasks = tasks.filter((task) => task.status === 'Upcoming');
+  const completeTasks = tasks.filter((task) => task.status === 'Complete');
 
   const upcomingTasksByCat = upcomingTasks.reduce((acc, task) => {
     if (!acc[task.phase]) {
