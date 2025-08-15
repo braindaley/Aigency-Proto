@@ -29,6 +29,7 @@ export default function TaskPage() {
     notFound();
   }
 
+  const [taskName, setTaskName] = useState(task.taskName);
   const [description, setDescription] = useState(task.description);
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
@@ -44,11 +45,12 @@ export default function TaskPage() {
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>(defaultDependency);
 
   const hasChanged = useMemo(() => {
+    const taskNameChanged = taskName !== task.taskName;
     const dependenciesChanged = JSON.stringify(selectedDependencies.sort()) !== JSON.stringify(defaultDependency.sort());
     const descriptionChanged = description !== task.description;
     const subtasksChanged = JSON.stringify(subtasks) !== JSON.stringify(task.subtasks || []);
-    return dependenciesChanged || descriptionChanged || subtasksChanged;
-  }, [selectedDependencies, description, subtasks, defaultDependency, task.description, task.subtasks]);
+    return taskNameChanged || dependenciesChanged || descriptionChanged || subtasksChanged;
+  }, [taskName, selectedDependencies, description, subtasks, task.taskName, defaultDependency, task.description, task.subtasks]);
 
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
@@ -78,11 +80,17 @@ export default function TaskPage() {
             <p className="font-bold uppercase text-base leading-4">ID {task.id}</p>
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
-          <div className="flex items-center gap-4 pt-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <div className="flex items-start gap-4 pt-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted shrink-0">
               {tagIcons[task.tag]}
             </div>
-            <CardTitle className="font-headline text-2xl font-bold tracking-tight">{task.taskName}</CardTitle>
+            <Input
+              id="taskName"
+              value={taskName}
+              onChange={(e) => setTaskName(e.target.value)}
+              placeholder="Enter a task name"
+              className="font-headline text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0"
+            />
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
