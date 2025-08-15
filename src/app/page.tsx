@@ -18,9 +18,6 @@ export default function Home() {
         <h1 className="text-2xl font-bold tracking-tight mb-2 font-headline">
           TaskMapper
         </h1>
-        <p className="text-lg text-muted-foreground">
-          A clear path to your project's completion.
-        </p>
       </header>
       
       <div className="flex flex-col gap-4">
