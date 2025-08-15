@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -8,9 +6,6 @@ export default function Home() {
       <p className="text-muted-foreground mt-2 mb-8">
         The task management pages have been moved.
       </p>
-      <Button asChild>
-        <Link href="/settings/tasks">Go to Tasks</Link>
-      </Button>
     </div>
   );
 }
