@@ -1,7 +1,15 @@
 import Link from 'next/link';
 import { tasks } from '@/lib/data';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Clock, ThumbsUp, Sparkles } from 'lucide-react';
+import type { Task, TaskStatus } from '@/lib/types';
+
+const statusIcons: Record<TaskStatus, React.ReactNode> = {
+  waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
+  approved: <ThumbsUp className="h-4 w-4 text-muted-foreground" />,
+  ai: <Sparkles className="h-4 w-4 text-muted-foreground" />,
+};
 
 export default function Home() {
   return (
@@ -15,18 +23,23 @@ export default function Home() {
         </p>
       </header>
       
-      <div className="flex flex-col gap-6">
-        {tasks.map((task) => (
-          <Link href={`/tasks/${task.id}`} key={task.id} className="group block">
-            <Card className="h-full transition-all duration-300 ease-in-out group-hover:shadow-lg group-hover:border-primary">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{task.title}</span>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 ease-in-out group-hover:translate-x-1 group-hover:text-primary" />
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </Link>
+      <div className="flex flex-col gap-4">
+        {tasks.map((task: Task) => (
+          <Card key={task.id} className="border-0 shadow-none">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  {statusIcons[task.status]}
+                </div>
+                <p>{task.title}</p>
+              </div>
+              <Button asChild variant="outline">
+                <Link href={`/tasks/${task.id}`}>
+                  View
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
