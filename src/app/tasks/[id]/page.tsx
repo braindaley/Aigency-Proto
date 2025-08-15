@@ -12,7 +12,7 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function TaskPage({ params }: { params: { id: string } }) {
+export default function TaskPage({ params }: { params: { id:string } }) {
   const task = tasks.find((t: Task) => t.id === params.id);
 
   if (!task) {
@@ -30,7 +30,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
         </Button>
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl font-bold font-headline">{task.title}</CardTitle>
+            <CardTitle className="text-2xl font-bold font-headline">{task.title}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg text-muted-foreground">{task.description}</p>
