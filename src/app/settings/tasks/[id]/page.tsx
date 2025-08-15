@@ -89,7 +89,7 @@ export default function TaskPage() {
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
               placeholder="Enter a task name"
-              className="font-headline text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0"
+              className="font-headline text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
         </CardHeader>
