@@ -1,7 +1,7 @@
 'use client';
 import { tasks } from '@/lib/data';
 import { notFound, useParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { ArrowLeft, Clock, ThumbsUp, Sparkles, User, Trash2, Plus } from 'lucide-react';
@@ -84,13 +84,16 @@ export default function TaskPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted shrink-0">
               {tagIcons[task.tag]}
             </div>
-            <Input
-              id="taskName"
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              placeholder="Enter a task name"
-              className="font-headline text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
+            <div className="w-full">
+              <Label htmlFor="taskName" className="sr-only">Task Name</Label>
+              <Input
+                id="taskName"
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                placeholder="Enter a task name"
+                className="font-headline text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
