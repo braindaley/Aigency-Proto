@@ -28,37 +28,10 @@ const TaskItem = ({ task }: { task: Task }) => (
   </Card>
 );
 
-const TaskGroup = ({ tasks }: { tasks: Task[] }) => (
-  <div className="flex flex-col gap-4">
-    {tasks.map((task: Task) => (
-      <TaskItem key={task.id} task={task} />
-    ))}
-  </div>
-);
-
-
 export default function Home() {
   const needsAttentionTasks = tasks.filter((task) => task.status === 'Needs attention');
   const upcomingTasks = tasks.filter((task) => task.status === 'Upcoming');
   const completeTasks = tasks.filter((task) => task.status === 'Complete');
-
-  const upcomingTasksByCat = upcomingTasks.reduce((acc, task) => {
-    if (!acc[task.phase]) {
-      acc[task.phase] = [];
-    }
-    acc[task.phase].push(task);
-    return acc;
-  }, {} as Record<TaskPhase, Task[]>);
-
-  const attentionTasksByCat = needsAttentionTasks.reduce((acc, task) => {
-    if (!acc[task.phase]) {
-      acc[task.phase] = [];
-    }
-    acc[task.phase].push(task);
-    return acc;
-  }, {} as Record<TaskPhase, Task[]>);
-
-  const taskCategories: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -69,32 +42,28 @@ export default function Home() {
       </header>
       
       <div className="flex flex-col gap-8">
-        <section className="flex flex-col gap-8">
-          <h2 className="text-xl font-semibold tracking-tight text-left">Needs attention</h2>
-          {Object.keys(attentionTasksByCat).length > 0 ? (
-            taskCategories.map((category) =>
-              attentionTasksByCat[category] ? (
-                <TaskGroup key={category} tasks={attentionTasksByCat[category]} />
-              ) : null
-            )
+        <section className="flex flex-col gap-4">
+          <h2 className="text-xl font-semibold tracking-tight text-left mb-4">Needs attention</h2>
+          {needsAttentionTasks.length > 0 ? (
+            needsAttentionTasks.map((task: Task) => (
+              <TaskItem key={task.id} task={task} />
+            ))
           ) : (
             <p className="text-muted-foreground">No tasks need your attention.</p>
           )}
         </section>
-        <section className="flex flex-col gap-8">
-          <h2 className="text-xl font-semibold tracking-tight text-left">Upcoming</h2>
-          {Object.keys(upcomingTasksByCat).length > 0 ? (
-             taskCategories.map((category) =>
-              upcomingTasksByCat[category] ? (
-                <TaskGroup key={category} tasks={upcomingTasksByCat[category]} />
-              ) : null
-            )
+        <section className="flex flex-col gap-4">
+          <h2 className="text-xl font-semibold tracking-tight text-left mb-4">Upcoming</h2>
+          {upcomingTasks.length > 0 ? (
+            upcomingTasks.map((task: Task) => (
+              <TaskItem key={task.id} task={task} />
+            ))
           ) : (
             <p className="text-muted-foreground">No upcoming tasks.</p>
           )}
         </section>
         <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold tracking-tight text-left">Complete</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-left mb-4">Complete</h2>
           {completeTasks.length > 0 ? (
             completeTasks.map((task: Task) => (
               <TaskItem key={task.id} task={task} />
