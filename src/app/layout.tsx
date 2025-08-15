@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'TaskMapper',
+  title: 'Aigency-Proto',
   description: 'A simple app to map out your tasks.',
 };
 

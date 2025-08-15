@@ -38,7 +38,7 @@ export default function Home() {
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <header className="text-left mb-12">
         <h1 className="text-2xl font-bold tracking-tight mb-2 font-headline">
-          TaskMapper
+          Aigency-Proto
         </h1>
       </header>
       
