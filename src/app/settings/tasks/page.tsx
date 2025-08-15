@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export default function TasksPage() {
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
+      <h1 className="text-3xl font-bold mb-8">Tasks</h1>
       <div className="flex flex-col gap-8">
         {tasksByPhase.map(({ phase, tasks }) => (
           <section key={phase} className="flex flex-col gap-4">
