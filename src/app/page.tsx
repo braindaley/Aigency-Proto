@@ -3,7 +3,7 @@ import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
-import type { Task, TaskStatus } from '@/lib/types';
+import type { Task, TaskStatus, TaskCategory } from '@/lib/types';
 
 const statusIcons: Record<TaskStatus, React.ReactNode> = {
   waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
@@ -30,10 +30,38 @@ const TaskItem = ({ task }: { task: Task }) => (
   </Card>
 );
 
+const TaskGroup = ({ category, tasks }: { category: TaskCategory; tasks: Task[] }) => (
+  <div className="flex flex-col gap-4">
+    <h3 className="text-lg font-semibold tracking-tight text-left">{category}</h3>
+    {tasks.map((task: Task) => (
+      <TaskItem key={task.id} task={task} />
+    ))}
+  </div>
+);
+
+
 export default function Home() {
   const needsAttentionTasks = tasks.filter((task) => task.status === 'ai');
   const upcomingTasks = tasks.filter((task) => task.status === 'waiting' || task.status === 'manual');
   const completeTasks = tasks.filter((task) => task.status === 'approved');
+
+  const upcomingTasksByCat = upcomingTasks.reduce((acc, task) => {
+    if (!acc[task.category]) {
+      acc[task.category] = [];
+    }
+    acc[task.category].push(task);
+    return acc;
+  }, {} as Record<TaskCategory, Task[]>);
+
+  const attentionTasksByCat = needsAttentionTasks.reduce((acc, task) => {
+    if (!acc[task.category]) {
+      acc[task.category] = [];
+    }
+    acc[task.category].push(task);
+    return acc;
+  }, {} as Record<TaskCategory, Task[]>);
+
+  const taskCategories: TaskCategory[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -44,22 +72,26 @@ export default function Home() {
       </header>
       
       <div className="flex flex-col gap-8">
-        <section className="flex flex-col gap-4">
+        <section className="flex flex-col gap-8">
           <h2 className="text-xl font-semibold tracking-tight text-left">Needs attention</h2>
-          {needsAttentionTasks.length > 0 ? (
-            needsAttentionTasks.map((task: Task) => (
-              <TaskItem key={task.id} task={task} />
-            ))
+          {Object.keys(attentionTasksByCat).length > 0 ? (
+            taskCategories.map((category) =>
+              attentionTasksByCat[category] ? (
+                <TaskGroup key={category} category={category} tasks={attentionTasksByCat[category]} />
+              ) : null
+            )
           ) : (
             <p className="text-muted-foreground">No tasks need your attention.</p>
           )}
         </section>
-        <section className="flex flex-col gap-4">
+        <section className="flex flex-col gap-8">
           <h2 className="text-xl font-semibold tracking-tight text-left">Upcoming</h2>
-          {upcomingTasks.length > 0 ? (
-            upcomingTasks.map((task: Task) => (
-              <TaskItem key={task.id} task={task} />
-            ))
+          {Object.keys(upcomingTasksByCat).length > 0 ? (
+             taskCategories.map((category) =>
+              upcomingTasksByCat[category] ? (
+                <TaskGroup key={category} category={category} tasks={upcomingTasksByCat[category]} />
+              ) : null
+            )
           ) : (
             <p className="text-muted-foreground">No upcoming tasks.</p>
           )}
