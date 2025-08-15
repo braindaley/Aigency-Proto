@@ -22,7 +22,7 @@ export default function TaskPage({ params }: { params: { id: string } }) {
       </div>
       <Card className="border-0 shadow-none">
         <CardHeader>
-          <p className="font-bold uppercase text-base leading-4 mb-2">ID: {task.id}</p>
+          <p className="font-bold uppercase text-base leading-4 mb-2">ID {task.id}</p>
           <CardTitle className="font-headline text-2xl font-bold tracking-tight">{task.taskName}</CardTitle>
           <CardDescription>{task.description}</CardDescription>
         </CardHeader>
