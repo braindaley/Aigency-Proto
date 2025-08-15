@@ -15,4 +15,5 @@ export interface Task {
   phase: TaskPhase;
   status: TaskStatus;
   subtasks?: Subtask[];
+  systemPrompt?: string;
 }

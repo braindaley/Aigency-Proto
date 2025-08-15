@@ -23,6 +23,11 @@ const tagIcons: Record<TaskTag, React.ReactNode> = {
 export default function TaskPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
+  if (!id) {
+    notFound();
+  }
+
   const task = tasks.find((task) => task.id === parseInt(id));
 
   if (!task) {
@@ -31,6 +36,7 @@ export default function TaskPage() {
 
   const [taskName, setTaskName] = useState(task.taskName);
   const [description, setDescription] = useState(task.description);
+  const [systemPrompt, setSystemPrompt] = useState(task.systemPrompt || '');
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
 
@@ -48,9 +54,10 @@ export default function TaskPage() {
     const taskNameChanged = taskName !== task.taskName;
     const dependenciesChanged = JSON.stringify(selectedDependencies.sort()) !== JSON.stringify(defaultDependency.sort());
     const descriptionChanged = description !== task.description;
+    const systemPromptChanged = systemPrompt !== (task.systemPrompt || '');
     const subtasksChanged = JSON.stringify(subtasks) !== JSON.stringify(task.subtasks || []);
-    return taskNameChanged || dependenciesChanged || descriptionChanged || subtasksChanged;
-  }, [taskName, selectedDependencies, description, subtasks, task.taskName, defaultDependency, task.description, task.subtasks]);
+    return taskNameChanged || dependenciesChanged || descriptionChanged || subtasksChanged || systemPromptChanged;
+  }, [taskName, selectedDependencies, description, subtasks, systemPrompt, task.taskName, defaultDependency, task.description, task.subtasks, task.systemPrompt]);
 
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
@@ -63,6 +70,10 @@ export default function TaskPage() {
     setSubtasks(subtasks.filter((subtask) => subtask.id !== id));
   };
 
+  const handleSave = () => {
+    console.log('Saving task...');
+  };
+
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <div className="flex justify-between items-center mb-8">
@@ -70,7 +81,7 @@ export default function TaskPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to tasks
         </Link>
-        <Button disabled={!hasChanged}>
+        <Button onClick={handleSave} disabled={!hasChanged}>
           Save changes
         </Button>
       </div>
@@ -91,12 +102,24 @@ export default function TaskPage() {
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
                 placeholder="Enter a task name"
-                className="font-headline text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="font-headline text-2xl font-bold tracking-tight"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {task.tag === 'ai' && (
+            <div className="space-y-2">
+              <Label htmlFor="systemPrompt">System prompt</Label>
+              <Textarea
+                id="systemPrompt"
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Enter a system prompt for the AI task."
+                className="min-h-[120px]"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="dependencies">Dependencies</Label>
             <Combobox
