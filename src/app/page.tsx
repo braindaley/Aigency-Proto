@@ -3,9 +3,9 @@ import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
-import type { Task, TaskStatus, TaskCategory } from '@/lib/types';
+import type { Task, TaskTag, TaskPhase } from '@/lib/types';
 
-const statusIcons: Record<TaskStatus, React.ReactNode> = {
+const statusIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
   approved: <ThumbsUp className="h-4 w-4 text-muted-foreground" />,
   ai: <Sparkles className="h-4 w-4 text-muted-foreground" />,
@@ -17,9 +17,9 @@ const TaskItem = ({ task }: { task: Task }) => (
     <CardContent className="p-0 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-          {statusIcons[task.status]}
+          {statusIcons[task.tag]}
         </div>
-        <p>{task.title}</p>
+        <p>{task.taskName}</p>
       </div>
       <Button asChild variant="outline" className="h-8 px-4">
         <Link href={`/tasks/${task.id}`}>
@@ -30,7 +30,7 @@ const TaskItem = ({ task }: { task: Task }) => (
   </Card>
 );
 
-const TaskGroup = ({ category, tasks }: { category: TaskCategory; tasks: Task[] }) => (
+const TaskGroup = ({ category, tasks }: { category: TaskPhase; tasks: Task[] }) => (
   <div className="flex flex-col gap-4">
     <h3 className="text-lg font-semibold tracking-tight text-left">{category}</h3>
     {tasks.map((task: Task) => (
@@ -41,27 +41,27 @@ const TaskGroup = ({ category, tasks }: { category: TaskCategory; tasks: Task[] 
 
 
 export default function Home() {
-  const needsAttentionTasks = tasks.filter((task) => task.status === 'ai');
-  const upcomingTasks = tasks.filter((task) => task.status === 'waiting' || task.status === 'manual' || task.status === 'ai');
-  const completeTasks = tasks.filter((task) => task.status === 'approved');
+  const needsAttentionTasks = tasks.filter((task) => task.tag === 'ai');
+  const upcomingTasks = tasks.filter((task) => task.tag === 'waiting' || task.tag === 'manual' || task.tag === 'ai');
+  const completeTasks = tasks.filter((task) => task.tag === 'approved');
 
   const upcomingTasksByCat = upcomingTasks.reduce((acc, task) => {
-    if (!acc[task.category]) {
-      acc[task.category] = [];
+    if (!acc[task.phase]) {
+      acc[task.phase] = [];
     }
-    acc[task.category].push(task);
+    acc[task.phase].push(task);
     return acc;
-  }, {} as Record<TaskCategory, Task[]>);
+  }, {} as Record<TaskPhase, Task[]>);
 
   const attentionTasksByCat = needsAttentionTasks.reduce((acc, task) => {
-    if (!acc[task.category]) {
-      acc[task.category] = [];
+    if (!acc[task.phase]) {
+      acc[task.phase] = [];
     }
-    acc[task.category].push(task);
+    acc[task.phase].push(task);
     return acc;
-  }, {} as Record<TaskCategory, Task[]>);
+  }, {} as Record<TaskPhase, Task[]>);
 
-  const taskCategories: TaskCategory[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
+  const taskCategories: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
