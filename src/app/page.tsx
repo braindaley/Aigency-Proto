@@ -15,12 +15,12 @@ const statusIcons: Record<TaskTag, React.ReactNode> = {
 const TaskItem = ({ task }: { task: Task }) => (
   <Card key={task.id} className="border-0 shadow-none">
     <CardContent className="p-0 flex items-center justify-between">
-      <div className="flex items-center gap-4">
+      <Link href={`/task/${task.id}`} className="flex items-center gap-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
           {statusIcons[task.tag]}
         </div>
         <p>{task.taskName}</p>
-      </div>
+      </Link>
     </CardContent>
   </Card>
 );
