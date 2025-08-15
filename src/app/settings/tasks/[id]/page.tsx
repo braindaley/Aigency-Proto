@@ -103,7 +103,6 @@ export default function TaskPage() {
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
                 placeholder="Enter a task name"
-                className="font-headline text-2xl font-bold tracking-tight"
               />
             </div>
           </div>
