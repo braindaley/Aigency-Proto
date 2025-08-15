@@ -14,8 +14,8 @@ const statusIcons: Record<TaskStatus, React.ReactNode> = {
 export default function Home() {
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
-      <header className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 font-headline">
+      <header className="text-left mb-12">
+        <h1 className="text-2xl font-bold tracking-tight mb-2 font-headline">
           TaskMapper
         </h1>
         <p className="text-lg text-muted-foreground">
