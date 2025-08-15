@@ -39,7 +39,8 @@ export default function TasksPage() {
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
-      <h1 className="text-3xl font-bold mb-8">Tasks</h1>
+      <h1 className="text-3xl font-bold">Tasks</h1>
+      <p className="text-muted-foreground mt-2 mb-8">Manage global tasks</p>
       <div className="flex flex-col gap-8">
         {tasksByPhase.map(({ phase, tasks }) => (
           <section key={phase} className="flex flex-col gap-4">
