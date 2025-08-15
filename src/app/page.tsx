@@ -3,7 +3,7 @@ import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
-import type { Task, TaskTag, TaskPhase, TaskStatus } from '@/lib/types';
+import type { Task, TaskTag, TaskPhase } from '@/lib/types';
 
 const statusIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
@@ -28,10 +28,13 @@ const TaskItem = ({ task }: { task: Task }) => (
   </Card>
 );
 
+const phases: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
+
 export default function Home() {
-  const needsAttentionTasks = tasks.filter((task) => task.status === 'Needs attention');
-  const upcomingTasks = tasks.filter((task) => task.status === 'Upcoming');
-  const completeTasks = tasks.filter((task) => task.status === 'Complete');
+  const tasksByPhase = phases.map(phase => ({
+    phase,
+    tasks: tasks.filter(task => task.phase === phase),
+  }));
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -42,36 +45,18 @@ export default function Home() {
       </header>
       
       <div className="flex flex-col gap-8">
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold tracking-tight text-left mb-4">Needs attention</h2>
-          {needsAttentionTasks.length > 0 ? (
-            needsAttentionTasks.map((task: Task) => (
-              <TaskItem key={task.id} task={task} />
-            ))
-          ) : (
-            <p className="text-muted-foreground">No tasks need your attention.</p>
-          )}
-        </section>
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold tracking-tight text-left mb-4">Upcoming</h2>
-          {upcomingTasks.length > 0 ? (
-            upcomingTasks.map((task: Task) => (
-              <TaskItem key={task.id} task={task} />
-            ))
-          ) : (
-            <p className="text-muted-foreground">No upcoming tasks.</p>
-          )}
-        </section>
-        <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold tracking-tight text-left mb-4">Complete</h2>
-          {completeTasks.length > 0 ? (
-            completeTasks.map((task: Task) => (
-              <TaskItem key={task.id} task={task} />
-            ))
-          ) : (
-            <p className="text-muted-foreground">No tasks have been completed.</p>
-          )}
-        </section>
+        {tasksByPhase.map(({ phase, tasks }) => (
+          <section key={phase} className="flex flex-col gap-4">
+            <h2 className="text-xl font-semibold tracking-tight text-left mb-4">{phase}</h2>
+            {tasks.length > 0 ? (
+              tasks.map((task: Task) => (
+                <TaskItem key={task.id} task={task} />
+              ))
+            ) : (
+              <p className="text-muted-foreground">No tasks in this phase.</p>
+            )}
+          </section>
+        ))}
       </div>
     </div>
   );
