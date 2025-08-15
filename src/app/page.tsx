@@ -3,9 +3,11 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Welcome</h1>
-      <p className="mb-8">The task management pages have been moved.</p>
+    <div className="container mx-auto px-4 py-8 md:py-12">
+      <h1 className="text-4xl font-bold mb-4 text-left">Welcome</h1>
+      <p className="mb-8 text-left text-muted-foreground">
+        The task management pages have been moved.
+      </p>
       <Button asChild>
         <Link href="/settings/tasks">Go to Tasks</Link>
       </Button>
