@@ -1,7 +1,7 @@
 import type { Task } from '@/lib/types';
 
 export const tasks: Task[] = [
-  { id: 1, phase: 'Submission', taskName: 'ACORD 125 – Commercial Insurance Application', tag: 'manual', status: 'Upcoming', description: 'Task description' },
+  { id: 1, phase: 'Submission', taskName: 'ACORD 125 – Commercial Insurance Application', tag: 'manual', status: 'Upcoming', description: 'Task description', subtasks: [{id: 1, text: 'Fill out applicant information'}, {id: 2, text: 'Complete prior carrier information'}] },
   { id: 2, phase: 'Submission', taskName: 'ACORD 130 – Request payroll by classification', tag: 'manual', status: 'Upcoming', description: 'Task description' },
   { id: 3, phase: 'Submission', taskName: 'ACORD 130 – Request employee count & job descriptions', tag: 'manual', status: 'Upcoming', description: 'Task description' },
   { id: 4, phase: 'Submission', taskName: 'ACORD 130 – Request loss runs (3–5 years)', tag: 'manual', status: 'Upcoming', description: 'Task description' },

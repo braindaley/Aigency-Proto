@@ -2,6 +2,11 @@ export type TaskTag = 'waiting' | 'approved' | 'ai' | 'manual';
 export type TaskPhase = 'Submission' | 'Marketing' | 'Proposal' | 'Binding' | 'Policy Check-In';
 export type TaskStatus = 'Needs attention' | 'Upcoming' | 'Complete';
 
+export interface Subtask {
+  id: number;
+  text: string;
+}
+
 export interface Task {
   id: number;
   taskName: string;
@@ -9,4 +14,5 @@ export interface Task {
   tag: TaskTag;
   phase: TaskPhase;
   status: TaskStatus;
+  subtasks?: Subtask[];
 }
