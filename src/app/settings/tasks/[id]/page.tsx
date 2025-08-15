@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { ArrowLeft, Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
 import type { TaskTag } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 const tagIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-8 w-8 text-muted-foreground" />,
@@ -29,24 +30,33 @@ export default function TaskPage() {
 
   const [description, setDescription] = useState(task.description);
 
-  const dependencyOptions = tasks
+  const dependencyOptions = useMemo(() => tasks
     .filter((t) => t.id !== task.id)
     .map((t) => ({
       value: t.id.toString(),
       label: `${t.id} - ${t.taskName}`,
-    }));
+    })), [task.id]);
 
-  const defaultDependency = task.id > 1 ? [(task.id - 1).toString()] : [];
+  const defaultDependency = useMemo(() => task.id > 1 ? [(task.id - 1).toString()] : [], [task.id]);
   
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>(defaultDependency);
 
+  const hasChanged = useMemo(() => {
+    const dependenciesChanged = JSON.stringify(selectedDependencies.sort()) !== JSON.stringify(defaultDependency.sort());
+    const descriptionChanged = description !== task.description;
+    return dependenciesChanged || descriptionChanged;
+  }, [selectedDependencies, description, defaultDependency, task.description]);
+
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
-      <div className="mb-8">
+      <div className="flex justify-between items-center mb-8">
         <Link href="/settings/tasks" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <ArrowLeft className="h-4 w-4" />
           Back to tasks
         </Link>
+        <Button disabled={!hasChanged}>
+          Save changes
+        </Button>
       </div>
       <Card className="border-0 shadow-none">
         <CardHeader>
@@ -63,7 +73,7 @@ export default function TaskPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">Dependencies</h3>
+            <Label htmlFor="dependencies">Dependencies</Label>
             <Combobox
               options={dependencyOptions}
               selected={selectedDependencies}
