@@ -20,8 +20,8 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 flex justify-center">
-      <div className="w-full max-w-2xl">
+    <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
+      <div className="w-full">
         <Button asChild variant="ghost" className="mb-6">
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />

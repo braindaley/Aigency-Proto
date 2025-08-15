@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12">
+    <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <header className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 font-headline">
           TaskMapper
@@ -15,7 +15,7 @@ export default function Home() {
         </p>
       </header>
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-col gap-6">
         {tasks.map((task) => (
           <Link href={`/tasks/${task.id}`} key={task.id} className="group block">
             <Card className="h-full transition-all duration-300 ease-in-out group-hover:shadow-lg group-hover:border-primary">
