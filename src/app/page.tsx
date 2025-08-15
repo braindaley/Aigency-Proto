@@ -28,9 +28,8 @@ const TaskItem = ({ task }: { task: Task }) => (
   </Card>
 );
 
-const TaskGroup = ({ category, tasks }: { category: TaskPhase; tasks: Task[] }) => (
+const TaskGroup = ({ tasks }: { tasks: Task[] }) => (
   <div className="flex flex-col gap-4">
-    <h3 className="text-lg font-semibold tracking-tight text-left">{category}</h3>
     {tasks.map((task: Task) => (
       <TaskItem key={task.id} task={task} />
     ))}
@@ -75,7 +74,7 @@ export default function Home() {
           {Object.keys(attentionTasksByCat).length > 0 ? (
             taskCategories.map((category) =>
               attentionTasksByCat[category] ? (
-                <TaskGroup key={category} category={category} tasks={attentionTasksByCat[category]} />
+                <TaskGroup key={category} tasks={attentionTasksByCat[category]} />
               ) : null
             )
           ) : (
@@ -87,7 +86,7 @@ export default function Home() {
           {Object.keys(upcomingTasksByCat).length > 0 ? (
              taskCategories.map((category) =>
               upcomingTasksByCat[category] ? (
-                <TaskGroup key={category} category={category} tasks={upcomingTasksByCat[category]} />
+                <TaskGroup key={category} tasks={upcomingTasksByCat[category]} />
               ) : null
             )
           ) : (
