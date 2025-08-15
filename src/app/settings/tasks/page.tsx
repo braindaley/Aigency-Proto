@@ -38,12 +38,6 @@ export default function TasksPage() {
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
-      <header className="text-left mb-12">
-        <h1 className="text-2xl font-bold tracking-tight mb-2 font-headline">
-          Aigency-Proto
-        </h1>
-      </header>
-      
       <div className="flex flex-col gap-8">
         {tasksByPhase.map(({ phase, tasks }) => (
           <section key={phase} className="flex flex-col gap-4">
