@@ -22,15 +22,14 @@ export default function TaskPage({ params }: { params: { id: string } }) {
       </div>
       <Card className="border-0 shadow-none">
         <CardHeader>
-          <p className="font-bold uppercase text-base leading-4 mb-2">ID {task.id}</p>
-          <CardTitle className="font-headline text-2xl font-bold tracking-tight">{task.taskName}</CardTitle>
+          <div className="flex items-center gap-4">
+            <p className="font-bold uppercase text-base leading-4">ID {task.id}</p>
+            <Badge variant="secondary">{task.phase}</Badge>
+          </div>
+          <CardTitle className="font-headline text-2xl font-bold tracking-tight pt-2">{task.taskName}</CardTitle>
           <CardDescription>{task.description}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <div>
-            <h3 className="font-medium">Phase</h3>
-            <p className="text-muted-foreground">{task.phase}</p>
-          </div>
           <div>
             <h3 className="font-medium">Tag</h3>
             <Badge variant="outline">{task.tag}</Badge>
