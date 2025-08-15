@@ -98,15 +98,6 @@ export default function TaskPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter a description for the task."
-            />
-          </div>
-          <div className="space-y-2">
             <Label>Sub-tasks</Label>
             <div className="space-y-2">
               {subtasks.map((subtask) => (
@@ -134,6 +125,15 @@ export default function TaskPage() {
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter a description for the task."
+            />
           </div>
         </CardContent>
       </Card>
