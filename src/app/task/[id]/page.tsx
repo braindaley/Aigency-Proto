@@ -42,11 +42,8 @@ export default function TaskPage({ params }: { params: { id: string } }) {
           </div>
           <CardDescription className="pt-2">{task.description}</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
-          <div>
-            <h3 className="font-medium">Status</h3>
-            <Badge>{task.status}</Badge>
-          </div>
+        <CardContent>
+          {/* Status has been removed from this page, but is still in the data */}
         </CardContent>
       </Card>
     </div>
