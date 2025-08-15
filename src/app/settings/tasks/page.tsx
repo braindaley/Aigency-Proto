@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
+import { Clock, ThumbsUp, Sparkles, User, ArrowLeft } from 'lucide-react';
 import type { Task, TaskTag, TaskPhase } from '@/lib/types';
 
 const statusIcons: Record<TaskTag, React.ReactNode> = {
@@ -39,6 +39,12 @@ export default function TasksPage() {
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
+      <div className="mb-8">
+        <Link href="/settings" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Back to settings
+        </Link>
+      </div>
       <h1 className="text-3xl font-bold">Tasks</h1>
       <p className="text-muted-foreground mt-2 mb-8">Manage global tasks</p>
       <div className="flex flex-col gap-8">
