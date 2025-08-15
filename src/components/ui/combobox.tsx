@@ -54,7 +54,7 @@ export function Combobox({
     onChange(newSelected)
   }
 
-  const handleRemove = (value: string, e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const handleRemove = (value: string, e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     const newSelected = selected.filter((s) => s !== value);
     onChange(newSelected);
@@ -71,19 +71,27 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between h-auto", className)}
         >
           <div className="flex flex-wrap gap-1">
             {selectedLabels.length > 0
               ? selectedLabels.map((label, index) => (
                   <Badge key={index} variant="secondary" className="mr-1">
                     {label}
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={(e) => handleRemove(selected[index], e)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleRemove(selected[index], e);
+                        }
+                      }}
                       className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      aria-label={`Remove ${label}`}
                     >
                       <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </button>
+                    </div>
                   </Badge>
                 ))
               : placeholder}
