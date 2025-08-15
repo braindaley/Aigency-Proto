@@ -1,7 +1,7 @@
 
 'use client';
 import { tasks } from '@/lib/data';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -17,8 +17,10 @@ const tagIcons: Record<TaskTag, React.ReactNode> = {
   manual: <User className="h-8 w-8 text-muted-foreground" />,
 };
 
-export default function TaskPage({ params }: { params: { id: string } }) {
-  const task = tasks.find((task) => task.id === parseInt(params.id));
+export default function TaskPage() {
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const task = tasks.find((task) => task.id === parseInt(id));
 
   if (!task) {
     notFound();
