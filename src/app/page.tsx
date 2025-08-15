@@ -45,21 +45,33 @@ export default function Home() {
       <div className="flex flex-col gap-8">
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold tracking-tight text-left">Needs attention</h2>
-          {needsAttentionTasks.map((task: Task) => (
-            <TaskItem key={task.id} task={task} />
-          ))}
+          {needsAttentionTasks.length > 0 ? (
+            needsAttentionTasks.map((task: Task) => (
+              <TaskItem key={task.id} task={task} />
+            ))
+          ) : (
+            <p className="text-muted-foreground">No tasks need your attention.</p>
+          )}
         </section>
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold tracking-tight text-left">Upcoming</h2>
-          {upcomingTasks.map((task: Task) => (
-            <TaskItem key={task.id} task={task} />
-          ))}
+          {upcomingTasks.length > 0 ? (
+            upcomingTasks.map((task: Task) => (
+              <TaskItem key={task.id} task={task} />
+            ))
+          ) : (
+            <p className="text-muted-foreground">No upcoming tasks.</p>
+          )}
         </section>
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold tracking-tight text-left">Complete</h2>
-          {completeTasks.map((task: Task) => (
-            <TaskItem key={task.id} task={task} />
-          ))}
+          {completeTasks.length > 0 ? (
+            completeTasks.map((task: Task) => (
+              <TaskItem key={task.id} task={task} />
+            ))
+          ) : (
+            <p className="text-muted-foreground">No tasks have been completed.</p>
+          )}
         </section>
       </div>
     </div>
