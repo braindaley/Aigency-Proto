@@ -1,3 +1,5 @@
+
+'use client';
 import { tasks } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -5,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { ArrowLeft, Clock, ThumbsUp, Sparkles, User } from 'lucide-react';
 import type { TaskTag } from '@/lib/types';
+import { Combobox } from '@/components/ui/combobox';
+import { useState } from 'react';
 
 const tagIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-8 w-8 text-muted-foreground" />,
@@ -19,6 +23,17 @@ export default function TaskPage({ params }: { params: { id: string } }) {
   if (!task) {
     notFound();
   }
+
+  const dependencyOptions = tasks
+    .filter((t) => t.id !== task.id)
+    .map((t) => ({
+      value: t.id.toString(),
+      label: `${t.id} - ${t.taskName}`,
+    }));
+
+  const defaultDependency = task.id > 1 ? [(task.id - 1).toString()] : [];
+  
+  const [selectedDependencies, setSelectedDependencies] = useState<string[]>(defaultDependency);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -43,15 +58,19 @@ export default function TaskPage({ params }: { params: { id: string } }) {
           <CardDescription className="pt-2">{task.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Status has been removed from this page, but is still in the data */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Dependencies</h3>
+            <Combobox
+              options={dependencyOptions}
+              selected={selectedDependencies}
+              onChange={setSelectedDependencies}
+              placeholder="Select dependencies..."
+              searchPlaceholder="Search dependencies..."
+              noResultsText="No dependencies found."
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
   );
-}
-
-export async function generateStaticParams() {
-  return tasks.map((task) => ({
-    id: task.id.toString(),
-  }));
 }
