@@ -33,7 +33,7 @@ export default function Home() {
                 </div>
                 <p>{task.title}</p>
               </div>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="h-8 px-4">
                 <Link href={`/tasks/${task.id}`}>
                   View
                 </Link>
