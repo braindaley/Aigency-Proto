@@ -63,15 +63,6 @@ export default function TaskPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter a description for the task."
-            />
-          </div>
-          <div className="space-y-2">
             <h3 className="text-sm font-medium">Dependencies</h3>
             <Combobox
               options={dependencyOptions}
@@ -80,6 +71,15 @@ export default function TaskPage() {
               placeholder="Select dependencies..."
               searchPlaceholder="Search dependencies..."
               noResultsText="No dependencies found."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter a description for the task."
             />
           </div>
         </CardContent>
