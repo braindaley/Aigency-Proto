@@ -12,7 +12,7 @@ import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp }
 import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Task, TaskStatus } from '@/lib/types';
+import type { Task, TaskStatus, CompanyTask } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -27,12 +27,6 @@ interface Company {
   id: string;
   name: string;
   renewals?: Renewal[];
-}
-
-interface CompanyTask extends Task {
-    companyId: string;
-    renewalDate: Timestamp;
-    renewalType: string;
 }
 
 const policyTypes = [
@@ -101,8 +95,8 @@ export default function CompanyTasksPage() {
         const tasksSnapshot = await getDocs(q);
         
         const tasksList = tasksSnapshot.docs.map(doc => ({
-          id: doc.id,
           ...doc.data(),
+          id: doc.id,
         })) as CompanyTask[];
 
         tasksList.sort((a, b) => {
@@ -182,10 +176,11 @@ export default function CompanyTasksPage() {
     });
 
     templates.forEach((templateData, index) => {
+      const { id, ...restOfTemplateData } = templateData;
       const newCompanyTaskRef = doc(companyTasksCollection);
       const newCompanyTask = {
-        ...templateData,
-        templateId: templateData.id,
+        ...restOfTemplateData,
+        templateId: id,
         companyId: companyId,
         renewalType: renewal.type,
         renewalDate: Timestamp.fromDate(renewal.date!),
