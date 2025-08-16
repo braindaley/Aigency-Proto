@@ -29,8 +29,10 @@ export default function NewCompanyPage() {
       const storedCompanies = localStorage.getItem('companies');
       const companies: Company[] = storedCompanies ? JSON.parse(storedCompanies) : [];
       
+      const newId = companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1;
+
       const newCompany: Company = {
-        id: Date.now(),
+        id: newId,
         name: companyName.trim(),
         description: description.trim(),
         website: website.trim(),
