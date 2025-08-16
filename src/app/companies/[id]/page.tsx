@@ -143,16 +143,17 @@ export default function CompanyDetailPage() {
         const companyDoc = await getDoc(doc(db, 'companies', companyId));
         if (companyDoc.exists()) {
           const companyData = { id: companyDoc.id, ...companyDoc.data() } as Company;
+          // Ensure renewals have Date objects
+          if (companyData.renewals) {
+            companyData.renewals = companyData.renewals.map(r => ({
+              ...r,
+              date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
+            })).filter(r => r.date) as Renewal[];
+          }
           setCompany(companyData);
           setEditedDescription(companyData.description || '');
           setEditedWebsite(companyData.website || '');
-          if (companyData.renewals) {
-            const formattedRenewals = companyData.renewals.map(r => ({
-              ...r,
-              date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
-            })).filter(r => r.date); // Filter out renewals without a date
-            setRenewals(formattedRenewals);
-          }
+          setRenewals(companyData.renewals || []);
         } else {
           setCompany(null);
         }
@@ -187,23 +188,20 @@ export default function CompanyDetailPage() {
     if (company) {
       setEditedDescription(company.description || '');
       setEditedWebsite(company.website || '');
-      if (company.renewals) {
-          const formattedRenewals = company.renewals.map(r => ({
-            ...r,
-            date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
-          })).filter(r => r.date);
-          setRenewals(formattedRenewals);
-      } else {
-          setRenewals([]);
-      }
+      // Always initialize renewals from the main company state when entering edit mode
+      setRenewals(company.renewals || []);
       setIsEditing(true);
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // No need to reset renewals, as they are re-fetched from the 'company' state
-    // when edit mode is re-entered.
+    // Reset fields to their last saved state from the `company` object
+    if (company) {
+      setEditedDescription(company.description || '');
+      setEditedWebsite(company.website || '');
+      setRenewals(company.renewals || []);
+    }
   };
 
   const handleSave = async () => {
@@ -219,19 +217,26 @@ export default function CompanyDetailPage() {
             date: Timestamp.fromDate(r.date!),
         }));
 
-      await updateDoc(companyRef, {
+      const updatedData = {
         description: editedDescription,
         website: editedWebsite,
         renewals: renewalsToSave,
-      });
+      };
 
-      const updatedCompanyData: Company = {
+      await updateDoc(companyRef, updatedData);
+
+      // Create the updated company state for the UI
+      const updatedCompanyState: Company = {
         ...company,
         description: editedDescription,
         website: editedWebsite,
+        // Convert Timestamps back to Dates for immediate UI consistency
         renewals: renewalsToSave.map(r => ({...r, date: r.date.toDate()})),
       };
-      setCompany(updatedCompanyData);
+
+      setCompany(updatedCompanyState);
+      // Ensure the 'renewals' state for editing also reflects the saved data
+      setRenewals(updatedCompanyState.renewals || []);
 
       setIsEditing(false);
       toast({
@@ -274,7 +279,7 @@ export default function CompanyDetailPage() {
     );
   }
 
-  const displayRenewals = isEditing ? renewals : (company.renewals || []).map(r => ({...r, date: (r.date as any)?.toDate ? (r.date as any).toDate() : r.date })).filter(r => r.date instanceof Date);
+  const displayRenewals = company.renewals || [];
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -418,5 +423,3 @@ export default function CompanyDetailPage() {
     </div>
   );
 }
-
-    
