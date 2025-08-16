@@ -12,8 +12,9 @@ import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp }
 import { Skeleton } from '@/components/ui/skeleton';
 import { differenceInCalendarDays } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { Task, TaskPhase } from '@/lib/types';
+import type { Task, TaskStatus } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 
 interface Renewal {
     id: number;
@@ -40,7 +41,7 @@ const policyTypes = [
     { value: 'property', label: 'Property' },
 ];
 
-const PHASES_ORDER: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
+const STATUS_ORDER: TaskStatus[] = ['Needs attention', 'Upcoming', 'Complete'];
 
 export default function CompanyTasksPage() {
   const params = useParams();
@@ -49,12 +50,10 @@ export default function CompanyTasksPage() {
   const [loading, setLoading] = useState(true);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [upcomingRenewals, setUpcomingRenewals] = useState<Renewal[]>([]);
-  const [tasksByPhase, setTasksByPhase] = useState<Record<TaskPhase, CompanyTask[]>>({
-    'Submission': [],
-    'Marketing': [],
-    'Proposal': [],
-    'Binding': [],
-    'Policy Check-In': [],
+  const [tasksByStatus, setTasksByStatus] = useState<Record<TaskStatus, CompanyTask[]>>({
+    'Needs attention': [],
+    'Upcoming': [],
+    'Complete': [],
   });
   const [error, setError] = useState<string | null>(null);
   const [generatedRenewals, setGeneratedRenewals] = useState<string[]>([]);
@@ -122,20 +121,20 @@ export default function CompanyTasksPage() {
         setGeneratedRenewals(generated);
 
         const groupedTasks = tasksList.reduce((acc, task) => {
-          const phase: TaskPhase = task.phase && PHASES_ORDER.includes(task.phase) ? task.phase : 'Submission';
-          if (!acc[phase]) {
-            acc[phase] = [];
+          const status: TaskStatus = task.status && STATUS_ORDER.includes(task.status) ? task.status : 'Upcoming';
+          if (!acc[status]) {
+            acc[status] = [];
           }
-          acc[phase].push(task);
+          acc[status].push(task);
           return acc;
-        }, {} as Record<TaskPhase, CompanyTask[]>);
+        }, {} as Record<TaskStatus, CompanyTask[]>);
 
-        const finalGroupedTasks = PHASES_ORDER.reduce((acc, phase) => {
-            acc[phase] = groupedTasks[phase] || [];
+        const finalGroupedTasks = STATUS_ORDER.reduce((acc, status) => {
+            acc[status] = groupedTasks[status] || [];
             return acc;
-        }, {} as Record<TaskPhase, CompanyTask[]>);
+        }, {} as Record<TaskStatus, CompanyTask[]>);
 
-        setTasksByPhase(finalGroupedTasks);
+        setTasksByStatus(finalGroupedTasks);
 
       } catch (err) {
         console.error("Error fetching tasks: ", err);
@@ -267,6 +266,7 @@ export default function CompanyTasksPage() {
                     <div>
                         <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
                     </div>
+                    <Badge variant="secondary">{task.phase}</Badge>
                 </div>
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/companies/${companyId}/tasks/${task.id}`}>
@@ -279,7 +279,7 @@ export default function CompanyTasksPage() {
     );
   };
 
-  const allTasksCount = PHASES_ORDER.reduce((sum, phase) => sum + (tasksByPhase[phase]?.length || 0), 0);
+  const allTasksCount = STATUS_ORDER.reduce((sum, status) => sum + (tasksByStatus[status]?.length || 0), 0);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -348,15 +348,15 @@ export default function CompanyTasksPage() {
             ) : allTasksCount === 0 ? (
                 <p className="text-muted-foreground text-center p-6">No tasks have been created for this company yet.</p>
             ) : (
-                <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
-                    {PHASES_ORDER.map(phase => (
-                        tasksByPhase[phase] && tasksByPhase[phase].length > 0 && (
-                            <AccordionItem value={phase} key={phase} className="border-b-0">
+                <Accordion type="multiple" defaultValue={STATUS_ORDER} className="w-full">
+                    {STATUS_ORDER.map(status => (
+                        tasksByStatus[status] && tasksByStatus[status].length > 0 && (
+                            <AccordionItem value={status} key={status} className="border-b-0">
                                 <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
-                                    <h2>{phase} ({tasksByPhase[phase].length})</h2>
+                                    <h2>{status} ({tasksByStatus[status].length})</h2>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-0">
-                                    {renderTaskList(tasksByPhase[phase])}
+                                    {renderTaskList(tasksByStatus[status])}
                                 </AccordionContent>
                             </AccordionItem>
                         )
