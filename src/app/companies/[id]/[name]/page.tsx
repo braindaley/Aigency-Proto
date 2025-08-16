@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useEffect, useState } from 'eact';
-import { useParams } from 'ext/navigation';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink } from 'ucide-react';
-import Link from 'ext/link';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 
 interface Company {
@@ -91,7 +91,7 @@ export default function CompanyDetailPage() {
           <div className="space-y-6">
             <div className="space-y-2">
               <Label>Company Description</Label>
-              <p className="text-muted-foreground">{company.description || 'o description provided.'}</p>
+              <p className="text-muted-foreground">{company.description || 'No description provided.'}</p>
             </div>
             <div className="space-y-2">
               <Label>Company Website</Label>
