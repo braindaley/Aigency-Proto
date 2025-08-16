@@ -82,7 +82,6 @@ export default function WorkersCompTasksPage() {
                     )}
                     <div>
                         <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
-                        {task.tag && <Badge variant={task.tag === 'ai' ? 'default' : 'secondary'} className="mt-1">{task.tag}</Badge>}
                     </div>
                 </div>
                 <Button asChild variant="outline" size="sm">
