@@ -364,7 +364,7 @@ export default function CompanyDetailPage() {
       <div className="mt-12">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Tasks</h2>
-          <Button asChild variant="ghost" size="icon">
+          <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
             <Link href={`/companies/${company.id}/tasks`}>
               <Settings className="h-5 w-5" />
               <span className="sr-only">Task Settings</span>
