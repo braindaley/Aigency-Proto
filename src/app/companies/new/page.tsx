@@ -7,24 +7,31 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Company {
   id: number;
   name: string;
+  description: string;
+  website: string;
 }
 
 export default function NewCompanyPage() {
-  const [newCompanyName, setNewCompanyName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [description, setDescription] = useState('');
+  const [website, setWebsite] = useState('');
   const router = useRouter();
 
   const handleAddCompany = () => {
-    if (newCompanyName.trim()) {
+    if (companyName.trim()) {
       const storedCompanies = localStorage.getItem('companies');
       const companies: Company[] = storedCompanies ? JSON.parse(storedCompanies) : [];
       
       const newCompany: Company = {
         id: Date.now(),
-        name: newCompanyName.trim(),
+        name: companyName.trim(),
+        description: description.trim(),
+        website: website.trim(),
       };
 
       const updatedCompanies = [...companies, newCompany];
@@ -54,12 +61,36 @@ export default function NewCompanyPage() {
               <Input
                 id="companyName"
                 placeholder="Enter company name"
-                value={newCompanyName}
-                onChange={(e) => setNewCompanyName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddCompany()}
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="companyDescription">Company description</Label>
+              <Textarea
+                id="companyDescription"
+                placeholder="Enter company description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="uploadDocuments">Upload documents</Label>
+              <Input
+                id="uploadDocuments"
+                type="file"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="companyWebsite">Company website</Label>
+              <Input
+                id="companyWebsite"
+                placeholder="https://example.com"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
               <Button variant="ghost" onClick={() => router.push('/companies')}>
                 Cancel
               </Button>
