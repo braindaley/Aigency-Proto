@@ -105,7 +105,7 @@ export default function CompanyTasksPage() {
           ...doc.data(),
         })) as CompanyTask[];
 
-        // Sort tasks by their original template ID
+        // Sort tasks by their original template ID numerically
         tasksList.sort((a, b) => {
             const idA = parseInt(String(a.templateId), 10);
             const idB = parseInt(String(b.templateId), 10);
@@ -181,6 +181,7 @@ export default function CompanyTasksPage() {
     
     // Fetch all docs to get correct numeric IDs for sorting before iterating
     const templates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Task }));
+    // Sort templates numerically by ID
     templates.sort((a, b) => {
         const idA = parseInt(String(a.id), 10);
         const idB = parseInt(String(b.id), 10);
