@@ -41,7 +41,9 @@ export default function CompaniesPage() {
   }, []);
 
 
-  const handleDeleteCompany = (id: number) => {
+  const handleDeleteCompany = (id: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     const updatedCompanies = companies.filter((company) => company.id !== id);
     setCompanies(updatedCompanies);
     localStorage.setItem('companies', JSON.stringify(updatedCompanies));
@@ -80,19 +82,21 @@ export default function CompaniesPage() {
 
       <div className="space-y-4">
         {filteredCompanies.map((company) => (
-          <Card key={company.id} className="border-0">
-            <CardContent className="p-4 flex items-center justify-between">
-              <p className="font-medium">{company.name}</p>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteCompany(company.id)}
-                aria-label={`Delete ${company.name}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
+          <Link href={`/companies/${company.id}`} key={company.id} className="block hover:bg-accent rounded-lg">
+            <Card className="border-0 shadow-none bg-transparent">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <p className="font-medium">{company.name}</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleDeleteCompany(company.id, e)}
+                    aria-label={`Delete ${company.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardContent>
+            </Card>
+          </Link>
         ))}
         {companies.length > 0 && filteredCompanies.length === 0 && (
           <p className="text-center text-muted-foreground">
