@@ -287,18 +287,17 @@ export default function CompanyTasksPage() {
                 <p className="text-muted-foreground mt-2">
                     This is where you can view all the tasks for this specific company.
                 </p>
+                {activeRenewal && activeRenewal.date && (
+                <div className="flex items-baseline gap-4 mt-6">
+                    <Label>
+                    {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                    Renewal Date: {format(activeRenewal.date, 'PPP')}
+                    </p>
+                </div>
+                )}
             </div>
-        )}
-        
-        {activeRenewal && activeRenewal.date && (
-           <div className="flex items-baseline gap-4 mt-4">
-            <Label>
-              {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Renewal Date: {format(activeRenewal.date, 'PPP')}
-            </p>
-          </div>
         )}
 
         {upcomingRenewals.length > 0 && (
