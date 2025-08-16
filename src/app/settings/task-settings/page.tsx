@@ -24,7 +24,7 @@ export default function TaskSettingsPage() {
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground">Manage tasks related to Worker's Comp policies.</p>
             <Button asChild>
-              <Link href="/settings/tasks/workers-comp">
+              <Link href="/settings/task-settings/workers-comp">
                 Go to Tasks
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
