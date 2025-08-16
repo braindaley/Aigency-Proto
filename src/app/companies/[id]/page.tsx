@@ -77,6 +77,7 @@ export default function CompanyDetailPage() {
                 Back to Companies
             </Link>
         </Button>
+        <p className="mb-2 font-bold uppercase text-base leading-4 text-muted-foreground">ID {company.id}</p>
         <h1 className="text-3xl font-bold">{company.name}</h1>
       </div>
       
