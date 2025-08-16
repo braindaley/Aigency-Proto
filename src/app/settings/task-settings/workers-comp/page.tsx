@@ -70,8 +70,10 @@ export default function TasksPage() {
       </div>
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-3xl font-bold">Tasks: Workers Comp</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> New Line
+        <Button asChild>
+          <Link href="/settings/task-settings/new">
+            <Plus className="mr-2 h-4 w-4" /> New Line
+          </Link>
         </Button>
       </div>
       <p className="text-muted-foreground mt-2 mb-8">Manage global tasks for Worker's Comp policies.</p>

@@ -3,7 +3,7 @@ export type TaskPhase = 'Submission' | 'Marketing' | 'Proposal' | 'Binding' | 'P
 export type TaskStatus = 'Needs attention' | 'Upcoming' | 'Complete';
 
 export interface Subtask {
-  id: string;
+  id: number;
   text: string;
 }
 
