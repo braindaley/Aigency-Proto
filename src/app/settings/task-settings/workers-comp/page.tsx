@@ -71,9 +71,9 @@ export default function WorkersCompTasksPage() {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
     }
     return (
-      <ul className="divide-y border-t">
+      <ul className="border-t">
         {tasks.map((task) => (
-           <li key={task.id} className="flex items-center justify-between p-4">
+           <li key={task.id} className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-4">
                     {task.tag === 'ai' ? (
                       <Sparkles className="h-6 w-6 text-muted-foreground" />
