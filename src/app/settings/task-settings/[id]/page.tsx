@@ -5,7 +5,7 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowLeft, Clock, ThumbsUp, Sparkles, User, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus } from 'lucide-react';
 import type { TaskTag, Subtask } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { useState, useMemo } from 'react';
@@ -13,13 +13,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-const tagIcons: Record<TaskTag, React.ReactNode> = {
-  waiting: <Clock className="h-8 w-8 text-muted-foreground" />,
-  approved: <ThumbsUp className="h-8 w-8 text-muted-foreground" />,
-  ai: <Sparkles className="h-8 w-8 text-muted-foreground" />,
-  manual: <User className="h-8 w-8 text-muted-foreground" />,
-};
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function TaskPage() {
   const params = useParams();
@@ -40,6 +40,7 @@ export default function TaskPage() {
   const [systemPrompt, setSystemPrompt] = useState(task.systemPrompt || '');
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
   const [newSubtask, setNewSubtask] = useState('');
+  const [tag, setTag] = useState<TaskTag>(task.tag);
 
   const dependencyOptions = useMemo(() => tasks
     .filter((t) => t.id !== task.id)
@@ -53,12 +54,13 @@ export default function TaskPage() {
 
   const hasChanged = useMemo(() => {
     const taskNameChanged = taskName !== task.taskName;
+    const tagChanged = tag !== task.tag;
     const dependenciesChanged = JSON.stringify(selectedDependencies.sort()) !== JSON.stringify(defaultDependency.sort());
     const descriptionChanged = description !== task.description;
     const systemPromptChanged = systemPrompt !== (task.systemPrompt || '');
     const subtasksChanged = JSON.stringify(subtasks) !== JSON.stringify(task.subtasks || []);
-    return taskNameChanged || dependenciesChanged || descriptionChanged || subtasksChanged || systemPromptChanged;
-  }, [taskName, selectedDependencies, description, subtasks, systemPrompt, task.taskName, defaultDependency, task.description, task.subtasks, task.systemPrompt]);
+    return taskNameChanged || dependenciesChanged || descriptionChanged || subtasksChanged || systemPromptChanged || tagChanged;
+  }, [taskName, selectedDependencies, description, subtasks, systemPrompt, tag, task.taskName, task.tag, defaultDependency, task.description, task.subtasks, task.systemPrompt]);
 
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
@@ -92,22 +94,30 @@ export default function TaskPage() {
             <p className="font-bold uppercase text-base leading-4">ID {task.id}</p>
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
-          <div className="flex items-start gap-4 pt-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted shrink-0">
-              {tagIcons[task.tag]}
-            </div>
-            <div className="w-full">
-              <Label htmlFor="taskName" className="sr-only">Task Name</Label>
+          <div className="pt-2">
+              <Label htmlFor="taskName">Task Name</Label>
               <Input
                 id="taskName"
                 value={taskName}
                 onChange={(e) => setTaskName(e.target.value)}
                 placeholder="Enter a task name"
+                className="mt-2"
               />
-            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="taskType">Task Type</Label>
+            <Select onValueChange={(value: TaskTag) => setTag(value)} value={tag}>
+                <SelectTrigger id="taskType">
+                    <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="ai">AI</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="dependencies">Dependencies</Label>
             <Combobox
@@ -157,7 +167,7 @@ export default function TaskPage() {
               placeholder="Enter a description for the task."
             />
           </div>
-          {task.tag === 'ai' && (
+          {tag === 'ai' && (
             <div className="space-y-2">
               <Label htmlFor="systemPrompt">System prompt</Label>
               <Textarea
