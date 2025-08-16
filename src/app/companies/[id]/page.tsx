@@ -362,7 +362,15 @@ export default function CompanyDetailPage() {
       </Card>
       
       <div className="mt-12">
-        <h2 className="text-xl font-semibold">Tasks</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Tasks</h2>
+          <Button asChild variant="ghost" size="icon">
+            <Link href={`/companies/${company.id}/tasks`}>
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Task Settings</span>
+            </Link>
+          </Button>
+        </div>
         <div className="mt-4 rounded-lg border p-6 text-center text-muted-foreground">
             <p>Tasks will be displayed here soon.</p>
         </div>
