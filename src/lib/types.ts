@@ -3,12 +3,12 @@ export type TaskPhase = 'Submission' | 'Marketing' | 'Proposal' | 'Binding' | 'P
 export type TaskStatus = 'Needs attention' | 'Upcoming' | 'Complete';
 
 export interface Subtask {
-  id: number;
+  id: string;
   text: string;
 }
 
 export interface Task {
-  id: number;
+  id: string;
   taskName: string;
   description: string;
   tag: TaskTag;

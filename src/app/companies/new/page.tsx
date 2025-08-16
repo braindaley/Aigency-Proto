@@ -9,13 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/ui/file-upload';
-
-interface Company {
-  id: number;
-  name: string;
-  description: string;
-  website: string;
-}
+import { db } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export default function NewCompanyPage() {
   const [companyName, setCompanyName] = useState('');
@@ -24,27 +19,20 @@ export default function NewCompanyPage() {
   const [files, setFiles] = useState<File[]>([]);
   const router = useRouter();
 
-  const handleAddCompany = () => {
+  const handleAddCompany = async () => {
     if (companyName.trim()) {
-      const storedCompanies = localStorage.getItem('companies');
-      const companies: Company[] = storedCompanies ? JSON.parse(storedCompanies) : [];
-      
-      const newId = companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1;
-
-      const newCompany: Company = {
-        id: newId,
-        name: companyName.trim(),
-        description: description.trim(),
-        website: website.trim(),
-      };
-
-      // In a real app, you would handle file uploads to a server here.
-      console.log('Uploaded files:', files.map(f => f.name));
-
-      const updatedCompanies = [...companies, newCompany];
-      localStorage.setItem('companies', JSON.stringify(updatedCompanies));
-      
-      router.push('/companies');
+      try {
+        await addDoc(collection(db, 'companies'), {
+          name: companyName.trim(),
+          description: description.trim(),
+          website: website.trim(),
+        });
+        // In a real app, you would handle file uploads to a server here.
+        console.log('Uploaded files:', files.map(f => f.name));
+        router.push('/companies');
+      } catch (error) {
+        console.error('Error adding document: ', error);
+      }
     }
   };
 

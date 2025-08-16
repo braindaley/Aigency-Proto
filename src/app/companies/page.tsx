@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 interface Company {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -18,24 +20,16 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
 
   useEffect(() => {
-    const storedCompanies = localStorage.getItem('companies');
-    if (storedCompanies) {
-      setCompanies(JSON.parse(storedCompanies));
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleFocus = () => {
-      const storedCompanies = localStorage.getItem('companies');
-      if (storedCompanies) {
-        setCompanies(JSON.parse(storedCompanies));
-      }
+    const fetchCompanies = async () => {
+      const querySnapshot = await getDocs(collection(db, 'companies'));
+      const companiesData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Company));
+      setCompanies(companiesData);
     };
 
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
+    fetchCompanies();
   }, []);
 
   const filteredCompanies = companies.filter((company) =>
