@@ -106,8 +106,8 @@ export default function CompanyTasksPage() {
         })) as CompanyTask[];
 
         tasksList.sort((a, b) => {
-            const idA = parseInt(String(a.id), 10);
-            const idB = parseInt(String(b.id), 10);
+            const idA = parseInt(String(a.templateId), 10);
+            const idB = parseInt(String(b.templateId), 10);
             return idA - idB;
         });
 
