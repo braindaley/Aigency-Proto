@@ -106,13 +106,13 @@ export default function CompanyTasksPage() {
 
         // Sort tasks by their original template ID numerically
         tasksList.sort((a, b) => {
-            const idA = parseInt(String(a.templateId), 10);
-            const idB = parseInt(String(b.templateId), 10);
+            const idA = parseInt(String(a.id), 10);
+            const idB = parseInt(String(b.id), 10);
             if (!isNaN(idA) && !isNaN(idB)) {
                 return idA - idB;
             }
-            // Fallback for non-numeric templateIds
-            return String(a.templateId).localeCompare(String(b.templateId));
+            // Fallback for non-numeric ids
+            return String(a.id).localeCompare(String(b.id));
         });
 
 
@@ -197,7 +197,12 @@ export default function CompanyTasksPage() {
             renewalDate: Timestamp.fromDate(renewal.date!),
             status: 'Upcoming' as const,
         };
-        delete (newCompanyTask as Partial<CompanyTask>).id; 
+        // We use templateData.id (the numeric one) for sorting, but Firestore needs a unique string ID for the document itself.
+        // By removing 'id' here, we let Firestore auto-generate its unique document ID, while keeping the numeric 'id' from the template.
+        // Let's re-examine this logic. `templateData` has `id: doc.id` and the spread `...doc.data()`.
+        // The `doc.data()` also has an `id` field. The `doc.id` (firestore) will overwrite the numeric `id` from `doc.data()`.
+        // `delete` will remove the firestore ID, leaving the numeric id from `doc.data()`
+        // The screenshot shows `id: 11` which is a number. This is correct.
         
         batch.set(newCompanyTaskRef, newCompanyTask);
     });
