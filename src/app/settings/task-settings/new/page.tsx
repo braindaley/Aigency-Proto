@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,8 @@ export default function NewTaskPage() {
   const [tag, setTag] = useState<TaskTag | ''>('');
   const [phase, setPhase] = useState<TaskPhase | ''>('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const policyType = searchParams.get('policyType') || 'workers-comp';
 
   const handleAddTask = async () => {
     if (taskName.trim() && tag && phase) {
@@ -32,8 +34,9 @@ export default function NewTaskPage() {
           phase,
           status: 'Upcoming' as TaskStatus,
           subtasks: [],
+          policyType,
         });
-        router.push('/settings/task-settings/workers-comp');
+        router.push(`/settings/task-settings/${policyType}`);
       } catch (error) {
         console.error('Error adding document: ', error);
       }
@@ -115,7 +118,7 @@ export default function NewTaskPage() {
               </div>
             )}
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="ghost" onClick={() => router.push('/settings/task-settings/workers-comp')}>
+              <Button variant="ghost" onClick={() => router.push(`/settings/task-settings/${policyType}`)}>
                 Cancel
               </Button>
               <Button onClick={handleAddTask}>Save Task</Button>
