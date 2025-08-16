@@ -60,11 +60,11 @@ export default function CompanyTasksPage() {
             <h1 className="text-3xl font-bold">Tasks for {company?.name || 'Company'}</h1>
         )}
         <p className="text-muted-foreground mt-2">
-            This is where you will manage the tasks for this specific company.
+            This is where you can view all the tasks for this specific company.
         </p>
       </div>
       
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardContent className="p-6">
           <p className="text-muted-foreground text-center">
             Task management functionality is coming soon.
