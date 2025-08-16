@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'eact';
+import { useParams } from 'ext/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, ExternalLink } from 'ucide-react';
+import Link from 'ext/link';
 import { Label } from '@/components/ui/label';
-import { createSlug } from '@/lib/utils';
 
 interface Company {
   id: number;
@@ -27,15 +26,15 @@ export default function CompanyDetailPage() {
     setIsClient(true);
   }, []);
 
-  const slug = params.name ? decodeURIComponent(params.name as string) : null;
+  const id = params.id ? parseInt(params.id as string, 10) : null;
 
   useEffect(() => {
-    if (isClient && slug) {
+    if (isClient && id !== null) {
       try {
         const storedCompanies = localStorage.getItem('companies');
         if (storedCompanies) {
           const companies: Company[] = JSON.parse(storedCompanies);
-          const foundCompany = companies.find((c) => createSlug(c.name) === slug);
+          const foundCompany = companies.find((c) => c.id === id);
           setCompany(foundCompany || null);
         }
       } catch (error) {
@@ -47,7 +46,7 @@ export default function CompanyDetailPage() {
     } else if (isClient) {
       setIsLoading(false);
     }
-  }, [slug, isClient]);
+  }, [id, isClient]);
 
   if (!isClient || isLoading) {
     return (
@@ -92,7 +91,7 @@ export default function CompanyDetailPage() {
           <div className="space-y-6">
             <div className="space-y-2">
               <Label>Company Description</Label>
-              <p className="text-muted-foreground">{company.description || 'No description provided.'}</p>
+              <p className="text-muted-foreground">{company.description || 'o description provided.'}</p>
             </div>
             <div className="space-y-2">
               <Label>Company Website</Label>
