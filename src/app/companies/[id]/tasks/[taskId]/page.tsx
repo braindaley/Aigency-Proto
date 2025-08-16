@@ -144,11 +144,13 @@ export default function CompanyTaskDetailPage() {
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
           <div className="flex items-center gap-3 pt-2">
-            {task.tag === 'ai' ? (
-                <Sparkles className="h-6 w-6 text-muted-foreground" />
-            ) : (
-                <User className="h-6 w-6 text-muted-foreground" />
-            )}
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                {task.tag === 'ai' ? (
+                    <Sparkles className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                    <User className="h-5 w-5 text-muted-foreground" />
+                )}
+            </div>
             <h1 className="text-2xl font-bold">{task.taskName}</h1>
           </div>
         </CardHeader>
