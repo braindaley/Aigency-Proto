@@ -43,6 +43,13 @@ interface Renewal {
     date: Date | undefined;
 }
 
+const policyTypes = [
+    { value: 'workers-comp', label: "Worker's Comp" },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'general-liability', label: 'General Liability' },
+    { value: 'property', label: 'Property' },
+];
+
 const policyTypeAbbreviations: { [key: string]: string } = {
     'workers-comp': 'WC',
     'automotive': 'Auto',
@@ -280,6 +287,7 @@ export default function CompanyDetailPage() {
   }
 
   const displayRenewals = company.renewals || [];
+  const usedPolicyTypes = renewals.map(r => r.type).filter(Boolean);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -363,15 +371,24 @@ export default function CompanyDetailPage() {
                     <div className="space-y-4">
                         {renewals.map((renewal) => (
                             <div key={renewal.id} className="flex items-center gap-4">
-                                <Select onValueChange={(value) => handleRenewalChange(renewal.id, value)} defaultValue={renewal.type}>
+                                <Select 
+                                    onValueChange={(value) => handleRenewalChange(renewal.id, value)} 
+                                    defaultValue={renewal.type || undefined}
+                                    value={renewal.type || undefined}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a policy type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="workers-comp">Worker's Comp</SelectItem>
-                                        <SelectItem value="automotive">Automotive</SelectItem>
-                                        <SelectItem value="general-liability">General Liability</SelectItem>
-                                        <SelectItem value="property">Property</SelectItem>
+                                        {policyTypes.map(policy => (
+                                            <SelectItem 
+                                                key={policy.value} 
+                                                value={policy.value}
+                                                disabled={usedPolicyTypes.includes(policy.value) && renewal.type !== policy.value}
+                                            >
+                                                {policy.label}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                                 <Popover>
@@ -402,7 +419,13 @@ export default function CompanyDetailPage() {
                             </div>
                         ))}
                     </div>
-                    <Button onClick={handleAddRenewal} variant="outline" size="sm" className="mt-4">
+                    <Button 
+                        onClick={handleAddRenewal} 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-4"
+                        disabled={renewals.length >= policyTypes.length}
+                    >
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add
                     </Button>
