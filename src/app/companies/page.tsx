@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 interface Company {
   id: number;
@@ -16,22 +16,35 @@ interface Company {
 export default function CompaniesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [isAdding, setIsAdding] = useState(false);
-  const [newCompanyName, setNewCompanyName] = useState('');
 
-  const handleAddCompany = () => {
-    if (newCompanyName.trim()) {
-      setCompanies([
-        ...companies,
-        { id: Date.now(), name: newCompanyName.trim() },
-      ]);
-      setNewCompanyName('');
-      setIsAdding(false);
+  useEffect(() => {
+    const storedCompanies = localStorage.getItem('companies');
+    if (storedCompanies) {
+      setCompanies(JSON.parse(storedCompanies));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // This effect runs when the component mounts and might be useful
+    // if you want to refresh the list when navigating back.
+    const handleFocus = () => {
+      const storedCompanies = localStorage.getItem('companies');
+      if (storedCompanies) {
+        setCompanies(JSON.parse(storedCompanies));
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
 
   const handleDeleteCompany = (id: number) => {
-    setCompanies(companies.filter((company) => company.id !== id));
+    const updatedCompanies = companies.filter((company) => company.id !== id);
+    setCompanies(updatedCompanies);
+    localStorage.setItem('companies', JSON.stringify(updatedCompanies));
   };
 
   const filteredCompanies = companies.filter((company) =>
@@ -47,38 +60,12 @@ export default function CompaniesPage() {
             Manage your companies here.
           </p>
         </div>
-        <Button onClick={() => setIsAdding(!isAdding)}>
-          <Plus className="mr-2 h-4 w-4" /> Add New
+        <Button asChild>
+          <Link href="/companies/new">
+            <Plus className="mr-2 h-4 w-4" /> Add New
+          </Link>
         </Button>
       </div>
-
-      {isAdding && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Add a new company</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  placeholder="Enter company name"
-                  value={newCompanyName}
-                  onChange={(e) => setNewCompanyName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddCompany()}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setIsAdding(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddCompany}>Save</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="relative mb-8">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -112,7 +99,7 @@ export default function CompaniesPage() {
             No companies found matching your search.
           </p>
         )}
-        {companies.length === 0 && !isAdding && (
+        {companies.length === 0 && (
            <p className="text-center text-muted-foreground py-8">
             No companies yet. Click &quot;Add New&quot; to get started.
           </p>
