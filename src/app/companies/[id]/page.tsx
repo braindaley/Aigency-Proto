@@ -22,9 +22,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { format, addMonths, differenceInCalendarMonths } from "date-fns"
+import { format, addMonths, differenceInCalendarMonths, differenceInCalendarDays } from "date-fns"
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -137,6 +138,8 @@ export default function CompanyDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
   const [editedWebsite, setEditedWebsite] = useState('');
+  
+  const [upcomingRenewals, setUpcomingRenewals] = useState<Renewal[]>([]);
 
   const companyId = typeof id === 'string' ? id : '';
 
@@ -174,6 +177,18 @@ export default function CompanyDetailPage() {
 
     fetchCompany();
   }, [companyId]);
+  
+  useEffect(() => {
+    if (company?.renewals) {
+      const today = new Date();
+      const upcoming = company.renewals.filter(r => {
+        if (!r.date) return false;
+        const daysUntilRenewal = differenceInCalendarDays(r.date, today);
+        return daysUntilRenewal >= 0 && daysUntilRenewal <= 120;
+      });
+      setUpcomingRenewals(upcoming);
+    }
+  }, [company]);
 
   const handleAddRenewal = () => {
     setRenewals([...renewals, { id: Date.now(), type: '', date: undefined }]);
@@ -310,6 +325,22 @@ export default function CompanyDetailPage() {
               </Button>
             )}
         </div>
+        
+        {upcomingRenewals.length > 0 && (
+          <div className="mt-6 space-y-4">
+            {upcomingRenewals.map(renewal => (
+              <Alert key={renewal.id}>
+                <AlertDescription>
+                  <div className="flex justify-between items-center">
+                    <span>Start the renewal process for {policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}</span>
+                    <Button>Create tasks</Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+
         <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
       </div>
       
@@ -461,3 +492,5 @@ export default function CompanyDetailPage() {
     </div>
   );
 }
+
+    
