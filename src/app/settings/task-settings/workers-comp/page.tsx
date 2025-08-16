@@ -129,7 +129,7 @@ export default function WorkersCompTasksPage() {
             ) : (
                 <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
                     {PHASES_ORDER.map(phase => (
-                        <AccordionItem value={phase} key={phase}>
+                        <AccordionItem value={phase} key={phase} className="border-b-0">
                             <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
                                 {phase} ({tasksByPhase[phase].length})
                             </AccordionTrigger>
