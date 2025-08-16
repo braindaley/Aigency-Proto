@@ -18,7 +18,7 @@ export default function TaskSettingsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Worker's Comp</CardTitle>
+          <CardTitle>Worker's Comp Tasks</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
