@@ -277,9 +277,17 @@ export default function CompanyTasksPage() {
             </Link>
         </Button>
         {loading ? (
-            <Skeleton className="h-9 w-1/2" />
+            <div className="space-y-2">
+                <Skeleton className="h-9 w-3/4" />
+                <Skeleton className="h-5 w-1/2" />
+            </div>
         ) : (
-            <h1 className="text-3xl font-bold">Tasks for {company?.name || 'Company'}</h1>
+            <div>
+                <h1 className="text-3xl font-bold">Tasks for {company?.name || 'Company'}</h1>
+                <p className="text-muted-foreground mt-2">
+                    This is where you can view all the tasks for this specific company.
+                </p>
+            </div>
         )}
         
         {activeRenewal && activeRenewal.date && (
@@ -292,10 +300,6 @@ export default function CompanyTasksPage() {
             </p>
           </div>
         )}
-        
-        <p className="text-muted-foreground mt-2">
-            This is where you can view all the tasks for this specific company.
-        </p>
 
         {upcomingRenewals.length > 0 && (
           <div className="mt-6 space-y-4">
