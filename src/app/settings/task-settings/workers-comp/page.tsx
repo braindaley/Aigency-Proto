@@ -71,9 +71,9 @@ export default function WorkersCompTasksPage() {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
     }
     return (
-      <ul className="border-t">
+      <ul className="border-t-0">
         {tasks.map((task) => (
-           <li key={task.id} className="flex items-center justify-between p-4 border-b">
+           <li key={task.id} className="flex items-center justify-between p-4 border-b-0">
                 <div className="flex items-center gap-4">
                     {task.tag === 'ai' ? (
                       <Sparkles className="h-6 w-6 text-muted-foreground" />
@@ -135,7 +135,7 @@ export default function WorkersCompTasksPage() {
                     {PHASES_ORDER.map(phase => (
                         <AccordionItem value={phase} key={phase} className="border-b-0">
                             <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
-                                {phase} ({tasksByPhase[phase].length})
+                                <h2>{phase} ({tasksByPhase[phase].length})</h2>
                             </AccordionTrigger>
                             <AccordionContent className="p-0">
                                 {renderTaskList(tasksByPhase[phase])}
