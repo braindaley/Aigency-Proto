@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -39,7 +39,8 @@ export default function WorkersCompTasksPage() {
         })) as Task[];
 
         const groupedTasks = tasksList.reduce((acc, task) => {
-          const phase = task.phase;
+          // Default to 'Submission' if phase is missing or invalid
+          const phase: TaskPhase = task.phase && PHASES_ORDER.includes(task.phase) ? task.phase : 'Submission';
           if (!acc[phase]) {
             acc[phase] = [];
           }
@@ -47,12 +48,10 @@ export default function WorkersCompTasksPage() {
           return acc;
         }, {} as Record<TaskPhase, Task[]>);
 
-        // Ensure all phases are present, even if empty
         const finalGroupedTasks = PHASES_ORDER.reduce((acc, phase) => {
             acc[phase] = groupedTasks[phase] || [];
             return acc;
         }, {} as Record<TaskPhase, Task[]>);
-
 
         setTasksByPhase(finalGroupedTasks);
 
@@ -69,20 +68,25 @@ export default function WorkersCompTasksPage() {
 
   const renderTaskList = (tasks: Task[]) => {
     if (tasks.length === 0) {
-      return <p className="text-sm text-muted-foreground px-4 pb-4">No tasks in this phase.</p>;
+      return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
     }
     return (
-      <ul className="divide-y">
+      <ul className="divide-y border-t">
         {tasks.map((task) => (
-           <li key={task.id}>
-            <Link href={`/settings/task-settings/workers-comp/${task.id}`} className="flex items-center justify-between p-4 hover:bg-accent">
-                <div className="flex-1">
-                  <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
-                  <p className="text-sm text-muted-foreground">ID: {task.id}</p>
+           <li key={task.id} className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-4">
+                    <FileText className="h-6 w-6 text-muted-foreground" />
+                    <div>
+                        <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                        {task.tag && <Badge variant={task.tag === 'ai' ? 'default' : 'secondary'} className="mt-1">{task.tag}</Badge>}
+                    </div>
                 </div>
-                <Badge variant={task.tag === 'ai' ? 'default' : 'secondary'}>{task.tag}</Badge>
-            </Link>
-          </li>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/settings/task-settings/workers-comp/${task.id}`}>
+                    View
+                  </Link>
+                </Button>
+            </li>
         ))}
       </ul>
     );
@@ -92,10 +96,12 @@ export default function WorkersCompTasksPage() {
   return (
     <div className="mx-auto max-w-screen-lg px-4 py-8 md:py-12">
       <div className="mb-8">
-        <Link href="/settings/task-settings" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Task Settings
-        </Link>
+        <Button variant="ghost" asChild className="-ml-4">
+            <Link href="/settings/task-settings">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Task Settings
+            </Link>
+        </Button>
       </div>
 
       <div className="flex justify-between items-center mb-2">
@@ -110,37 +116,35 @@ export default function WorkersCompTasksPage() {
         </Button>
       </div>
       
-      <div className="mt-8">
-          {loading ? (
-            <Card>
-                <CardHeader>
-                    <CardTitle>All Tasks</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <Skeleton className="h-8 w-full" />
-                        <Skeleton className="h-8 w-full" />
-                        <Skeleton className="h-8 w-3/4" />
-                    </div>
-                </CardContent>
-            </Card>
-          ) : error ? (
-            <p className="text-destructive">{error}</p>
-          ) : (
-            <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
-                {PHASES_ORDER.map(phase => (
-                    <AccordionItem value={phase} key={phase}>
-                        <AccordionTrigger className="px-4 text-base font-semibold">
-                            {phase}
-                        </AccordionTrigger>
-                        <AccordionContent className="p-0">
-                            {renderTaskList(tasksByPhase[phase])}
-                        </AccordionContent>
-                    </AccordionItem>
-                ))}
-            </Accordion>
-          )}
-      </div>
+      <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Task Library</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+                <div className="space-y-4 p-6">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-3/4" />
+                </div>
+            ) : error ? (
+                <p className="text-destructive p-6">{error}</p>
+            ) : (
+                <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
+                    {PHASES_ORDER.map(phase => (
+                        <AccordionItem value={phase} key={phase}>
+                            <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
+                                {phase} ({tasksByPhase[phase].length})
+                            </AccordionTrigger>
+                            <AccordionContent className="p-0">
+                                {renderTaskList(tasksByPhase[phase])}
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            )}
+          </CardContent>
+      </Card>
     </div>
   );
 }

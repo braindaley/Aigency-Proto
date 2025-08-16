@@ -8,47 +8,47 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface Company {
-  id: number;
+  id: string;
   name: string;
   description: string;
   website: string;
 }
 
 export default function CompanyDetailPage() {
-  const { id: companyId } = useParams();
+  const params = useParams();
+  const companyId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const id = companyId ? parseInt(companyId as string, 10) : null;
-
-  useEffect(() => {
-    if (isClient && id !== null) {
+    const fetchCompany = async () => {
+      if (!companyId) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const storedCompanies = localStorage.getItem('companies');
-        if (storedCompanies) {
-          const companies: Company[] = JSON.parse(storedCompanies);
-          const foundCompany = companies.find((c) => c.id === id);
-          setCompany(foundCompany || null);
+        const companyDoc = await getDoc(doc(db, 'companies', companyId));
+        if (companyDoc.exists()) {
+          setCompany({ id: companyDoc.id, ...companyDoc.data() } as Company);
+        } else {
+          setCompany(null);
         }
       } catch (error) {
-        console.error("Failed to parse companies from localStorage", error);
+        console.error("Error fetching company:", error);
         setCompany(null);
       } finally {
         setIsLoading(false);
       }
-    } else if (isClient) {
-      setIsLoading(false);
-    }
-  }, [id, isClient]);
+    };
 
-  if (!isClient || isLoading) {
+    fetchCompany();
+  }, [companyId]);
+
+  if (isLoading) {
     return (
       <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
         <p>Loading...</p>
