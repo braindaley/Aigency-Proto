@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
+import { createSlug } from '@/lib/utils';
 
 interface Company {
   id: number;
@@ -26,15 +27,15 @@ export default function CompanyDetailPage() {
     setIsClient(true);
   }, []);
 
-  const name = params.name ? decodeURIComponent(params.name as string) : null;
+  const slug = params.name ? decodeURIComponent(params.name as string) : null;
 
   useEffect(() => {
-    if (isClient && name) {
+    if (isClient && slug) {
       try {
         const storedCompanies = localStorage.getItem('companies');
         if (storedCompanies) {
           const companies: Company[] = JSON.parse(storedCompanies);
-          const foundCompany = companies.find((c) => c.name === name);
+          const foundCompany = companies.find((c) => createSlug(c.name) === slug);
           setCompany(foundCompany || null);
         }
       } catch (error) {
@@ -46,7 +47,7 @@ export default function CompanyDetailPage() {
     } else if (isClient) {
       setIsLoading(false);
     }
-  }, [name, isClient]);
+  }, [slug, isClient]);
 
   if (!isClient || isLoading) {
     return (

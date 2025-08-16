@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { createSlug } from '@/lib/utils';
 
 interface Company {
   id: number;
@@ -73,7 +74,7 @@ export default function CompaniesPage() {
         {filteredCompanies.map((company) => (
           <Card key={company.id}>
              <CardContent className="p-0">
-              <Link href={`/companies/${encodeURIComponent(company.name)}`} className="block flex-1 p-4 rounded-lg hover:bg-accent">
+              <Link href={`/companies/${createSlug(company.name)}`} className="block flex-1 p-4 rounded-lg hover:bg-accent">
                   <p className="font-medium">{company.name}</p>
               </Link>
             </CardContent>
