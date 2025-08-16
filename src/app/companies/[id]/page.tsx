@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Settings, Save, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Settings, Save, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -179,6 +179,10 @@ export default function CompanyDetailPage() {
       setRenewals(renewals.map(r => r.id === id ? { ...r, date } : r));
   }
   
+  const handleRemoveRenewal = (id: number) => {
+    setRenewals(renewals.filter(r => r.id !== id));
+  };
+
   const handleEdit = () => {
     if (company) {
       setEditedDescription(company.description || '');
@@ -198,17 +202,8 @@ export default function CompanyDetailPage() {
 
   const handleCancel = () => {
     setIsEditing(false);
-    if (company) {
-       if (company.renewals) {
-        const formattedRenewals = company.renewals.map(r => ({
-          ...r,
-          date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
-        })).filter(r => r.date);
-        setRenewals(formattedRenewals);
-      } else {
-        setRenewals([]);
-      }
-    }
+    // No need to reset renewals, as they are re-fetched from the 'company' state
+    // when edit mode is re-entered.
   };
 
   const handleSave = async () => {
@@ -230,11 +225,11 @@ export default function CompanyDetailPage() {
         renewals: renewalsToSave,
       });
 
-      const updatedCompanyData = {
+      const updatedCompanyData: Company = {
         ...company,
         description: editedDescription,
         website: editedWebsite,
-        renewals: renewals.filter(r => r.type && r.date),
+        renewals: renewalsToSave.map(r => ({...r, date: r.date.toDate()})),
       };
       setCompany(updatedCompanyData);
 
@@ -279,7 +274,7 @@ export default function CompanyDetailPage() {
     );
   }
 
-  const displayRenewals = isEditing ? renewals : (company.renewals || []).map(r => ({...r, date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined })).filter(r => r.date);
+  const displayRenewals = isEditing ? renewals : (company.renewals || []).map(r => ({...r, date: (r.date as any)?.toDate ? (r.date as any).toDate() : r.date })).filter(r => r.date instanceof Date);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -396,6 +391,9 @@ export default function CompanyDetailPage() {
                                         />
                                     </PopoverContent>
                                 </Popover>
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveRenewal(renewal.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </div>
                         ))}
                     </div>
@@ -420,3 +418,5 @@ export default function CompanyDetailPage() {
     </div>
   );
 }
+
+    
