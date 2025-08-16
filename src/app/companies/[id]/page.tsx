@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Settings, Save, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Settings, Save, X, Trash2, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -26,8 +26,10 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import type { Task } from '@/lib/types';
+import { Badge } from '@/components/ui/badge';
 
 interface Company {
   id: string;
@@ -41,6 +43,12 @@ interface Renewal {
     id: number;
     type: string;
     date: Date | undefined;
+}
+
+interface CompanyTask extends Task {
+    companyId: string;
+    renewalDate: Timestamp;
+    renewalType: string;
 }
 
 const policyTypes = [
@@ -137,20 +145,26 @@ export default function CompanyDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
   const [editedWebsite, setEditedWebsite] = useState('');
+
+  const [attentionTasks, setAttentionTasks] = useState<CompanyTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
   
   const companyId = typeof id === 'string' ? id : '';
 
   useEffect(() => {
-    const fetchCompany = async () => {
+    const fetchCompanyData = async () => {
       if (!companyId) {
         setIsLoading(false);
+        setTasksLoading(false);
         return;
       }
+      setIsLoading(true);
+      setTasksLoading(true);
       try {
+        // Fetch company details
         const companyDoc = await getDoc(doc(db, 'companies', companyId));
         if (companyDoc.exists()) {
           const companyData = { id: companyDoc.id, ...companyDoc.data() } as Company;
-          // Ensure renewals have Date objects
           if (companyData.renewals) {
             companyData.renewals = companyData.renewals.map(r => ({
               ...r,
@@ -170,9 +184,35 @@ export default function CompanyDetailPage() {
       } finally {
         setIsLoading(false);
       }
+
+      // Fetch tasks that need attention
+      try {
+        const tasksQuery = query(
+          collection(db, 'companyTasks'), 
+          where('companyId', '==', companyId),
+          where('status', '==', 'Needs attention')
+        );
+        const tasksSnapshot = await getDocs(tasksQuery);
+        const tasksList = tasksSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as CompanyTask[];
+
+        tasksList.sort((a, b) => {
+            const idA = parseInt(String(a.templateId), 10);
+            const idB = parseInt(String(b.templateId), 10);
+            return idA - idB;
+        });
+
+        setAttentionTasks(tasksList);
+      } catch (error) {
+         console.error("Error fetching tasks:", error);
+      } finally {
+        setTasksLoading(false);
+      }
     };
 
-    fetchCompany();
+    fetchCompanyData();
   }, [companyId]);
   
   const handleAddRenewal = () => {
@@ -195,7 +235,6 @@ export default function CompanyDetailPage() {
     if (company) {
       setEditedDescription(company.description || '');
       setEditedWebsite(company.website || '');
-      // Always initialize renewals from the main company state when entering edit mode
       setRenewals(company.renewals || []);
       setIsEditing(true);
     }
@@ -203,7 +242,6 @@ export default function CompanyDetailPage() {
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset fields to their last saved state from the `company` object
     if (company) {
       setEditedDescription(company.description || '');
       setEditedWebsite(company.website || '');
@@ -232,17 +270,14 @@ export default function CompanyDetailPage() {
 
       await updateDoc(companyRef, updatedData);
 
-      // Create the updated company state for the UI
       const updatedCompanyState: Company = {
         ...company,
         description: editedDescription,
         website: editedWebsite,
-        // Convert Timestamps back to Dates for immediate UI consistency
         renewals: renewalsToSave.map(r => ({...r, date: r.date.toDate()})),
       };
 
       setCompany(updatedCompanyState);
-      // Ensure the 'renewals' state for editing also reflects the saved data
       setRenewals(updatedCompanyState.renewals || []);
 
       setIsEditing(false);
@@ -259,7 +294,6 @@ export default function CompanyDetailPage() {
       });
     }
   };
-
 
   if (isLoading) {
     return (
@@ -372,8 +406,39 @@ export default function CompanyDetailPage() {
             </Link>
           </Button>
         </div>
-        <div className="mt-4 rounded-lg p-6 text-center text-muted-foreground">
-            <p>Tasks will be displayed here soon.</p>
+        <div className="mt-4">
+          {tasksLoading ? (
+            <p>Loading tasks...</p>
+          ) : attentionTasks.length > 0 ? (
+            <ul className="divide-y">
+              {attentionTasks.map((task) => (
+                <li key={task.id} className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                            {task.tag === 'ai' ? (
+                            <Sparkles className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                            <User className="h-5 w-5 text-muted-foreground" />
+                            )}
+                        </div>
+                        <div>
+                            <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                        </div>
+                        <Badge variant="secondary">{task.phase}</Badge>
+                    </div>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/companies/${companyId}/tasks/${task.id}`}>
+                        View
+                      </Link>
+                    </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-lg p-6 text-center text-muted-foreground">
+              <p>No tasks currently need attention.</p>
+            </div>
+          )}
         </div>
       </div>
 

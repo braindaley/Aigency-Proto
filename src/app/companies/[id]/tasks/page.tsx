@@ -186,20 +186,17 @@ export default function CompanyTasksPage() {
     });
 
     templates.forEach((templateData, index) => {
-        const newCompanyTaskRef = doc(companyTasksCollection); 
-
-        const newCompanyTask = {
-            ...templateData,
-            templateId: templateData.id, 
-            companyId: companyId,
-            renewalType: renewal.type,
-            renewalDate: Timestamp.fromDate(renewal.date!),
-            status: index === 0 ? 'Needs attention' : 'Upcoming' as const,
-        };
-        // Remove the original ID to avoid confusion
-        delete (newCompanyTask as any).id;
-        
-        batch.set(newCompanyTaskRef, newCompanyTask);
+      const { id, ...restOfTemplateData } = templateData;
+      const newCompanyTaskRef = doc(companyTasksCollection);
+      const newCompanyTask = {
+        ...restOfTemplateData,
+        templateId: id,
+        companyId: companyId,
+        renewalType: renewal.type,
+        renewalDate: Timestamp.fromDate(renewal.date!),
+        status: (index === 0 ? 'Needs attention' : 'Upcoming') as const,
+      };
+      batch.set(newCompanyTaskRef, newCompanyTask);
     });
 
     try {
