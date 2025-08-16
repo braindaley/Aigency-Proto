@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
@@ -11,14 +12,14 @@ export default function SettingsPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Tasks</CardTitle>
+          <CardTitle>Task Settings</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground">Manage global tasks for your agency.</p>
             <Button asChild>
               <Link href="/settings/tasks">
-                Go to Tasks
+                Go to Task Settings
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
