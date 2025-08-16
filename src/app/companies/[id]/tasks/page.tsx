@@ -111,7 +111,7 @@ export default function CompanyTasksPage() {
             if (!isNaN(idA) && !isNaN(idB)) {
                 return idA - idB;
             }
-            // Fallback for non-numeric ids, which shouldn't happen with the new logic
+            // Fallback for non-numeric ids
             return String(a.templateId).localeCompare(String(b.templateId));
         });
 
