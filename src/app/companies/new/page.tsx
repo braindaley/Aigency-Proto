@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/ui/file-upload';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes } from 'firebase/storage';
 
 export default function NewCompanyPage() {
   const [companyName, setCompanyName] = useState('');
@@ -22,13 +23,18 @@ export default function NewCompanyPage() {
   const handleAddCompany = async () => {
     if (companyName.trim()) {
       try {
-        await addDoc(collection(db, 'companies'), {
+        const docRef = await addDoc(collection(db, 'companies'), {
           name: companyName.trim(),
           description: description.trim(),
           website: website.trim(),
         });
-        // In a real app, you would handle file uploads to a server here.
-        console.log('Uploaded files:', files.map(f => f.name));
+
+        const storage = getStorage();
+        for (const file of files) {
+          const storageRef = ref(storage, `companies/${docRef.id}/${file.name}`);
+          await uploadBytes(storageRef, file);
+        }
+
         router.push('/companies');
       } catch (error) {
         console.error('Error adding document: ', error);
