@@ -186,7 +186,7 @@ export default function CompanyTaskDetailPage() {
       <Card className="border-0 shadow-none">
         <CardHeader>
           <div className="flex items-center gap-4">
-            <p className="font-bold uppercase text-base leading-4">ID {task.id}</p>
+            <p className="font-bold uppercase text-base leading-4">ID {task.templateId}</p>
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
           <div className="pt-2">

@@ -106,13 +106,13 @@ export default function CompanyTasksPage() {
 
         // Sort tasks by their original template ID numerically
         tasksList.sort((a, b) => {
-            const idA = parseInt(String(a.id), 10);
-            const idB = parseInt(String(b.id), 10);
+            const idA = parseInt(String(a.templateId), 10);
+            const idB = parseInt(String(b.templateId), 10);
             if (!isNaN(idA) && !isNaN(idB)) {
                 return idA - idB;
             }
             // Fallback for non-numeric ids, which shouldn't happen with the new logic
-            return String(a.id).localeCompare(String(b.id));
+            return String(a.templateId).localeCompare(String(b.templateId));
         });
 
         // Update generated renewals state
@@ -196,6 +196,8 @@ export default function CompanyTasksPage() {
             renewalDate: Timestamp.fromDate(renewal.date!),
             status: index === 0 ? 'Needs attention' : 'Upcoming' as const,
         };
+        // Remove the original ID to avoid confusion
+        delete (newCompanyTask as any).id;
         
         batch.set(newCompanyTaskRef, newCompanyTask);
     });
