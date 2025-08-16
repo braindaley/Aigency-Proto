@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { format, addMonths } from "date-fns"
+import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -43,30 +43,78 @@ interface Renewal {
     date: Date | undefined;
 }
 
-const Timeline = () => {
-    const [months, setMonths] = useState<string[]>([]);
+const policyTypeAbbreviations: { [key: string]: string } = {
+    'workers-comp': 'WC',
+    'automotive': 'Auto',
+    'general-liability': 'GL',
+    'property': 'Prop',
+};
+
+const Timeline = ({ renewals, startDate }: { renewals: Renewal[], startDate: Date }) => {
+    const [months, setMonths] = useState<Date[]>([]);
   
     useEffect(() => {
       const getMonths = () => {
-        const
-   currentDate = new Date();
         const futureMonths = [];
         for (let i = 0; i < 15; i++) {
-          futureMonths.push(format(addMonths(currentDate, i), 'MMM'));
+          futureMonths.push(addMonths(startDate, i));
         }
         return futureMonths;
       };
       setMonths(getMonths());
-    }, []);
+    }, [startDate]);
+
+    const renewalsByMonth: { [key: number]: Renewal[] } = {};
+    renewals.forEach(renewal => {
+        if (renewal.date) {
+            const monthIndex = differenceInCalendarMonths(renewal.date, startDate);
+            if (monthIndex >= 0 && monthIndex < 15) {
+                if (!renewalsByMonth[monthIndex]) {
+                    renewalsByMonth[monthIndex] = [];
+                }
+                renewalsByMonth[monthIndex].push(renewal);
+            }
+        }
+    });
   
     return (
-      <div className="w-full mt-8">
+      <div className="w-full mt-8 relative">
         <div className="flex justify-between text-sm text-muted-foreground mb-2" style={{ fontSize: '14px' }}>
           {months.map((month, index) => (
-            <span key={index} className="flex-1 text-center">{month}</span>
+            <span key={index} className="flex-1 text-center">{format(month, 'MMM')}</span>
           ))}
         </div>
         <div className="w-full bg-muted rounded-full" style={{ height: '10px', borderRadius: '40px' }} />
+        <div className="absolute top-full w-full mt-2">
+            {Object.entries(renewalsByMonth).map(([monthIndex, monthRenewals]) => (
+                <div 
+                    key={monthIndex} 
+                    className="absolute flex flex-col items-center"
+                    style={{ 
+                        left: `calc(${(parseInt(monthIndex) / 15) * 100}% + ${(100 / 15 / 2)}%)`, 
+                        transform: 'translateX(-50%)' 
+                    }}
+                >
+                    {monthRenewals.map((renewal) => (
+                         <div 
+                            key={renewal.id} 
+                            className="text-xs font-medium text-gray-600"
+                            style={{
+                                display: 'flex',
+                                padding: '2px 10px',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderRadius: '12px',
+                                backgroundColor: '#f0f0f0', // light grey
+                                marginBottom: '4px'
+                            }}
+                        >
+                            {policyTypeAbbreviations[renewal.type] || renewal.type}
+                        </div>
+                    ))}
+                </div>
+            ))}
+        </div>
       </div>
     );
 };
@@ -77,6 +125,7 @@ export default function CompanyDetailPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
+  const [timelineStartDate, setTimelineStartDate] = useState(new Date());
   
   const [isEditing, setIsEditing] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
@@ -98,11 +147,10 @@ export default function CompanyDetailPage() {
           setEditedDescription(companyData.description || '');
           setEditedWebsite(companyData.website || '');
           if (companyData.renewals) {
-            // Convert Firestore Timestamps back to JS Date objects
             const formattedRenewals = companyData.renewals.map(r => ({
               ...r,
               date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
-            }));
+            })).filter(r => r.date); // Filter out renewals without a date
             setRenewals(formattedRenewals);
           }
         } else {
@@ -135,21 +183,27 @@ export default function CompanyDetailPage() {
     if (company) {
       setEditedDescription(company.description || '');
       setEditedWebsite(company.website || '');
-      // Make a copy of renewals to edit, to avoid mutating state directly before saving
-      setRenewals(company.renewals ? JSON.parse(JSON.stringify(company.renewals)).map((r: any) => ({...r, date: r.date ? new Date(r.date) : undefined})) : []);
+      if (company.renewals) {
+          const formattedRenewals = company.renewals.map(r => ({
+            ...r,
+            date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
+          })).filter(r => r.date);
+          setRenewals(formattedRenewals);
+      } else {
+          setRenewals([]);
+      }
       setIsEditing(true);
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset renewals to original state if canceled
     if (company) {
        if (company.renewals) {
         const formattedRenewals = company.renewals.map(r => ({
           ...r,
           date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
-        }));
+        })).filter(r => r.date);
         setRenewals(formattedRenewals);
       } else {
         setRenewals([]);
@@ -163,10 +217,12 @@ export default function CompanyDetailPage() {
     try {
       const companyRef = doc(db, 'companies', company.id);
       
-      const renewalsToSave = renewals.map(r => ({
-        ...r,
-        date: r.date ? Timestamp.fromDate(r.date) : null,
-      }));
+      const renewalsToSave = renewals
+        .filter(r => r.type && r.date)
+        .map(r => ({
+            ...r,
+            date: Timestamp.fromDate(r.date!),
+        }));
 
       await updateDoc(companyRef, {
         description: editedDescription,
@@ -178,7 +234,7 @@ export default function CompanyDetailPage() {
         ...company,
         description: editedDescription,
         website: editedWebsite,
-        renewals: renewals, // Keep JS Date objects in local state
+        renewals: renewals.filter(r => r.type && r.date),
       };
       setCompany(updatedCompanyData);
 
@@ -223,11 +279,11 @@ export default function CompanyDetailPage() {
     );
   }
 
-  const displayRenewals = isEditing ? renewals : company.renewals || [];
+  const displayRenewals = isEditing ? renewals : (company.renewals || []).map(r => ({...r, date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined })).filter(r => r.date);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
-      <div className="mb-8">
+      <div className="mb-8 pb-10">
         <Button asChild variant="ghost" className="mb-4 -ml-4">
             <Link href="/companies">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -246,7 +302,7 @@ export default function CompanyDetailPage() {
               </Button>
             )}
         </div>
-        <Timeline />
+        <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
       </div>
       
       <Card className="border-0 shadow-none">
