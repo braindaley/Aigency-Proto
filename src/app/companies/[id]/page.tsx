@@ -40,12 +40,12 @@ interface Renewal {
 }
 
 export default function CompanyDetailPage() {
-  const params = useParams();
+  const { id } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
   
-  const id = typeof params.id === 'string' ? params.id : '';
+  const companyId = typeof id === 'string' ? id : '';
 
   const handleAddRenewal = () => {
     setRenewals([...renewals, { id: Date.now(), type: '', date: undefined }]);
@@ -61,12 +61,12 @@ export default function CompanyDetailPage() {
 
   useEffect(() => {
     const fetchCompany = async () => {
-      if (!id) {
+      if (!companyId) {
         setIsLoading(false);
         return;
       }
       try {
-        const companyDoc = await getDoc(doc(db, 'companies', id));
+        const companyDoc = await getDoc(doc(db, 'companies', companyId));
         if (companyDoc.exists()) {
           setCompany({ id: companyDoc.id, ...companyDoc.data() } as Company);
         } else {
@@ -81,7 +81,7 @@ export default function CompanyDetailPage() {
     };
 
     fetchCompany();
-  }, [id]);
+  }, [companyId]);
 
   if (isLoading) {
     return (

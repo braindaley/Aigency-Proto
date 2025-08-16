@@ -17,7 +17,7 @@ interface Company {
 }
 
 export default function CompanyDetailPage() {
-  const params = useParams();
+  const { id: companyId } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
@@ -26,7 +26,7 @@ export default function CompanyDetailPage() {
     setIsClient(true);
   }, []);
 
-  const id = params.id ? parseInt(params.id as string, 10) : null;
+  const id = companyId ? parseInt(companyId as string, 10) : null;
 
   useEffect(() => {
     if (isClient && id !== null) {

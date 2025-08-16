@@ -25,10 +25,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TaskPage() {
-  const params = useParams();
+  const { id } = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const id = typeof params.id === 'string' ? params.id : '';
+  const taskId = typeof id === 'string' ? id : '';
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function TaskPage() {
   const [initialState, setInitialState] = useState<any>({});
 
   useEffect(() => {
-    if (!id) {
+    if (!taskId) {
       notFound();
       return;
     }
@@ -53,7 +53,7 @@ export default function TaskPage() {
     const fetchTaskAndAllTasks = async () => {
       try {
         // Fetch the specific task
-        const taskDocRef = doc(db, 'tasks', id);
+        const taskDocRef = doc(db, 'tasks', taskId);
         const taskDoc = await getDoc(taskDocRef);
 
         if (!taskDoc.exists()) {
@@ -92,7 +92,7 @@ export default function TaskPage() {
     };
     
     fetchTaskAndAllTasks();
-  }, [id]);
+  }, [taskId]);
 
   const dependencyOptions = useMemo(() => {
     if (!task) return [];
@@ -128,9 +128,9 @@ export default function TaskPage() {
   };
 
   const handleSave = async () => {
-    if (!id) return;
+    if (!taskId) return;
     try {
-      const taskDocRef = doc(db, 'tasks', id);
+      const taskDocRef = doc(db, 'tasks', taskId);
       await updateDoc(taskDocRef, {
         taskName,
         description,
