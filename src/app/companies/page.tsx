@@ -91,7 +91,7 @@ export default function CompaniesPage() {
         {filteredCompanies.map((company) => (
           <Card key={company.id} className="border-0 shadow-none bg-transparent group">
              <CardContent className="p-0 flex items-center justify-between">
-              <Link href={`/companies/${company.id}`} className="block flex-1 p-4 rounded-lg hover:bg-accent">
+              <Link href={`/companies/${encodeURIComponent(company.name)}`} className="block flex-1 p-4 rounded-lg hover:bg-accent">
                   <p className="font-medium">{company.name}</p>
               </Link>
               <AlertDialog>
