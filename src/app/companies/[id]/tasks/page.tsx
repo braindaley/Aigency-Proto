@@ -111,10 +111,9 @@ export default function CompanyTasksPage() {
             if (!isNaN(idA) && !isNaN(idB)) {
                 return idA - idB;
             }
-            // Fallback for non-numeric ids
+            // Fallback for non-numeric ids, which shouldn't happen with the new logic
             return String(a.id).localeCompare(String(b.id));
         });
-
 
         // Update generated renewals state
         const generated = [...new Set(tasksList.map(task => task.renewalType))];
@@ -186,7 +185,7 @@ export default function CompanyTasksPage() {
         return String(a.id).localeCompare(String(b.id));
     });
 
-    templates.forEach(templateData => {
+    templates.forEach((templateData, index) => {
         const newCompanyTaskRef = doc(companyTasksCollection); 
 
         const newCompanyTask = {
@@ -195,14 +194,8 @@ export default function CompanyTasksPage() {
             companyId: companyId,
             renewalType: renewal.type,
             renewalDate: Timestamp.fromDate(renewal.date!),
-            status: 'Upcoming' as const,
+            status: index === 0 ? 'Needs attention' : 'Upcoming' as const,
         };
-        // We use templateData.id (the numeric one) for sorting, but Firestore needs a unique string ID for the document itself.
-        // By removing 'id' here, we let Firestore auto-generate its unique document ID, while keeping the numeric 'id' from the template.
-        // Let's re-examine this logic. `templateData` has `id: doc.id` and the spread `...doc.data()`.
-        // The `doc.data()` also has an `id` field. The `doc.id` (firestore) will overwrite the numeric `id` from `doc.data()`.
-        // `delete` will remove the firestore ID, leaving the numeric id from `doc.data()`
-        // The screenshot shows `id: 11` which is a number. This is correct.
         
         batch.set(newCompanyTaskRef, newCompanyTask);
     });
