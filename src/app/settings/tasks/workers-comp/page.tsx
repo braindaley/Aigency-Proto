@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { tasks } from '@/lib/data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, ThumbsUp, Sparkles, User, ArrowLeft } from 'lucide-react';
+import { Clock, ThumbsUp, Sparkles, User, ArrowLeft, Plus } from 'lucide-react';
 import type { Task, TaskTag, TaskPhase } from '@/lib/types';
 
 const statusIcons: Record<TaskTag, React.ReactNode> = {
@@ -45,7 +45,12 @@ export default function TasksPage() {
           Back to Task Settings
         </Link>
       </div>
-      <h1 className="text-3xl font-bold">Tasks: Workers Comp</h1>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-3xl font-bold">Tasks: Workers Comp</h1>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" /> New Line
+        </Button>
+      </div>
       <p className="text-muted-foreground mt-2 mb-8">Manage global tasks for Worker's Comp policies.</p>
       <div className="flex flex-col gap-8">
         {tasksByPhase.map(({ phase, tasks }) => (
