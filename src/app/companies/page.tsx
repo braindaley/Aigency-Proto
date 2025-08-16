@@ -80,7 +80,7 @@ export default function CompaniesPage() {
 
       <div className="space-y-4">
         {filteredCompanies.map((company) => (
-          <Card key={company.id}>
+          <Card key={company.id} className="border-0">
             <CardContent className="p-4 flex items-center justify-between">
               <p className="font-medium">{company.name}</p>
               <Button
