@@ -10,17 +10,34 @@ import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { differenceInCalendarDays } from 'date-fns';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+interface Renewal {
+    id: number;
+    type: string;
+    date: Date | undefined;
+}
 
 interface Company {
   id: string;
   name: string;
+  renewals?: Renewal[];
 }
+
+const policyTypes = [
+    { value: 'workers-comp', label: "Worker's Comp" },
+    { value: 'automotive', label: 'Automotive' },
+    { value: 'general-liability', label: 'General Liability' },
+    { value: 'property', label: 'Property' },
+];
 
 export default function CompanyTasksPage() {
   const params = useParams();
   const companyId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [upcomingRenewals, setUpcomingRenewals] = useState<Renewal[]>([]);
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -31,7 +48,14 @@ export default function CompanyTasksPage() {
       try {
         const companyDoc = await getDoc(doc(db, 'companies', companyId));
         if (companyDoc.exists()) {
-          setCompany({ id: companyDoc.id, ...companyDoc.data() } as Company);
+          const companyData = { id: companyDoc.id, ...companyDoc.data() } as Company;
+           if (companyData.renewals) {
+            companyData.renewals = companyData.renewals.map(r => ({
+              ...r,
+              date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
+            })).filter(r => r.date) as Renewal[];
+          }
+          setCompany(companyData);
         } else {
           setCompany(null);
         }
@@ -44,6 +68,18 @@ export default function CompanyTasksPage() {
 
     fetchCompany();
   }, [companyId]);
+
+  useEffect(() => {
+    if (company?.renewals) {
+      const today = new Date();
+      const upcoming = company.renewals.filter(r => {
+        if (!r.date) return false;
+        const daysUntilRenewal = differenceInCalendarDays(r.date, today);
+        return daysUntilRenewal >= 0 && daysUntilRenewal <= 120;
+      });
+      setUpcomingRenewals(upcoming);
+    }
+  }, [company]);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -62,6 +98,21 @@ export default function CompanyTasksPage() {
         <p className="text-muted-foreground mt-2">
             This is where you can view all the tasks for this specific company.
         </p>
+
+        {upcomingRenewals.length > 0 && (
+          <div className="mt-6 space-y-4">
+            {upcomingRenewals.map(renewal => (
+              <Alert key={renewal.id}>
+                <AlertDescription>
+                  <div className="flex justify-between items-center">
+                    <span>Start the renewal process for {policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}</span>
+                    <Button>Create tasks</Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
       </div>
       
       <Card className="border-0 shadow-none">
