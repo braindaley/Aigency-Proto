@@ -43,7 +43,7 @@ export default function NewCompanyPage() {
           </p>
       </div>
       
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle>Company Details</CardTitle>
         </CardHeader>
