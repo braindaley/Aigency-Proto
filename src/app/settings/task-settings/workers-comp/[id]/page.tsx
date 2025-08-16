@@ -28,7 +28,7 @@ export default function TaskPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const id = typeof params.id === 'string' ? params.id : '';
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
