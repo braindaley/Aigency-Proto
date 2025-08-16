@@ -10,11 +10,12 @@ import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Task, TaskStatus } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 
 interface Renewal {
     id: number;
@@ -104,15 +105,10 @@ export default function CompanyTasksPage() {
           ...doc.data(),
         })) as CompanyTask[];
 
-        // Sort tasks by their original template ID numerically
         tasksList.sort((a, b) => {
             const idA = parseInt(String(a.templateId), 10);
             const idB = parseInt(String(b.templateId), 10);
-            if (!isNaN(idA) && !isNaN(idB)) {
-                return idA - idB;
-            }
-            // Fallback for non-numeric ids
-            return String(a.templateId).localeCompare(String(b.templateId));
+            return idA - idB;
         });
 
         // Update generated renewals state
@@ -186,11 +182,10 @@ export default function CompanyTasksPage() {
     });
 
     templates.forEach((templateData, index) => {
-      const { id, ...restOfTemplateData } = templateData;
       const newCompanyTaskRef = doc(companyTasksCollection);
       const newCompanyTask = {
-        ...restOfTemplateData,
-        templateId: id,
+        ...templateData,
+        templateId: templateData.id,
         companyId: companyId,
         renewalType: renewal.type,
         renewalDate: Timestamp.fromDate(renewal.date!),
@@ -270,6 +265,7 @@ export default function CompanyTasksPage() {
   };
 
   const allTasksCount = STATUS_ORDER.reduce((sum, status) => sum + (tasksByStatus[status]?.length || 0), 0);
+  const activeRenewal = upcomingRenewals.find(r => generatedRenewals.includes(r.type));
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -285,6 +281,18 @@ export default function CompanyTasksPage() {
         ) : (
             <h1 className="text-3xl font-bold">Tasks for {company?.name || 'Company'}</h1>
         )}
+        
+        {activeRenewal && activeRenewal.date && (
+           <div className="flex items-baseline gap-4 mt-4">
+            <Label>
+              {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Renewal Date: {format(activeRenewal.date, 'PPP')}
+            </p>
+          </div>
+        )}
+        
         <p className="text-muted-foreground mt-2">
             This is where you can view all the tasks for this specific company.
         </p>
@@ -343,7 +351,7 @@ export default function CompanyTasksPage() {
                         tasksByStatus[status] && tasksByStatus[status].length > 0 && (
                             <AccordionItem value={status} key={status} className="border-b-0">
                                 <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
-                                    <h2>{status} ({tasksByStatus[status].length})</h2>
+                                    <h3>{status} ({tasksByStatus[status].length})</h3>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-0">
                                     {renderTaskList(tasksByStatus[status])}
