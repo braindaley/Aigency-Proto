@@ -11,7 +11,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { Task, TaskPhase } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
 
 const PHASES_ORDER: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
@@ -73,13 +72,15 @@ export default function WorkersCompTasksPage() {
     return (
       <ul className="border-t-0">
         {tasks.map((task) => (
-           <li key={task.id} className="flex items-center justify-between p-4 border-b-0">
+           <li key={task.id} className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
-                    {task.tag === 'ai' ? (
-                      <Sparkles className="h-6 w-6 text-muted-foreground" />
-                    ) : (
-                      <User className="h-6 w-6 text-muted-foreground" />
-                    )}
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                        {task.tag === 'ai' ? (
+                        <Sparkles className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        )}
+                    </div>
                     <div>
                         <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
                     </div>
