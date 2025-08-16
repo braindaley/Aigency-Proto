@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, User } from 'lucide-react';
+import { ArrowLeft, Sparkles, User, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
@@ -194,6 +194,35 @@ export default function CompanyTasksPage() {
     }
   };
 
+  const handleDeleteTasks = async (renewalType: string) => {
+    if (!companyId) return;
+
+    try {
+      const q = query(
+        collection(db, 'companyTasks'),
+        where('companyId', '==', companyId),
+        where('renewalType', '==', renewalType)
+      );
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        console.log('No tasks to delete.');
+        return;
+      }
+
+      const batch = writeBatch(db);
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      console.log(`Successfully deleted ${snapshot.size} tasks for renewal: ${renewalType}`);
+      await fetchCompanyTasks();
+    } catch (error) {
+      console.error('Error deleting tasks:', error);
+    }
+  };
+
   const renderTaskList = (tasks: CompanyTask[]) => {
     if (tasks.length === 0) {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
@@ -225,7 +254,7 @@ export default function CompanyTasksPage() {
     );
   };
 
-  const allTasksCount = PHASES_ORDER.reduce((sum, phase) => sum + tasksByPhase[phase].length, 0);
+  const allTasksCount = PHASES_ORDER.reduce((sum, phase) => sum + (tasksByPhase[phase]?.length || 0), 0);
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -252,12 +281,27 @@ export default function CompanyTasksPage() {
                 <AlertDescription>
                   <div className="flex justify-between items-center">
                     <span>Start the renewal process for {policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}</span>
-                    <Button 
-                      onClick={() => handleCreateTasks(renewal)}
-                      disabled={generatedRenewals.includes(renewal.type)}
-                    >
-                      {generatedRenewals.includes(renewal.type) ? 'Tasks Created' : 'Create tasks'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {generatedRenewals.includes(renewal.type) ? (
+                         <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleDeleteTasks(renewal.type)}
+                            aria-label={`Delete ${renewal.type} tasks`}
+                          >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                      ) : (
+                        <Button onClick={() => handleCreateTasks(renewal)}>
+                           Create tasks
+                        </Button>
+                      )}
+                      <Button 
+                        disabled={!generatedRenewals.includes(renewal.type)}
+                      >
+                        Tasks Created
+                      </Button>
+                    </div>
                   </div>
                 </AlertDescription>
               </Alert>
@@ -281,14 +325,16 @@ export default function CompanyTasksPage() {
             ) : (
                 <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
                     {PHASES_ORDER.map(phase => (
-                        <AccordionItem value={phase} key={phase} className="border-b-0">
-                            <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
-                                <h2>{phase} ({tasksByPhase[phase].length})</h2>
-                            </AccordionTrigger>
-                            <AccordionContent className="p-0">
-                                {renderTaskList(tasksByPhase[phase])}
-                            </AccordionContent>
-                        </AccordionItem>
+                        tasksByPhase[phase] && tasksByPhase[phase].length > 0 && (
+                            <AccordionItem value={phase} key={phase} className="border-b-0">
+                                <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
+                                    <h2>{phase} ({tasksByPhase[phase].length})</h2>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-0">
+                                    {renderTaskList(tasksByPhase[phase])}
+                                </AccordionContent>
+                            </AccordionItem>
+                        )
                     ))}
                 </Accordion>
             )}
@@ -297,3 +343,5 @@ export default function CompanyTasksPage() {
     </div>
   );
 }
+
+    
