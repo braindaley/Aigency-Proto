@@ -6,7 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, ThumbsUp, Sparkles, User, ArrowLeft, Plus } from 'lucide-react';
 import type { Task, TaskTag, TaskPhase } from '@/lib/types';
-import { tasks as allTasks } from '@/lib/data';
+import { useEffect, useState } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 const statusIcons: Record<TaskTag, React.ReactNode> = {
   waiting: <Clock className="h-4 w-4 text-muted-foreground" />,
@@ -34,9 +36,28 @@ const TaskItem = ({ task }: { task: Task }) => (
 const phases: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
 export default function TasksPage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'tasks'));
+        const tasksData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Task));
+        setTasks(tasksData);
+      } catch (error) {
+        console.error("Error fetching tasks from Firestore:", error);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
   const tasksByPhase = phases.map(phase => ({
     phase,
-    tasks: allTasks.filter(task => task.phase === phase),
+    tasks: tasks.filter(task => task.phase === phase),
   }));
 
   return (

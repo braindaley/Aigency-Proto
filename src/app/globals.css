@@ -77,6 +77,17 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+@layer base {
+  h1 {
+    @apply text-3xl font-bold font-headline;
+  }
+  h2 {
+    @apply text-xl font-semibold font-headline;
+  }
+  h3 {
+    @apply text-lg font-semibold;
+  }
+}
 
 @layer base {
   * {

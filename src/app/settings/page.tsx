@@ -18,7 +18,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground">Manage global tasks for your agency.</p>
             <Button asChild>
-              <Link href="/settings/tasks">
+              <Link href="/settings/task-settings">
                 Go to Task Settings
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>

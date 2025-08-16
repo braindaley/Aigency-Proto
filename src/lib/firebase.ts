@@ -3,12 +3,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  projectId: "pigeon-program",
-  appId: "1:598664408513:web:61586559d0e5e057f05340",
-  storageBucket: "pigeon-program.appspot.com",
-  apiKey: "AIzaSyBEb0m_gBftTfWFZYgXWM6KMdzBnb_LOL4",
-  authDomain: "pigeon-program.firebaseapp.com",
-  messagingSenderId: "598664408513",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
 
 // Initialize Firebase
