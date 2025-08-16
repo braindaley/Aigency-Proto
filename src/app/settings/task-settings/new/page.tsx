@@ -83,16 +83,14 @@ export default function NewTaskPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tag">Tag</Label>
+              <Label htmlFor="taskType">Task Type</Label>
               <Select onValueChange={(value: TaskTag) => setTag(value)} value={tag}>
-                <SelectTrigger id="tag">
-                  <SelectValue placeholder="Select a tag" />
+                <SelectTrigger id="taskType">
+                  <SelectValue placeholder="Select a type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="manual">Manual</SelectItem>
                   <SelectItem value="ai">AI</SelectItem>
-                  <SelectItem value="waiting">Waiting</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
                 </SelectContent>
               </Select>
             </div>
