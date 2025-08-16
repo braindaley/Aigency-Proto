@@ -72,7 +72,7 @@ export default function TasksPage() {
         <h1 className="text-3xl font-bold">Tasks: Workers Comp</h1>
         <Button asChild>
           <Link href="/settings/task-settings/new">
-            <Plus className="mr-2 h-4 w-4" /> New Line
+            <Plus className="mr-2 h-4 w-4" /> New task
           </Link>
         </Button>
       </div>
