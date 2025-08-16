@@ -1,0 +1,12 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read and write access by default for prototyping.
+    // WARNING: This is insecure for production applications.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
