@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, User, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -75,7 +75,11 @@ export default function WorkersCompTasksPage() {
         {tasks.map((task) => (
            <li key={task.id} className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
-                    <FileText className="h-6 w-6 text-muted-foreground" />
+                    {task.tag === 'ai' ? (
+                      <Sparkles className="h-6 w-6 text-muted-foreground" />
+                    ) : (
+                      <User className="h-6 w-6 text-muted-foreground" />
+                    )}
                     <div>
                         <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
                         {task.tag && <Badge variant={task.tag === 'ai' ? 'default' : 'secondary'} className="mt-1">{task.tag}</Badge>}
