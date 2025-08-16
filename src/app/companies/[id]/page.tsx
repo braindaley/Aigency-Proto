@@ -176,7 +176,7 @@ export default function CompanyDetailPage() {
               <h1 className="text-3xl font-bold">{company.name}</h1>
             </div>
             {!isEditing && (
-              <Button variant="ghost" size="icon" onClick={handleEdit}>
+              <Button variant="ghost" onClick={handleEdit} className="h-8 w-8 rounded-full bg-muted p-0">
                 <Settings className="h-5 w-5" />
                 <span className="sr-only">Edit Company</span>
               </Button>
