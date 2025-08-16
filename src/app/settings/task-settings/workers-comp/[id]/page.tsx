@@ -101,7 +101,7 @@ export default function TaskPage() {
       .filter((t) => t.id !== task.id)
       .map((t) => ({
         value: t.id,
-        label: `ID ${t.id.substring(0,5)}... - ${t.taskName}`,
+        label: `ID ${String(t.id).substring(0,5)}... - ${t.taskName}`,
       }));
   }, [allTasks, task]);
 
