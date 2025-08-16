@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { FileUpload } from '@/components/ui/file-upload';
 
 interface Company {
   id: number;
@@ -20,6 +21,7 @@ export default function NewCompanyPage() {
   const [companyName, setCompanyName] = useState('');
   const [description, setDescription] = useState('');
   const [website, setWebsite] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const router = useRouter();
 
   const handleAddCompany = () => {
@@ -33,6 +35,9 @@ export default function NewCompanyPage() {
         description: description.trim(),
         website: website.trim(),
       };
+
+      // In a real app, you would handle file uploads to a server here.
+      console.log('Uploaded files:', files.map(f => f.name));
 
       const updatedCompanies = [...companies, newCompany];
       localStorage.setItem('companies', JSON.stringify(updatedCompanies));
@@ -76,10 +81,7 @@ export default function NewCompanyPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="uploadDocuments">Upload documents</Label>
-              <Input
-                id="uploadDocuments"
-                type="file"
-              />
+              <FileUpload onFilesChange={setFiles} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="companyWebsite">Company website</Label>
