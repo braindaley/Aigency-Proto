@@ -322,6 +322,9 @@ export default function CompanyDetailPage() {
 
   const displayRenewals = company.renewals || [];
   const usedPolicyTypes = renewals.map(r => r.type).filter(Boolean);
+  const activeRenewalType = attentionTasks.length > 0
+    ? policyTypes.find(p => p.value === attentionTasks[0].renewalType)?.label || attentionTasks[0].renewalType
+    : null;
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -406,6 +409,9 @@ export default function CompanyDetailPage() {
             </Link>
           </Button>
         </div>
+        {activeRenewalType && (
+          <h3 className="text-lg font-semibold mt-4">{activeRenewalType}</h3>
+        )}
         <div className="mt-4">
           {tasksLoading ? (
             <p>Loading tasks...</p>
