@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, addMonths } from "date-fns"
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +41,34 @@ interface Renewal {
     type: string;
     date: Date | undefined;
 }
+
+const Timeline = () => {
+    const [months, setMonths] = useState<string[]>([]);
+  
+    useEffect(() => {
+      const getMonths = () => {
+        const
+   currentDate = new Date();
+        const futureMonths = [];
+        for (let i = 0; i < 15; i++) {
+          futureMonths.push(format(addMonths(currentDate, i), 'MMM'));
+        }
+        return futureMonths;
+      };
+      setMonths(getMonths());
+    }, []);
+  
+    return (
+      <div className="w-full mt-8">
+        <div className="flex justify-between text-sm text-muted-foreground mb-2" style={{ fontSize: '14px' }}>
+          {months.map((month, index) => (
+            <span key={index} className="flex-1 text-center">{month}</span>
+          ))}
+        </div>
+        <div className="w-full bg-muted rounded-full" style={{ height: '10px', borderRadius: '40px' }} />
+      </div>
+    );
+};
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
@@ -182,6 +210,7 @@ export default function CompanyDetailPage() {
               </Button>
             )}
         </div>
+        <Timeline />
       </div>
       
       <Card className="border-0 shadow-none">
