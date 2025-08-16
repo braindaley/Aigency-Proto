@@ -116,7 +116,7 @@ export default function WorkersCompTasksPage() {
         </Button>
       </div>
       
-      <Card className="mt-8">
+      <Card className="mt-8 border-0 shadow-none">
           <CardContent className="p-0">
             {loading ? (
                 <div className="space-y-4 p-6">
