@@ -23,9 +23,11 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface Company {
-  id: number;
+  id: string;
   name: string;
   description: string;
   website: string;
@@ -41,8 +43,9 @@ export default function CompanyDetailPage() {
   const params = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
+  
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const handleAddRenewal = () => {
     setRenewals([...renewals, { id: Date.now(), type: '', date: undefined }]);
@@ -57,32 +60,30 @@ export default function CompanyDetailPage() {
   }
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const id = params.id ? parseInt(params.id as string, 10) : null;
-
-  useEffect(() => {
-    if (isClient && id !== null) {
+    const fetchCompany = async () => {
+      if (!id) {
+        setIsLoading(false);
+        return;
+      }
       try {
-        const storedCompanies = localStorage.getItem('companies');
-        if (storedCompanies) {
-          const companies: Company[] = JSON.parse(storedCompanies);
-          const foundCompany = companies.find((c) => c.id === id);
-          setCompany(foundCompany || null);
+        const companyDoc = await getDoc(doc(db, 'companies', id));
+        if (companyDoc.exists()) {
+          setCompany({ id: companyDoc.id, ...companyDoc.data() } as Company);
+        } else {
+          setCompany(null);
         }
       } catch (error) {
-        console.error("Failed to parse companies from localStorage", error);
+        console.error("Error fetching company:", error);
         setCompany(null);
       } finally {
         setIsLoading(false);
       }
-    } else if (isClient) {
-      setIsLoading(false);
-    }
-  }, [id, isClient]);
+    };
 
-  if (!isClient || isLoading) {
+    fetchCompany();
+  }, [id]);
+
+  if (isLoading) {
     return (
       <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
         <p>Loading...</p>
