@@ -44,10 +44,10 @@ export default function NewCompanyPage() {
       </div>
       
       <Card className="border-0 shadow-none">
-        <CardHeader>
+        <CardHeader className="p-0">
           <CardTitle>Company Details</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 pt-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="companyName">Company Name</Label>
