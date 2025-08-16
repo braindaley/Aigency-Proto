@@ -75,7 +75,7 @@ export default function WorkersCompTasksPage() {
       <ul className="divide-y">
         {tasks.map((task) => (
            <li key={task.id}>
-            <Link href={`/settings/task-settings/${task.id}`} className="flex items-center justify-between p-4 hover:bg-accent">
+            <Link href={`/settings/task-settings/workers-comp/${task.id}`} className="flex items-center justify-between p-4 hover:bg-accent">
                 <div className="flex-1">
                   <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
                   <p className="text-sm text-muted-foreground">ID: {task.id}</p>
@@ -90,7 +90,7 @@ export default function WorkersCompTasksPage() {
   
 
   return (
-    <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
+    <div className="mx-auto max-w-screen-lg px-4 py-8 md:py-12">
       <div className="mb-8">
         <Link href="/settings/task-settings" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <ArrowLeft className="h-4 w-4" />
@@ -129,16 +129,14 @@ export default function WorkersCompTasksPage() {
           ) : (
             <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
                 {PHASES_ORDER.map(phase => (
-                    tasksByPhase[phase] && (
-                        <AccordionItem value={phase} key={phase}>
-                            <AccordionTrigger className="px-4 text-base font-semibold">
-                                {phase}
-                            </AccordionTrigger>
-                            <AccordionContent className="p-0">
-                                {renderTaskList(tasksByPhase[phase])}
-                            </AccordionContent>
-                        </AccordionItem>
-                    )
+                    <AccordionItem value={phase} key={phase}>
+                        <AccordionTrigger className="px-4 text-base font-semibold">
+                            {phase}
+                        </AccordionTrigger>
+                        <AccordionContent className="p-0">
+                            {renderTaskList(tasksByPhase[phase])}
+                        </AccordionContent>
+                    </AccordionItem>
                 ))}
             </Accordion>
           )}
