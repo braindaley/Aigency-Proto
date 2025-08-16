@@ -360,6 +360,13 @@ export default function CompanyDetailPage() {
           </div>
         </CardContent>
       </Card>
+      
+      <div className="mt-12">
+        <h2 className="text-xl font-semibold">Tasks</h2>
+        <div className="mt-4 rounded-lg border p-6 text-center text-muted-foreground">
+            <p>Tasks will be displayed here soon.</p>
+        </div>
+      </div>
 
       {isEditing && (
         <>
