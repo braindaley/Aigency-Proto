@@ -164,23 +164,19 @@ export default function CompanyTasksPage() {
   const handleCreateTasks = async (renewal: Renewal) => {
     if (!companyId || !renewal.date) return;
 
-    // 1. Query for template tasks
     const templatesQuery = query(collection(db, 'tasks'), where('policyType', '==', renewal.type));
     const templatesSnapshot = await getDocs(templatesQuery);
 
     if (templatesSnapshot.empty) {
         console.log(`No task templates found for policy type: ${renewal.type}`);
-        // Optionally, show a toast notification to the user
         return;
     }
 
-    // 2. Create a batch write
     const batch = writeBatch(db);
     const companyTasksCollection = collection(db, 'companyTasks');
     
-    // Fetch all docs to get correct numeric IDs for sorting before iterating
     const templates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Task }));
-    // Sort templates numerically by ID
+    
     templates.sort((a, b) => {
         const idA = parseInt(String(a.id), 10);
         const idB = parseInt(String(b.id), 10);
@@ -191,30 +187,27 @@ export default function CompanyTasksPage() {
     });
 
     templates.forEach(templateData => {
-        const newCompanyTaskRef = doc(companyTasksCollection); // Create a new doc with a unique ID
+        const newCompanyTaskRef = doc(companyTasksCollection); 
 
         const newCompanyTask = {
             ...templateData,
-            templateId: templateData.id, // Store original template ID for sorting
+            templateId: templateData.id, 
             companyId: companyId,
             renewalType: renewal.type,
             renewalDate: Timestamp.fromDate(renewal.date!),
             status: 'Upcoming' as const,
         };
-        delete (newCompanyTask as Partial<CompanyTask>).id; // Remove the old template ID field
+        delete (newCompanyTask as Partial<CompanyTask>).id; 
         
         batch.set(newCompanyTaskRef, newCompanyTask);
     });
 
-    // 3. Commit the batch
     try {
         await batch.commit();
         console.log('Successfully created tasks for renewal:', renewal.type);
-        // 4. Refresh the tasks list on the page
         await fetchCompanyTasks(); 
     } catch (error) {
         console.error('Error creating company tasks:', error);
-        // Optionally, show an error toast
     }
   };
 
@@ -249,7 +242,7 @@ export default function CompanyTasksPage() {
 
   const renderTaskList = (tasks: CompanyTask[]) => {
     if (tasks.length === 0) {
-      return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
+      return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this category.</p>;
     }
     return (
       <ul className="border-t-0">
@@ -368,5 +361,3 @@ export default function CompanyTasksPage() {
     </div>
   );
 }
-
-    
