@@ -1,31 +1,22 @@
 
 'use client';
-import { notFound, useParams, useRouter } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowLeft, Trash2, Plus } from 'lucide-react';
-import type { TaskTag, Subtask, Task } from '@/lib/types';
-import { useState, useMemo, useEffect } from 'react';
-import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft } from 'lucide-react';
+import type { Subtask, Task } from '@/lib/types';
+import { useState, useEffect, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function CompanyTaskDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   
   const companyId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -34,14 +25,7 @@ export default function CompanyTaskDetailPage() {
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [taskName, setTaskName] = useState('');
-  const [description, setDescription] = useState('');
-  const [systemPrompt, setSystemPrompt] = useState('');
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
-  const [newSubtask, setNewSubtask] = useState('');
-  const [tag, setTag] = useState<TaskTag>('manual');
-  
-  const [initialState, setInitialState] = useState<any>({});
 
   useEffect(() => {
     if (!taskId) {
@@ -61,20 +45,12 @@ export default function CompanyTaskDetailPage() {
         
         const taskData = { id: taskDoc.id, ...taskDoc.data() } as Task;
         setTask(taskData);
-        setTaskName(taskData.taskName);
-        setDescription(taskData.description);
-        setSystemPrompt(taskData.systemPrompt || '');
-        setSubtasks(taskData.subtasks || []);
-        setTag(taskData.tag || 'manual');
-
-        const currentState = {
-          taskName: taskData.taskName,
-          description: taskData.description,
-          systemPrompt: taskData.systemPrompt || '',
-          subtasks: taskData.subtasks || [],
-          tag: taskData.tag || 'manual',
-        };
-        setInitialState(currentState);
+        // Ensure subtasks have a 'completed' property
+        const initializedSubtasks = (taskData.subtasks || []).map(st => ({
+            ...st,
+            completed: st.completed || false,
+        }));
+        setSubtasks(initializedSubtasks);
 
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -86,62 +62,40 @@ export default function CompanyTaskDetailPage() {
     fetchTask();
   }, [taskId]);
 
-  const hasChanged = useMemo(() => {
-    if (!task) return false;
-    const currentState = {
-      taskName,
-      description,
-      systemPrompt,
-      subtasks,
-      tag,
-    };
-    return JSON.stringify(initialState) !== JSON.stringify(currentState);
-  }, [task, taskName, description, systemPrompt, subtasks, tag, initialState]);
-  
-  const handleAddSubtask = () => {
-    if (newSubtask.trim() !== '') {
-      setSubtasks([...subtasks, { id: Date.now(), text: newSubtask.trim() }]);
-      setNewSubtask('');
-    }
-  };
-
-  const handleDeleteSubtask = (id: number) => {
-    setSubtasks(subtasks.filter((subtask) => subtask.id !== id));
-  };
-
-  const handleSave = async () => {
+  const handleSubtaskToggle = useCallback(async (subtaskId: number) => {
     if (!taskId) return;
+    
+    const updatedSubtasks = subtasks.map((subtask) =>
+      subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask
+    );
+    setSubtasks(updatedSubtasks);
+
     try {
       const taskDocRef = doc(db, 'companyTasks', taskId);
       await updateDoc(taskDocRef, {
-        taskName,
-        description,
-        systemPrompt,
-        subtasks,
-        tag,
+        subtasks: updatedSubtasks,
       });
-      const updatedInitialState = { taskName, description, systemPrompt, subtasks, tag };
-      setInitialState(updatedInitialState);
-      toast({
-        title: "Task Saved",
-        description: "Your changes have been saved successfully.",
+       toast({
+        title: "Subtask updated",
+        description: "Your changes have been saved.",
       });
     } catch (error) {
-      console.error("Error updating document: ", error);
+      console.error("Error updating subtask: ", error);
+      // Revert state on error
+      setSubtasks(subtasks);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save changes. Please try again.",
+        description: "Failed to save subtask. Please try again.",
       });
     }
-  };
+  }, [taskId, subtasks, toast]);
   
   if (loading) {
     return (
        <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
         <div className="flex justify-between items-center mb-8">
             <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-10 w-24" />
         </div>
         <Card className="border-0 shadow-none">
             <CardHeader>
@@ -150,14 +104,17 @@ export default function CompanyTaskDetailPage() {
                     <Skeleton className="h-6 w-16" />
                 </div>
                 <div className="pt-2 space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-4 w-full" />
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-10 w-full" />
+                </div>
+                 <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-20 w-full" />
                 </div>
             </CardContent>
         </Card>
@@ -179,9 +136,6 @@ export default function CompanyTaskDetailPage() {
             Back to tasks
           </Link>
         </Button>
-        <Button onClick={handleSave} disabled={!hasChanged}>
-          Save changes
-        </Button>
       </div>
       <Card className="border-0 shadow-none">
         <CardHeader>
@@ -190,77 +144,42 @@ export default function CompanyTaskDetailPage() {
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
           <div className="pt-2">
-              <Label htmlFor="taskName">Task Name</Label>
-              <Input
-                id="taskName"
-                value={taskName}
-                onChange={(e) => setTaskName(e.target.value)}
-                placeholder="Enter a task name"
-                className="mt-2"
-              />
+              <h2 className="text-xl font-semibold">{task.taskName}</h2>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="taskType">Task Type</Label>
-            <Select onValueChange={(value: TaskTag) => setTag(value)} value={tag}>
-                <SelectTrigger id="taskType">
-                    <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="ai">AI</SelectItem>
-                </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Sub-tasks</Label>
+        <CardContent className="space-y-6">
+          {subtasks && subtasks.length > 0 && (
             <div className="space-y-2">
-              {subtasks.map((subtask) => (
-                <div key={subtask.id} className="flex items-center gap-2">
-                  <Input value={subtask.text} readOnly className="flex-1" />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteSubtask(subtask.id)}
-                    aria-label="Delete sub-task"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              <Label>Sub-tasks</Label>
+              <div className="space-y-3 pt-2">
+                {subtasks.map((subtask) => (
+                  <div key={subtask.id} className="flex items-center gap-3">
+                    <Checkbox
+                      id={`subtask-${subtask.id}`}
+                      checked={subtask.completed}
+                      onCheckedChange={() => handleSubtaskToggle(subtask.id)}
+                    />
+                    <label
+                      htmlFor={`subtask-${subtask.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {subtask.text}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-2 pt-2">
-              <Input
-                value={newSubtask}
-                onChange={(e) => setNewSubtask(e.target.value)}
-                placeholder="Add a new sub-task"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
-              />
-              <Button onClick={handleAddSubtask} aria-label="Add sub-task">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          )}
+          
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter a description for the task."
-            />
+            <Label>Description</Label>
+            <p className="text-muted-foreground text-sm">{task.description}</p>
           </div>
-          {tag === 'ai' && (
+
+          {task.tag === 'ai' && task.systemPrompt && (
             <div className="space-y-2">
-              <Label htmlFor="systemPrompt">System prompt</Label>
-              <Textarea
-                id="systemPrompt"
-                value={systemPrompt}
-                onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="Enter a system prompt for the AI task."
-                className="min-h-[150px]"
-              />
+              <Label>System prompt</Label>
+              <p className="text-muted-foreground text-sm font-mono bg-muted p-4 rounded-md whitespace-pre-wrap">{task.systemPrompt}</p>
             </div>
           )}
         </CardContent>

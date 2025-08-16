@@ -5,6 +5,7 @@ export type TaskStatus = 'Needs attention' | 'Upcoming' | 'Complete';
 export interface Subtask {
   id: number;
   text: string;
+  completed: boolean;
 }
 
 export interface Task {
