@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { Task, TaskPhase } from '@/lib/types';
@@ -117,9 +117,6 @@ export default function WorkersCompTasksPage() {
       </div>
       
       <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Task Library</CardTitle>
-          </CardHeader>
           <CardContent className="p-0">
             {loading ? (
                 <div className="space-y-4 p-6">
