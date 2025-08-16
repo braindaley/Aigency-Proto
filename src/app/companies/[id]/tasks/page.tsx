@@ -105,6 +105,10 @@ export default function CompanyTasksPage() {
           ...doc.data(),
         })) as CompanyTask[];
 
+        // Sort tasks by their original template ID
+        tasksList.sort((a, b) => (a.templateId || 0) - (b.templateId || 0));
+
+
         // Update generated renewals state
         const generated = [...new Set(tasksList.map(task => task.renewalType))];
         setGeneratedRenewals(generated);
@@ -173,11 +177,13 @@ export default function CompanyTasksPage() {
 
         const newCompanyTask = {
             ...templateData,
+            templateId: templateData.id, // Store original template ID for sorting
             companyId: companyId,
             renewalType: renewal.type,
             renewalDate: Timestamp.fromDate(renewal.date!),
             status: 'Upcoming' as const,
         };
+        delete newCompanyTask.id; // Remove the old template ID field
         
         batch.set(newCompanyTaskRef, newCompanyTask);
     });
@@ -343,5 +349,3 @@ export default function CompanyTasksPage() {
     </div>
   );
 }
-
-    

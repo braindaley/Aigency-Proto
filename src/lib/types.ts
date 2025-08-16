@@ -8,7 +8,7 @@ export interface Subtask {
 }
 
 export interface Task {
-  id: string;
+  id: string | number;
   taskName: string;
   description: string;
   tag: TaskTag;
@@ -17,4 +17,5 @@ export interface Task {
   policyType?: string;
   subtasks?: Subtask[];
   systemPrompt?: string;
+  templateId?: number;
 }
