@@ -3,8 +3,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write access by default for prototyping.
-    // WARNING: This is insecure for production applications.
+    // Allow read and write access to all documents
+    // for prototyping purposes.
+    // WARNING: Do NOT use these rules in a production environment.
     match /{document=**} {
       allow read, write: if true;
     }
