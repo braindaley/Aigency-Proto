@@ -26,7 +26,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format, addMonths } from "date-fns"
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface Company {
@@ -34,6 +34,7 @@ interface Company {
   name: string;
   description: string;
   website: string;
+  renewals?: Renewal[];
 }
 
 interface Renewal {
@@ -96,6 +97,14 @@ export default function CompanyDetailPage() {
           setCompany(companyData);
           setEditedDescription(companyData.description || '');
           setEditedWebsite(companyData.website || '');
+          if (companyData.renewals) {
+            // Convert Firestore Timestamps back to JS Date objects
+            const formattedRenewals = companyData.renewals.map(r => ({
+              ...r,
+              date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
+            }));
+            setRenewals(formattedRenewals);
+          }
         } else {
           setCompany(null);
         }
@@ -126,12 +135,26 @@ export default function CompanyDetailPage() {
     if (company) {
       setEditedDescription(company.description || '');
       setEditedWebsite(company.website || '');
+      // Make a copy of renewals to edit, to avoid mutating state directly before saving
+      setRenewals(company.renewals ? JSON.parse(JSON.stringify(company.renewals)).map((r: any) => ({...r, date: r.date ? new Date(r.date) : undefined})) : []);
       setIsEditing(true);
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    // Reset renewals to original state if canceled
+    if (company) {
+       if (company.renewals) {
+        const formattedRenewals = company.renewals.map(r => ({
+          ...r,
+          date: (r.date as any)?.toDate ? (r.date as any).toDate() : undefined,
+        }));
+        setRenewals(formattedRenewals);
+      } else {
+        setRenewals([]);
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -139,15 +162,26 @@ export default function CompanyDetailPage() {
 
     try {
       const companyRef = doc(db, 'companies', company.id);
+      
+      const renewalsToSave = renewals.map(r => ({
+        ...r,
+        date: r.date ? Timestamp.fromDate(r.date) : null,
+      }));
+
       await updateDoc(companyRef, {
         description: editedDescription,
         website: editedWebsite,
+        renewals: renewalsToSave,
       });
-      setCompany({
+
+      const updatedCompanyData = {
         ...company,
         description: editedDescription,
         website: editedWebsite,
-      });
+        renewals: renewals, // Keep JS Date objects in local state
+      };
+      setCompany(updatedCompanyData);
+
       setIsEditing(false);
       toast({
         title: "Success",
@@ -188,6 +222,8 @@ export default function CompanyDetailPage() {
       </div>
     );
   }
+
+  const displayRenewals = isEditing ? renewals : company.renewals || [];
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -271,7 +307,7 @@ export default function CompanyDetailPage() {
                     <div className="space-y-4">
                         {renewals.map((renewal) => (
                             <div key={renewal.id} className="flex items-center gap-4">
-                                <Select onValueChange={(value) => handleRenewalChange(renewal.id, value)}>
+                                <Select onValueChange={(value) => handleRenewalChange(renewal.id, value)} defaultValue={renewal.type}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a policy type" />
                                     </SelectTrigger>
