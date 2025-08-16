@@ -106,7 +106,15 @@ export default function CompanyTasksPage() {
         })) as CompanyTask[];
 
         // Sort tasks by their original template ID
-        tasksList.sort((a, b) => (a.templateId || 0) - (b.templateId || 0));
+        tasksList.sort((a, b) => {
+            const idA = parseInt(String(a.templateId), 10);
+            const idB = parseInt(String(b.templateId), 10);
+            if (!isNaN(idA) && !isNaN(idB)) {
+                return idA - idB;
+            }
+            // Fallback for non-numeric templateIds
+            return String(a.templateId).localeCompare(String(b.templateId));
+        });
 
 
         // Update generated renewals state
@@ -170,9 +178,19 @@ export default function CompanyTasksPage() {
     // 2. Create a batch write
     const batch = writeBatch(db);
     const companyTasksCollection = collection(db, 'companyTasks');
+    
+    // Fetch all docs to get correct numeric IDs for sorting before iterating
+    const templates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Task }));
+    templates.sort((a, b) => {
+        const idA = parseInt(String(a.id), 10);
+        const idB = parseInt(String(b.id), 10);
+        if (!isNaN(idA) && !isNaN(idB)) {
+          return idA - idB;
+        }
+        return String(a.id).localeCompare(String(b.id));
+    });
 
-    templatesSnapshot.forEach(templateDoc => {
-        const templateData = templateDoc.data() as Task;
+    templates.forEach(templateData => {
         const newCompanyTaskRef = doc(companyTasksCollection); // Create a new doc with a unique ID
 
         const newCompanyTask = {
@@ -183,7 +201,7 @@ export default function CompanyTasksPage() {
             renewalDate: Timestamp.fromDate(renewal.date!),
             status: 'Upcoming' as const,
         };
-        delete newCompanyTask.id; // Remove the old template ID field
+        delete (newCompanyTask as Partial<CompanyTask>).id; // Remove the old template ID field
         
         batch.set(newCompanyTaskRef, newCompanyTask);
     });
@@ -289,6 +307,7 @@ export default function CompanyTasksPage() {
                     <span>Start the renewal process for {policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}</span>
                     <div className="flex items-center gap-2">
                       {generatedRenewals.includes(renewal.type) ? (
+                        <>
                          <Button
                             variant="outline"
                             size="icon"
@@ -297,16 +316,15 @@ export default function CompanyTasksPage() {
                           >
                            <Trash2 className="h-4 w-4" />
                          </Button>
+                         <Button disabled>
+                           Tasks Created
+                         </Button>
+                        </>
                       ) : (
                         <Button onClick={() => handleCreateTasks(renewal)}>
                            Create tasks
                         </Button>
                       )}
-                      <Button 
-                        disabled={!generatedRenewals.includes(renewal.type)}
-                      >
-                        Tasks Created
-                      </Button>
                     </div>
                   </div>
                 </AlertDescription>
@@ -349,3 +367,5 @@ export default function CompanyTasksPage() {
     </div>
   );
 }
+
+    
