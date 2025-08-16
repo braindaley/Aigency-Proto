@@ -4,7 +4,7 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles, User } from 'lucide-react';
 import type { Subtask, Task } from '@/lib/types';
 import { useState, useEffect, useCallback } from 'react';
 import { Label } from '@/components/ui/label';
@@ -131,9 +131,9 @@ export default function CompanyTaskDetailPage() {
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <div className="flex justify-between items-center mb-8">
         <Button variant="ghost" asChild>
-          <Link href={`/companies/${companyId}/tasks`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Link href={`/companies/${companyId}`} className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Back to tasks
+            Back to company
           </Link>
         </Button>
       </div>
@@ -143,8 +143,13 @@ export default function CompanyTaskDetailPage() {
             <p className="font-bold uppercase text-base leading-4">ID {task.templateId}</p>
             <Badge variant="secondary">{task.phase}</Badge>
           </div>
-          <div className="pt-2">
-              <h2 className="text-xl font-semibold">{task.taskName}</h2>
+          <div className="flex items-center gap-3 pt-2">
+            {task.tag === 'ai' ? (
+                <Sparkles className="h-6 w-6 text-muted-foreground" />
+            ) : (
+                <User className="h-6 w-6 text-muted-foreground" />
+            )}
+            <h1 className="text-2xl font-bold">{task.taskName}</h1>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
