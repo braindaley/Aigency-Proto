@@ -43,21 +43,22 @@ async function addSequentialDependencies() {
   const batch = db.batch();
   for (let i = 0; i < tasks.length; i++) {
     const currentTask = tasks[i];
+    const currentTaskId = String(currentTask.id);
     
     // The first task has no dependency
     if (i === 0) {
-        console.log(`Task ${currentTask.id} (${currentTask.taskName}) is the first, skipping dependency.`);
+        console.log(`Task ${currentTaskId} (${currentTask.taskName}) is the first, skipping dependency.`);
         // Optional: Ensure it has no dependencies
-        batch.update(tasksRef.doc(currentTask.id), { dependencies: [] });
+        batch.update(tasksRef.doc(currentTaskId), { dependencies: [] });
         continue;
     }
     
     const previousTask = tasks[i - 1];
-    const dependencyId = previousTask.id;
+    const dependencyId = String(previousTask.id);
 
-    console.log(`Setting dependency for Task ${currentTask.id} (${currentTask.taskName}) to Task ${dependencyId}`);
+    console.log(`Setting dependency for Task ${currentTaskId} (${currentTask.taskName}) to Task ${dependencyId}`);
     
-    batch.update(tasksRef.doc(currentTask.id), {
+    batch.update(tasksRef.doc(currentTaskId), {
       dependencies: [dependencyId]
     });
   }
