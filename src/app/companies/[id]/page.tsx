@@ -228,8 +228,63 @@ export default function CompanyDetailPage() {
                 )
               )}
             </div>
-             {isEditing && (
-              <div className="flex justify-end gap-2 pt-4">
+          </div>
+        </CardContent>
+      </Card>
+
+      {isEditing && (
+        <>
+            <Card className="mt-8">
+                <CardHeader>
+                    <CardTitle>Next renewal</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {renewals.map((renewal) => (
+                            <div key={renewal.id} className="flex items-center gap-4">
+                                <Select onValueChange={(value) => handleRenewalChange(renewal.id, value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a policy type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="workers-comp">Worker's Comp</SelectItem>
+                                        <SelectItem value="automotive">Automotive</SelectItem>
+                                        <SelectItem value="general-liability">General Liability</SelectItem>
+                                        <SelectItem value="property">Property</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-[280px] justify-start text-left font-normal",
+                                                !renewal.date && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {renewal.date ? format(renewal.date, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={renewal.date}
+                                            onSelect={(date) => handleDateChange(renewal.id, date)}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        ))}
+                    </div>
+                    <Button onClick={handleAddRenewal} variant="outline" size="sm" className="mt-4">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add
+                    </Button>
+                </CardContent>
+            </Card>
+            <div className="flex justify-end gap-2 pt-4 mt-4">
                 <Button variant="ghost" onClick={handleCancel}>
                   <X className="mr-2 h-4 w-4" />
                   Cancel
@@ -238,66 +293,9 @@ export default function CompanyDetailPage() {
                   <Save className="mr-2 h-4 w-4" />
                   Save
                 </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {!isEditing && (
-        <Card className="mt-8">
-          <CardHeader>
-              <CardTitle>Next renewal</CardTitle>
-          </CardHeader>
-          <CardContent>
-              <div className="space-y-4">
-                  {renewals.map((renewal) => (
-                      <div key={renewal.id} className="flex items-center gap-4">
-                          <Select onValueChange={(value) => handleRenewalChange(renewal.id, value)}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Select a policy type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="workers-comp">Worker's Comp</SelectItem>
-                                  <SelectItem value="automotive">Automotive</SelectItem>
-                                  <SelectItem value="general-liability">General Liability</SelectItem>
-                                  <SelectItem value="property">Property</SelectItem>
-                              </SelectContent>
-                          </Select>
-                          <Popover>
-                              <PopoverTrigger asChild>
-                                  <Button
-                                      variant={"outline"}
-                                      className={cn(
-                                          "w-[280px] justify-start text-left font-normal",
-                                          !renewal.date && "text-muted-foreground"
-                                      )}
-                                  >
-                                      <CalendarIcon className="mr-2 h-4 w-4" />
-                                      {renewal.date ? format(renewal.date, "PPP") : <span>Pick a date</span>}
-                                  </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                      mode="single"
-                                      selected={renewal.date}
-                                      onSelect={(date) => handleDateChange(renewal.id, date)}
-                                      initialFocus
-                                  />
-                              </PopoverContent>
-                          </Popover>
-                      </div>
-                  ))}
-              </div>
-              <Button onClick={handleAddRenewal} variant="outline" size="sm" className="mt-4">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add
-              </Button>
-          </CardContent>
-      </Card>
+            </div>
+        </>
       )}
     </div>
   );
 }
-
-    
