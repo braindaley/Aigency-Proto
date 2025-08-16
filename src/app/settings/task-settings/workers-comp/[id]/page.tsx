@@ -25,7 +25,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TaskPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id;
   const router = useRouter();
   const { toast } = useToast();
   const taskId = typeof id === 'string' ? id : '';
@@ -100,7 +101,7 @@ export default function TaskPage() {
       .filter((t) => t.id !== task.id)
       .map((t) => ({
         value: t.id,
-        label: t.taskName,
+        label: `ID ${t.id.substring(0,5)}... - ${t.taskName}`,
       }));
   }, [allTasks, task]);
 
