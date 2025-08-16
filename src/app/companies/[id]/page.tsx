@@ -371,7 +371,7 @@ export default function CompanyDetailPage() {
             </Link>
           </Button>
         </div>
-        <div className="mt-4 rounded-lg border p-6 text-center text-muted-foreground">
+        <div className="mt-4 rounded-lg p-6 text-center text-muted-foreground">
             <p>Tasks will be displayed here soon.</p>
         </div>
       </div>
