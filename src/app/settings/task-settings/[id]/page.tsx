@@ -78,7 +78,7 @@ export default function TaskPage() {
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <div className="flex justify-between items-center mb-8">
-        <Link href="/settings/tasks" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <Link href="/settings/task-settings/workers-comp" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <ArrowLeft className="h-4 w-4" />
           Back to tasks
         </Link>
