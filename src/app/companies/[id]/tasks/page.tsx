@@ -106,8 +106,8 @@ export default function CompanyTasksPage() {
         })) as CompanyTask[];
 
         tasksList.sort((a, b) => {
-            const idA = parseInt(String(a.templateId), 10);
-            const idB = parseInt(String(b.templateId), 10);
+            const idA = parseInt(String(a.id), 10);
+            const idB = parseInt(String(b.id), 10);
             return idA - idB;
         });
 
@@ -288,12 +288,12 @@ export default function CompanyTasksPage() {
                     This is where you can view all the tasks for this specific company.
                 </p>
                 {activeRenewal && activeRenewal.date && (
-                <div className="flex items-baseline gap-4 mt-6">
-                    <Label>
-                    {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                    Renewal Date: {format(activeRenewal.date, 'PPP')}
+                <div className="mt-6">
+                    <h2 className="text-xl font-semibold">
+                        {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Renewal Date: {format(activeRenewal.date, 'PPP')}
                     </p>
                 </div>
                 )}
