@@ -7,6 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Company {
   id: number;
@@ -25,8 +36,6 @@ export default function CompaniesPage() {
   }, []);
 
   useEffect(() => {
-    // This effect runs when the component mounts and might be useful
-    // if you want to refresh the list when navigating back.
     const handleFocus = () => {
       const storedCompanies = localStorage.getItem('companies');
       if (storedCompanies) {
@@ -41,9 +50,7 @@ export default function CompaniesPage() {
   }, []);
 
 
-  const handleDeleteCompany = (id: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDeleteCompany = (id: number) => {
     const updatedCompanies = companies.filter((company) => company.id !== id);
     setCompanies(updatedCompanies);
     localStorage.setItem('companies', JSON.stringify(updatedCompanies));
@@ -82,21 +89,37 @@ export default function CompaniesPage() {
 
       <div className="space-y-4">
         {filteredCompanies.map((company) => (
-          <Link href={`/companies/${company.id}`} key={company.id} className="block hover:bg-accent rounded-lg">
-            <Card className="border-0 shadow-none bg-transparent">
-                <CardContent className="p-4 flex items-center justify-between">
+          <Card key={company.id} className="border-0 shadow-none bg-transparent group">
+             <CardContent className="p-0 flex items-center justify-between">
+              <Link href={`/companies/${company.id}`} className="block flex-1 p-4 rounded-lg hover:bg-accent">
                   <p className="font-medium">{company.name}</p>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => handleDeleteCompany(company.id, e)}
-                    aria-label={`Delete ${company.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100"
+                      aria-label={`Delete ${company.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
                   </Button>
-                </CardContent>
-            </Card>
-          </Link>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the company.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDeleteCompany(company.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         ))}
         {companies.length > 0 && filteredCompanies.length === 0 && (
           <p className="text-center text-muted-foreground">
