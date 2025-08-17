@@ -41,10 +41,12 @@ export default function WorkersCompTasksPage() {
       const q = query(tasksCollection, where('policyType', '==', 'workers-comp'));
       const tasksSnapshot = await getDocs(q);
       
-      const tasksList = tasksSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Task[];
+      const tasksList = tasksSnapshot.docs.map(doc => {
+        const data = doc.data();
+        // Explicitly exclude the 'id' field from the document's data
+        const { id, ...rest } = data;
+        return { ...rest, id: doc.id } as Task;
+      });
 
       tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 

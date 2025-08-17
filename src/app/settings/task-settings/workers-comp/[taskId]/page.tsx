@@ -41,7 +41,7 @@ export default function TaskPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const id = typeof params.id === 'string' ? params.id : '';
+  const taskId = typeof params.taskId === 'string' ? params.taskId : '';
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ export default function TaskPage() {
   const [initialState, setInitialState] = useState<any>({});
 
   useEffect(() => {
-    if (!id) {
+    if (!taskId) {
       notFound();
       return;
     }
@@ -67,7 +67,7 @@ export default function TaskPage() {
     const fetchTaskAndAllTasks = async () => {
       try {
         // Fetch the specific task
-        const taskDocRef = doc(db, 'tasks', id);
+        const taskDocRef = doc(db, 'tasks', taskId);
         const taskDoc = await getDoc(taskDocRef);
 
         if (!taskDoc.exists()) {
@@ -111,7 +111,7 @@ export default function TaskPage() {
     };
     
     fetchTaskAndAllTasks();
-  }, [id]);
+  }, [taskId]);
 
   const dependencyOptions = useMemo(() => {
     if (!task || !task.sortOrder) return [];
@@ -150,9 +150,9 @@ export default function TaskPage() {
   };
 
   const handleSave = async () => {
-    if (!id) return;
+    if (!taskId) return;
     try {
-      const taskDocRef = doc(db, 'tasks', id);
+      const taskDocRef = doc(db, 'tasks', taskId);
       const updatedData = {
         taskName,
         description,
@@ -182,10 +182,10 @@ export default function TaskPage() {
   };
 
   const handleDelete = async () => {
-    if (!id || !task) return;
+    if (!taskId || !task) return;
     try {
       // Delete the task
-      await deleteDoc(doc(db, 'tasks', id));
+      await deleteDoc(doc(db, 'tasks', taskId));
 
       // Re-fetch remaining tasks to re-order them
       const remainingTasksQuery = query(collection(db, 'tasks'), where('policyType', '==', task.policyType));
