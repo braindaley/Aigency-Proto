@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus, User, Sparkles, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,10 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { Task, TaskPhase } from '@/lib/types';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useToast } from '@/hooks/use-toast';
-import { StrictDroppable } from '@/components/ui/strict-droppable';
-
+import { cn } from '@/lib/utils';
 
 const PHASES_ORDER: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
@@ -29,6 +27,11 @@ export default function WorkersCompTasksPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Drag and Drop state
+  const [dragging, setDragging] = useState(false);
+  const dragItem = useRef<Task | null>(null);
+  const dragOverItem = useRef<Task | null>(null);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -73,36 +76,57 @@ export default function WorkersCompTasksPage() {
     fetchTasks();
   }, []);
 
-  const onDragEnd = async (result: DropResult) => {
-    const { source, destination } = result;
+  const handleDragStart = (e: React.DragEvent<HTMLLIElement>, task: Task) => {
+    dragItem.current = task;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => setDragging(true), 0);
+  };
 
-    if (!destination) {
-      return;
-    }
+  const handleDragEnter = (e: React.DragEvent<HTMLLIElement>, task: Task) => {
+    e.preventDefault();
+    dragOverItem.current = task;
+  };
 
-    const sourcePhase = source.droppableId as TaskPhase;
-    const destPhase = destination.droppableId as TaskPhase;
+  const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => {
+    e.preventDefault();
+  };
+  
+  const handleDrop = async (e: React.DragEvent<HTMLLIElement>, targetPhase: TaskPhase) => {
+    e.preventDefault();
+    setDragging(false);
 
-    const newTasksByPhase = { ...tasksByPhase };
-    const sourceTasks = Array.from(newTasksByPhase[sourcePhase]);
-    const [movedTask] = sourceTasks.splice(source.index, 1);
+    const sourceTask = dragItem.current;
+    if (!sourceTask) return;
 
-    if (sourcePhase === destPhase) {
-      sourceTasks.splice(destination.index, 0, movedTask);
-      newTasksByPhase[sourcePhase] = sourceTasks;
-    } else {
-      const destTasks = Array.from(newTasksByPhase[destPhase]);
-      destTasks.splice(destination.index, 0, { ...movedTask, phase: destPhase });
-      newTasksByPhase[sourcePhase] = sourceTasks;
-      newTasksByPhase[destPhase] = destTasks;
-    }
+    const sourcePhase = sourceTask.phase;
+    const targetTask = dragOverItem.current;
+
+    const newTasksByPhase = JSON.parse(JSON.stringify(tasksByPhase));
+
+    // Remove from source
+    const sourceTasks = newTasksByPhase[sourcePhase].filter((t: Task) => t.id !== sourceTask.id);
+    newTasksByPhase[sourcePhase] = sourceTasks;
+    
+    // Add to destination
+    const destTasks = newTasksByPhase[targetPhase];
+    const targetIndex = targetTask ? destTasks.findIndex((t: Task) => t.id === targetTask.id) : destTasks.length;
+
+    sourceTask.phase = targetPhase;
+    destTasks.splice(targetIndex, 0, sourceTask);
+    newTasksByPhase[targetPhase] = destTasks;
 
     setTasksByPhase(newTasksByPhase);
 
-    // After reordering, flatten all tasks to update sortOrder and dependencies
+    await updateTasksInFirestore(newTasksByPhase);
+
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
+
+  const updateTasksInFirestore = async (newTasksState: Record<TaskPhase, Task[]>) => {
     const allTasks: Task[] = [];
     PHASES_ORDER.forEach(phase => {
-        allTasks.push(...(newTasksByPhase[phase] || []));
+        allTasks.push(...(newTasksState[phase] || []));
     });
 
     const batch = writeBatch(db);
@@ -112,10 +136,10 @@ export default function WorkersCompTasksPage() {
         
         const updates: Partial<Task> = {
             sortOrder: index + 1,
-            phase: task.phase, // This is updated if moved to a new phase
+            phase: task.phase,
             dependencies: previousTaskId ? [previousTaskId] : [],
         };
-
+        
         batch.update(taskRef, updates);
     });
 
@@ -125,7 +149,6 @@ export default function WorkersCompTasksPage() {
             title: "Tasks Reordered",
             description: "Successfully updated task order and dependencies.",
         });
-        // Refetch to ensure local state is in sync with Firestore
         await fetchTasks();
     } catch (err) {
         console.error("Error updating tasks:", err);
@@ -144,45 +167,40 @@ export default function WorkersCompTasksPage() {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
     }
     return (
-      <StrictDroppable droppableId={phase}>
-        {(provided) => (
-          <ul {...provided.droppableProps} ref={provided.innerRef} className="border-t-0">
-            {tasks.map((task, index) => (
-              <Draggable key={task.id.toString()} draggableId={task.id.toString()} index={index}>
-                {(provided, snapshot) => (
-                  <li
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={`flex items-center justify-between p-4 ${snapshot.isDragging ? 'bg-accent shadow-lg' : ''}`}
-                    style={{...provided.draggableProps.style}}
-                  >
-                    <div className="flex items-center gap-4">
-                      <GripVertical className="h-5 w-5 text-muted-foreground" />
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                        {task.tag === 'ai' ? (
-                          <Sparkles className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <User className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
-                      </div>
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/settings/task-settings/workers-comp/${task.id}`}>
-                        View
-                      </Link>
-                    </Button>
-                  </li>
+      <ul className="border-t-0" onDragOver={handleDragOver}>
+        {tasks.map((task) => (
+          <li
+            key={task.id.toString()}
+            draggable
+            onDragStart={(e) => handleDragStart(e, task)}
+            onDragEnter={(e) => handleDragEnter(e, task)}
+            onDrop={(e) => handleDrop(e, phase)}
+            onDragOver={handleDragOver}
+            className={cn('flex items-center justify-between p-4 cursor-grab', {
+              'opacity-50': dragging && dragItem.current?.id === task.id,
+            })}
+          >
+            <div className="flex items-center gap-4">
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                {task.tag === 'ai' ? (
+                  <Sparkles className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <User className="h-5 w-5 text-muted-foreground" />
                 )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </ul>
-        )}
-      </StrictDroppable>
+              </div>
+              <div>
+                <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/settings/task-settings/workers-comp/${task.id}`}>
+                View
+              </Link>
+            </Button>
+          </li>
+        ))}
+      </ul>
     );
   };
   
@@ -221,20 +239,18 @@ export default function WorkersCompTasksPage() {
           ) : error ? (
             <p className="text-destructive p-6">{error}</p>
           ) : (
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
-                {PHASES_ORDER.map(phase => (
-                  <AccordionItem value={phase} key={phase} className="border-b-0">
-                    <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
-                      <h2>{phase} ({tasksByPhase[phase].length})</h2>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-0">
-                      {renderTaskList(tasksByPhase[phase], phase)}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </DragDropContext>
+            <Accordion type="multiple" defaultValue={PHASES_ORDER} className="w-full">
+              {PHASES_ORDER.map(phase => (
+                <AccordionItem value={phase} key={phase} className="border-b-0">
+                  <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
+                    <h2>{phase} ({tasksByPhase[phase].length})</h2>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-0" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, phase)}>
+                    {renderTaskList(tasksByPhase[phase], phase)}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           )}
         </CardContent>
       </Card>
