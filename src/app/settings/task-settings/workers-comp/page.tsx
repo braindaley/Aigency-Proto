@@ -6,13 +6,15 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, User, Sparkles, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { Task, TaskPhase } from '@/lib/types';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useToast } from '@/hooks/use-toast';
+import { StrictDroppable } from '@/components/ui/strict-droppable';
+
 
 const PHASES_ORDER: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
 
@@ -142,7 +144,7 @@ export default function WorkersCompTasksPage() {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
     }
     return (
-      <Droppable droppableId={phase}>
+      <StrictDroppable droppableId={phase}>
         {(provided) => (
           <ul {...provided.droppableProps} ref={provided.innerRef} className="border-t-0">
             {tasks.map((task, index) => (
@@ -180,7 +182,7 @@ export default function WorkersCompTasksPage() {
             {provided.placeholder}
           </ul>
         )}
-      </Droppable>
+      </StrictDroppable>
     );
   };
   
