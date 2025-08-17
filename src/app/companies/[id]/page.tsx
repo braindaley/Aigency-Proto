@@ -28,7 +28,7 @@ import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Task } from '@/lib/types';
+import type { CompanyTask } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
 interface Company {
@@ -43,12 +43,6 @@ interface Renewal {
     id: number;
     type: string;
     date: Date | undefined;
-}
-
-interface CompanyTask extends Task {
-    companyId: string;
-    renewalDate: Timestamp;
-    renewalType: string;
 }
 
 const policyTypes = [
@@ -198,11 +192,7 @@ export default function CompanyDetailPage() {
             ...doc.data(),
         })) as CompanyTask[];
 
-        tasksList.sort((a, b) => {
-            const idA = parseInt(String(a.templateId), 10);
-            const idB = parseInt(String(b.templateId), 10);
-            return idA - idB;
-        });
+        tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
         setAttentionTasks(tasksList);
       } catch (error) {

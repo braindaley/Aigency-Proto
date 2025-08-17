@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TaskTag, TaskPhase, TaskStatus } from '@/lib/types';
 
@@ -26,6 +26,11 @@ export default function NewTaskPage() {
   const handleAddTask = async () => {
     if (taskName.trim() && tag && phase) {
       try {
+        // Get the current number of tasks to determine the sort order
+        const tasksQuery = query(collection(db, 'tasks'), where('policyType', '==', policyType));
+        const querySnapshot = await getDocs(tasksQuery);
+        const sortOrder = querySnapshot.size + 1;
+
         await addDoc(collection(db, 'tasks'), {
           taskName: taskName.trim(),
           description: description.trim(),
@@ -35,6 +40,7 @@ export default function NewTaskPage() {
           status: 'Upcoming' as TaskStatus,
           subtasks: [],
           policyType,
+          sortOrder,
         });
         router.push(`/settings/task-settings/${policyType}`);
       } catch (error) {

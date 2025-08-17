@@ -37,6 +37,9 @@ export default function WorkersCompTasksPage() {
           ...doc.data(),
         })) as Task[];
 
+        // Sort tasks by sortOrder
+        tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
         const groupedTasks = tasksList.reduce((acc, task) => {
           // Default to 'Submission' if phase is missing or invalid
           const phase: TaskPhase = task.phase && PHASES_ORDER.includes(task.phase) ? task.phase : 'Submission';

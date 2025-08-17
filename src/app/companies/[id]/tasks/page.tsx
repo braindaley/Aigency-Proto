@@ -99,11 +99,7 @@ export default function CompanyTasksPage() {
           id: doc.id,
         })) as CompanyTask[];
 
-        tasksList.sort((a, b) => {
-            const idA = parseInt(String(a.templateId), 10);
-            const idB = parseInt(String(b.templateId), 10);
-            return idA - idB;
-        });
+        tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
         // Update generated renewals state
         const generated = [...new Set(tasksList.map(task => task.renewalType))];
@@ -166,14 +162,7 @@ export default function CompanyTasksPage() {
     
     const templates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Task }));
     
-    templates.sort((a, b) => {
-        const idA = parseInt(String(a.id), 10);
-        const idB = parseInt(String(b.id), 10);
-        if (!isNaN(idA) && !isNaN(idB)) {
-          return idA - idB;
-        }
-        return String(a.id).localeCompare(String(b.id));
-    });
+    templates.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
     templates.forEach((templateData, index) => {
       const { id, ...restOfTemplateData } = templateData;
@@ -282,16 +271,17 @@ export default function CompanyTasksPage() {
                 <p className="text-muted-foreground mt-2">
                     This is where you can view all the tasks for this specific company.
                 </p>
-                {activeRenewal && activeRenewal.date && (
-                <div className="mt-6">
-                    <h2 className="text-xl font-semibold">
-                        {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Renewal Date: {format(activeRenewal.date, 'PPP')}
-                    </p>
-                </div>
-                )}
+                
+            </div>
+        )}
+        {activeRenewal && activeRenewal.date && (
+            <div className="mt-6">
+                <h2 className="text-xl font-semibold">
+                    {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Renewal Date: {format(activeRenewal.date, 'PPP')}
+                </p>
             </div>
         )}
 
