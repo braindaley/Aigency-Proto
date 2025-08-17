@@ -13,6 +13,17 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs, query, where, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,7 +41,7 @@ export default function TaskPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const taskId = typeof params.id === 'string' ? params.id : '';
+  const id = typeof params.id === 'string' ? params.id : '';
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +59,7 @@ export default function TaskPage() {
   const [initialState, setInitialState] = useState<any>({});
 
   useEffect(() => {
-    if (!taskId) {
+    if (!id) {
       notFound();
       return;
     }
@@ -56,7 +67,7 @@ export default function TaskPage() {
     const fetchTaskAndAllTasks = async () => {
       try {
         // Fetch the specific task
-        const taskDocRef = doc(db, 'tasks', taskId);
+        const taskDocRef = doc(db, 'tasks', id);
         const taskDoc = await getDoc(taskDocRef);
 
         if (!taskDoc.exists()) {
@@ -100,7 +111,7 @@ export default function TaskPage() {
     };
     
     fetchTaskAndAllTasks();
-  }, [taskId]);
+  }, [id]);
 
   const dependencyOptions = useMemo(() => {
     if (!task || !task.sortOrder) return [];
@@ -139,9 +150,9 @@ export default function TaskPage() {
   };
 
   const handleSave = async () => {
-    if (!taskId) return;
+    if (!id) return;
     try {
-      const taskDocRef = doc(db, 'tasks', taskId);
+      const taskDocRef = doc(db, 'tasks', id);
       const updatedData = {
         taskName,
         description,
@@ -166,6 +177,47 @@ export default function TaskPage() {
         variant: "destructive",
         title: "Error",
         description: "Failed to save changes. Please try again.",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !task) return;
+    try {
+      // Delete the task
+      await deleteDoc(doc(db, 'tasks', id));
+
+      // Re-fetch remaining tasks to re-order them
+      const remainingTasksQuery = query(collection(db, 'tasks'), where('policyType', '==', task.policyType));
+      const snapshot = await getDocs(remainingTasksQuery);
+      const remainingTasks = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Task))
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+      // Update sortOrder and dependencies for remaining tasks
+      const batch = writeBatch(db);
+      remainingTasks.forEach((t, index) => {
+        const taskRef = doc(db, 'tasks', t.id.toString());
+        const previousTaskId = index > 0 ? remainingTasks[index - 1].id.toString() : null;
+        batch.update(taskRef, {
+          sortOrder: index + 1,
+          dependencies: previousTaskId ? [previousTaskId] : [],
+        });
+      });
+      await batch.commit();
+
+      toast({
+        title: "Task Deleted",
+        description: "The task template has been successfully deleted.",
+      });
+
+      router.push('/settings/task-settings/workers-comp');
+    } catch (error) {
+      console.error("Error deleting document: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
       });
     }
   };
@@ -213,9 +265,31 @@ export default function TaskPage() {
             Back to tasks
           </Link>
         </Button>
-        <Button onClick={handleSave} disabled={!hasChanged}>
-          Save changes
-        </Button>
+        <div className="flex items-center gap-2">
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this task template.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button onClick={handleSave} disabled={!hasChanged}>
+            Save changes
+          </Button>
+        </div>
       </div>
       <Card className="border-0 shadow-none">
         <CardHeader>
