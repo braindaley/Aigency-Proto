@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -88,7 +88,8 @@ export default function TaskPage() {
 
         // Fetch all tasks for dependency options
         const tasksCollection = collection(db, 'tasks');
-        const tasksSnapshot = await getDocs(tasksCollection);
+        const q = query(tasksCollection, where('policyType', '==', taskData.policyType));
+        const tasksSnapshot = await getDocs(q);
         const tasksList = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
         setAllTasks(tasksList);
 
@@ -220,7 +221,9 @@ export default function TaskPage() {
       <Card className="border-0 shadow-none">
         <CardHeader>
           <div className="flex items-center gap-4">
-            <p className="font-bold uppercase text-base leading-4 text-muted-foreground">ID {typeof task.id === 'string' ? task.id.substring(0, 5) + '...' : task.id}</p>
+             {task.sortOrder && (
+                <p className="font-bold uppercase text-base leading-4 text-muted-foreground">TASK #{task.sortOrder}</p>
+             )}
              <Badge variant="secondary">{task.phase}</Badge>
           </div>
           <div className="pt-2">
