@@ -317,7 +317,7 @@ export default function TaskPage() {
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 placeholder="Enter a system prompt for the AI task."
-                className="min-h-[150px]"
+                className="min-h-[450px]"
               />
             </div>
           )}
@@ -326,5 +326,3 @@ export default function TaskPage() {
     </div>
   );
 }
-
-    
