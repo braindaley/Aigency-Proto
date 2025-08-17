@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react';
-import type { TaskTag, Subtask, Task } from '@/lib/types';
+import type { TaskTag, Subtask, Task, TaskPhase } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { useState, useMemo, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +24,8 @@ import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
+const PHASES: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
+
 export default function TaskPage() {
   const params = useParams();
   const id = params.id;
@@ -40,9 +42,10 @@ export default function TaskPage() {
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
   const [tag, setTag] = useState<TaskTag>('manual');
+  const [phase, setPhase] = useState<TaskPhase>('Submission');
   
   const [allTasks, setAllTasks] = useState<Task[]>([]);
-  const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
+  const [dependencies, setDependencies] = useState<string[]>([]);
   const [initialState, setInitialState] = useState<any>({});
 
   useEffect(() => {
@@ -69,6 +72,8 @@ export default function TaskPage() {
         setSystemPrompt(taskData.systemPrompt || '');
         setSubtasks(taskData.subtasks || []);
         setTag(taskData.tag || 'manual');
+        setPhase(taskData.phase || 'Submission');
+        setDependencies(taskData.dependencies || []);
 
         const currentState = {
           taskName: taskData.taskName,
@@ -76,6 +81,8 @@ export default function TaskPage() {
           systemPrompt: taskData.systemPrompt || '',
           subtasks: taskData.subtasks || [],
           tag: taskData.tag || 'manual',
+          phase: taskData.phase || 'Submission',
+          dependencies: taskData.dependencies || [],
         };
         setInitialState(currentState);
 
@@ -97,11 +104,12 @@ export default function TaskPage() {
 
   const dependencyOptions = useMemo(() => {
     if (!task) return [];
+    // Exclude self and tasks that come after the current task in sort order
     return allTasks
-      .filter((t) => t.id !== task.id)
+      .filter((t) => t.id !== task.id && t.sortOrder < task.sortOrder)
       .map((t) => ({
-        value: t.id,
-        label: `ID ${String(t.id).substring(0,5)}... - ${t.taskName}`,
+        value: t.id.toString(),
+        label: t.taskName,
       }));
   }, [allTasks, task]);
 
@@ -113,13 +121,15 @@ export default function TaskPage() {
       systemPrompt,
       subtasks,
       tag,
+      phase,
+      dependencies,
     };
     return JSON.stringify(initialState) !== JSON.stringify(currentState);
-  }, [task, taskName, description, systemPrompt, subtasks, tag, initialState]);
+  }, [task, taskName, description, systemPrompt, subtasks, tag, phase, dependencies, initialState]);
   
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
-      setSubtasks([...subtasks, { id: Date.now(), text: newSubtask.trim() }]);
+      setSubtasks([...subtasks, { id: Date.now(), text: newSubtask.trim(), completed: false }]);
       setNewSubtask('');
     }
   };
@@ -132,15 +142,20 @@ export default function TaskPage() {
     if (!taskId) return;
     try {
       const taskDocRef = doc(db, 'tasks', taskId);
-      await updateDoc(taskDocRef, {
+      const updatedData = {
         taskName,
         description,
         systemPrompt,
         subtasks,
         tag,
-      });
-      const updatedInitialState = { taskName, description, systemPrompt, subtasks, tag };
+        phase,
+        dependencies,
+      };
+      await updateDoc(taskDocRef, updatedData);
+
+      const updatedInitialState = { ...updatedData };
       setInitialState(updatedInitialState);
+      
       toast({
         title: "Task Saved",
         description: "Your changes have been saved successfully.",
@@ -205,8 +220,8 @@ export default function TaskPage() {
       <Card className="border-0 shadow-none">
         <CardHeader>
           <div className="flex items-center gap-4">
-            <p className="font-bold uppercase text-base leading-4">ID {task.id}</p>
-            <Badge variant="secondary">{task.phase}</Badge>
+            <p className="font-bold uppercase text-base leading-4 text-muted-foreground">ID {typeof task.id === 'string' ? task.id.substring(0, 5) + '...' : task.id}</p>
+             <Badge variant="secondary">{task.phase}</Badge>
           </div>
           <div className="pt-2">
               <Label htmlFor="taskName">Task Name</Label>
@@ -220,6 +235,17 @@ export default function TaskPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+              <Label htmlFor="phase">Phase</Label>
+              <Select onValueChange={(value: TaskPhase) => setPhase(value)} value={phase}>
+                <SelectTrigger id="phase">
+                  <SelectValue placeholder="Select a phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PHASES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           <div className="space-y-2">
             <Label htmlFor="taskType">Task Type</Label>
             <Select onValueChange={(value: TaskTag) => setTag(value)} value={tag}>
@@ -236,8 +262,8 @@ export default function TaskPage() {
             <Label htmlFor="dependencies">Dependencies</Label>
             <Combobox
               options={dependencyOptions}
-              selected={selectedDependencies}
-              onChange={setSelectedDependencies}
+              selected={dependencies}
+              onChange={setDependencies}
               placeholder="Select dependencies..."
               searchPlaceholder="Search dependencies..."
               noResultsText="No dependencies found."

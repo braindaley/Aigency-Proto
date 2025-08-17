@@ -18,6 +18,7 @@ export interface Task {
   tag: TaskTag;
   phase: TaskPhase;
   status: TaskStatus;
+  dependencies?: string[];
   policyType?: string;
   subtasks?: Subtask[];
   systemPrompt?: string;
