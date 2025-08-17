@@ -28,10 +28,9 @@ const PHASES: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', '
 
 export default function TaskPage() {
   const params = useParams();
-  const id = params.id;
   const router = useRouter();
   const { toast } = useToast();
-  const taskId = typeof id === 'string' ? id : '';
+  const taskId = typeof params.id === 'string' ? params.id : '';
 
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
@@ -327,3 +326,5 @@ export default function TaskPage() {
     </div>
   );
 }
+
+    
