@@ -182,6 +182,9 @@ export default function WorkersCompTasksPage() {
           >
             <div className="flex items-center gap-4">
               <GripVertical className="h-5 w-5 text-muted-foreground" />
+               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                {task.sortOrder}
+              </div>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                 {task.tag === 'ai' ? (
                   <Sparkles className="h-5 w-5 text-muted-foreground" />
