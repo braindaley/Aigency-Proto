@@ -104,10 +104,10 @@ export default function TaskPage() {
   }, [taskId]);
 
   const dependencyOptions = useMemo(() => {
-    if (!task) return [];
+    if (!task || !task.sortOrder) return [];
     // Exclude self and tasks that come after the current task in sort order
     return allTasks
-      .filter((t) => t.id !== task.id && t.sortOrder < task.sortOrder)
+      .filter((t) => t.id !== task.id && t.sortOrder && task.sortOrder && t.sortOrder < task.sortOrder)
       .map((t) => ({
         value: t.id.toString(),
         label: t.taskName,
