@@ -383,14 +383,14 @@ export default function TaskPage() {
               placeholder="Enter a description for the task."
             />
           </div>
-          {tag === 'ai' && (
+          {(tag === 'ai' || tag === 'manual') && (
             <div className="space-y-2">
               <Label htmlFor="systemPrompt">System prompt</Label>
               <Textarea
                 id="systemPrompt"
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="Enter a system prompt for the AI task."
+                placeholder={tag === 'ai' ? "Enter a system prompt for the AI task." : "Enter a system prompt for the manual task."}
                 className="min-h-[450px]"
               />
             </div>

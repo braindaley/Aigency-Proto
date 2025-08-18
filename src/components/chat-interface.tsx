@@ -44,7 +44,8 @@ export function ChatInterface() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to get response' }));
+        throw new Error(errorData.details || errorData.error || 'Failed to get response');
       }
 
       const reader = response.body?.getReader();
@@ -88,7 +89,7 @@ export function ChatInterface() {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
