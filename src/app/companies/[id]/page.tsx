@@ -5,28 +5,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Settings, Save, X, Trash2, Sparkles, User } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Settings, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
 import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, Timestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { CompanyTask } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -136,10 +119,6 @@ export default function CompanyDetailPage() {
   const [renewals, setRenewals] = useState<Renewal[]>([]);
   const [timelineStartDate, setTimelineStartDate] = useState(new Date());
   
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedDescription, setEditedDescription] = useState('');
-  const [editedWebsite, setEditedWebsite] = useState('');
-
   const [attentionTasks, setAttentionTasks] = useState<CompanyTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   
@@ -166,8 +145,6 @@ export default function CompanyDetailPage() {
             })).filter(r => r.date) as Renewal[];
           }
           setCompany(companyData);
-          setEditedDescription(companyData.description || '');
-          setEditedWebsite(companyData.website || '');
           setRenewals(companyData.renewals || []);
         } else {
           setCompany(null);
@@ -205,85 +182,6 @@ export default function CompanyDetailPage() {
     fetchCompanyData();
   }, [companyId]);
   
-  const handleAddRenewal = () => {
-    setRenewals([...renewals, { id: Date.now(), type: '', date: undefined }]);
-  };
-
-  const handleRenewalChange = (id: number, type: string) => {
-      setRenewals(renewals.map(r => r.id === id ? { ...r, type } : r));
-  }
-
-  const handleDateChange = (id: number, date: Date | undefined) => {
-      setRenewals(renewals.map(r => r.id === id ? { ...r, date } : r));
-  }
-  
-  const handleRemoveRenewal = (id: number) => {
-    setRenewals(renewals.filter(r => r.id !== id));
-  };
-
-  const handleEdit = () => {
-    if (company) {
-      setEditedDescription(company.description || '');
-      setEditedWebsite(company.website || '');
-      setRenewals(company.renewals || []);
-      setIsEditing(true);
-    }
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    if (company) {
-      setEditedDescription(company.description || '');
-      setEditedWebsite(company.website || '');
-      setRenewals(company.renewals || []);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!company) return;
-
-    try {
-      const companyRef = doc(db, 'companies', company.id);
-      
-      const renewalsToSave = renewals
-        .filter(r => r.type && r.date)
-        .map(r => ({
-            ...r,
-            date: Timestamp.fromDate(r.date!),
-        }));
-
-      const updatedData = {
-        description: editedDescription,
-        website: editedWebsite,
-        renewals: renewalsToSave,
-      };
-
-      await updateDoc(companyRef, updatedData);
-
-      const updatedCompanyState: Company = {
-        ...company,
-        description: editedDescription,
-        website: editedWebsite,
-        renewals: renewalsToSave.map(r => ({...r, date: r.date.toDate()})),
-      };
-
-      setCompany(updatedCompanyState);
-      setRenewals(updatedCompanyState.renewals || []);
-
-      setIsEditing(false);
-      toast({
-        title: "Success",
-        description: "Company details updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error updating company:", error);
-       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update company details.",
-      });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -311,7 +209,6 @@ export default function CompanyDetailPage() {
   }
 
   const displayRenewals = company.renewals || [];
-  const usedPolicyTypes = renewals.map(r => r.type).filter(Boolean);
   const activeRenewalType = attentionTasks.length > 0
     ? policyTypes.find(p => p.value === attentionTasks[0].renewalType)?.label || attentionTasks[0].renewalType
     : null;
@@ -330,47 +227,30 @@ export default function CompanyDetailPage() {
               <p className="mb-2 font-bold uppercase text-base leading-4 text-muted-foreground">ID {company.id}</p>
               <h1 className="text-3xl font-bold">{company.name}</h1>
             </div>
-            {!isEditing && (
-              <Button variant="ghost" onClick={handleEdit} className="h-8 w-8 rounded-full bg-muted p-0">
+            <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
+              <Link href={`/settings/companies/${company.id}`}>
                 <Settings className="h-5 w-5" />
-                <span className="sr-only">Edit Company</span>
-              </Button>
-            )}
+                <span className="sr-only">Company Settings</span>
+              </Link>
+            </Button>
         </div>
         
         <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
       </div>
       
-      <Card className="border-0 shadow-none">
-        <CardContent className="p-0 pt-6">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="companyDescription">Company Description</Label>
-              {isEditing ? (
-                <Textarea
-                  id="companyDescription"
-                  value={editedDescription}
-                  onChange={(e) => setEditedDescription(e.target.value)}
-                  placeholder="Enter company description"
-                  className="min-h-[120px]"
-                />
-              ) : (
-                <p className="text-muted-foreground min-h-[40px]">
-                  {company.description || 'No description provided.'}
-                </p>
+      {(company.description || company.website) && (
+        <Card className="border-0 shadow-none">
+          <CardContent className="p-0 pt-6">
+            <div className="space-y-6">
+              {company.description && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">Description</h3>
+                  <p className="text-muted-foreground">{company.description}</p>
+                </div>
               )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="companyWebsite">Company Website</Label>
-              {isEditing ? (
-                <Input
-                  id="companyWebsite"
-                  value={editedWebsite}
-                  onChange={(e) => setEditedWebsite(e.target.value)}
-                  placeholder="https://example.com"
-                />
-              ) : (
-                company.website ? (
+              {company.website && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">Website</h3>
                   <a 
                       href={company.website} 
                       target="_blank" 
@@ -380,14 +260,12 @@ export default function CompanyDetailPage() {
                       {company.website}
                       <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
-                ) : (
-                  <p className="text-muted-foreground">No website provided.</p>
-                )
+                </div>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="mt-12">
         <div className="flex justify-between items-center">
@@ -438,88 +316,6 @@ export default function CompanyDetailPage() {
         </div>
       </div>
 
-      {isEditing && (
-        <>
-            <Card className="mt-8">
-                <CardHeader>
-                    <CardTitle>Next renewal</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {renewals.map((renewal) => (
-                            <div key={renewal.id} className="flex items-center gap-4">
-                                <Select 
-                                    onValueChange={(value) => handleRenewalChange(renewal.id, value)} 
-                                    defaultValue={renewal.type || undefined}
-                                    value={renewal.type || undefined}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a policy type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {policyTypes.map(policy => (
-                                            <SelectItem 
-                                                key={policy.value} 
-                                                value={policy.value}
-                                                disabled={usedPolicyTypes.includes(policy.value) && renewal.type !== policy.value}
-                                            >
-                                                {policy.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-[280px] justify-start text-left font-normal",
-                                                !renewal.date && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {renewal.date ? format(renewal.date, "PPP") : <span>Pick a date</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <Calendar
-                                            mode="single"
-                                            selected={renewal.date}
-                                            onSelect={(date) => handleDateChange(renewal.id, date)}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <Button variant="ghost" size="icon" onClick={() => handleRemoveRenewal(renewal.id)}>
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                    <Button 
-                        onClick={handleAddRenewal} 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-4"
-                        disabled={renewals.length >= policyTypes.length}
-                    >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add
-                    </Button>
-                </CardContent>
-            </Card>
-            <div className="flex justify-end gap-2 pt-4 mt-4">
-                <Button variant="ghost" onClick={handleCancel}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
-            </div>
-        </>
-      )}
     </div>
   );
 }

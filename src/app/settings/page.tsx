@@ -10,22 +10,41 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold">Settings</h1>
       <p className="text-muted-foreground mt-2 mb-8">Manage your application settings.</p>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Task Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">Manage global tasks for your agency.</p>
-            <Button asChild>
-              <Link href="/settings/task-settings">
-                Go to Task Settings
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Companies</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Manage your companies and their settings.</p>
+              <Button asChild>
+                <Link href="/settings/companies">
+                  Go to Companies
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Task Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Manage global tasks for your agency.</p>
+              <Button asChild>
+                <Link href="/settings/task-settings">
+                  Go to Task Settings
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
