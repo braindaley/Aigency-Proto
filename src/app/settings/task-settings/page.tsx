@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download } from "lucide-react";
 import Link from "next/link";
 
 export default function TaskSettingsPage() {
@@ -16,22 +16,92 @@ export default function TaskSettingsPage() {
       <h1 className="text-3xl font-bold">Task Settings</h1>
       <p className="text-muted-foreground mt-2 mb-8">Manage global tasks for different policy types.</p>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Worker's Comp Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">Manage tasks related to Worker's Comp policies.</p>
-            <Button asChild>
-              <Link href="/settings/task-settings/workers-comp">
-                Go to Tasks
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Worker's Comp Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Manage tasks related to Worker's Comp policies.</p>
+              <Button asChild>
+                <Link href="/settings/task-settings/workers-comp">
+                  Go to Tasks
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Auto Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Manage tasks related to Auto policies.</p>
+              <Button asChild>
+                <Link href="/settings/task-settings/auto">
+                  Go to Tasks
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>General Liability Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Manage tasks related to General Liability policies.</p>
+              <Button asChild>
+                <Link href="/settings/task-settings/general-liability">
+                  Go to Tasks
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Manage tasks related to Property policies.</p>
+              <Button asChild>
+                <Link href="/settings/task-settings/property">
+                  Go to Tasks
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Backup & Restore</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Export or import task templates for backup and migration.</p>
+              <Button asChild variant="outline">
+                <Link href="/settings/task-settings/backup">
+                  <Download className="mr-2 h-4 w-4" />
+                  Manage Backups
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
