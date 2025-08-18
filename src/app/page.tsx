@@ -8,6 +8,7 @@ export default function Home() {
       <p className="text-muted-foreground mt-2">
         Coming soon
       </p>
+      <CompanyOverviewCards />
     </div>
   );
 }

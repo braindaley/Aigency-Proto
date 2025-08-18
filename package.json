@@ -13,6 +13,8 @@
     "update:dependencies": "node scripts/add-dependencies.js"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.6",
+    "@ai-sdk/openai": "^2.0.15",
     "@ai-sdk/react": "^2.0.15",
     "@genkit-ai/googleai": "^1.14.1",
     "@genkit-ai/next": "^1.14.1",

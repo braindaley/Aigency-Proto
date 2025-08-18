@@ -24,6 +24,9 @@ export function Header() {
         <Link href="/companies" className="text-sm font-medium text-muted-foreground hover:text-foreground">
           Companies
         </Link>
+        <Link href="/chat" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+          AI Assistant
+        </Link>
       </nav>
       
       <div className="flex items-center gap-4">
@@ -50,6 +53,12 @@ export function Header() {
                   className="text-muted-foreground hover:text-foreground"
                 >
                   Companies
+                </Link>
+                <Link
+                  href="/chat"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  AI Assistant
                 </Link>
                 <Link
                   href="/settings"
