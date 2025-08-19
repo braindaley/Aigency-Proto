@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, FileText, Download, User, Send, Paperclip } from 'lucide-react';
+import { Sparkles, FileText, Download, User, Send, Paperclip } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
 
 interface ChatMessage {
@@ -242,7 +242,7 @@ How can I assist you with this task today?`,
                     {message.role === 'user' ? (
                       <User className="h-4 w-4" />
                     ) : (
-                      <Bot className="h-4 w-4" />
+                      <Sparkles className="h-4 w-4" />
                     )}
                   </div>
                   <div
@@ -263,7 +263,7 @@ How can I assist you with this task today?`,
               <div className="flex gap-3 justify-start">
                 <div className="flex gap-3 max-w-[80%]">
                   <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-muted">
-                    <Bot className="h-4 w-4" />
+                    <Sparkles className="h-4 w-4" />
                   </div>
                   <div className="rounded-lg px-4 py-2 bg-muted">
                     <div className="flex items-center gap-2">

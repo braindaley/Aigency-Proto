@@ -8,7 +8,7 @@ import { Loader } from '@/components/ai-elements/loader';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Sparkles, User } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -166,7 +166,7 @@ export function ChatInterface() {
                   {message.role === 'user' ? (
                     <User className="h-4 w-4" />
                   ) : (
-                    <Bot className="h-4 w-4" />
+                    <Sparkles className="h-4 w-4" />
                   )}
                 </div>
                 <div
@@ -188,7 +188,7 @@ export function ChatInterface() {
             <div className="flex gap-3 justify-start">
               <div className="flex gap-3 max-w-[80%]">
                 <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-muted">
-                  <Bot className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="rounded-lg px-4 py-2 bg-muted">
                   <div className="flex items-center gap-2">

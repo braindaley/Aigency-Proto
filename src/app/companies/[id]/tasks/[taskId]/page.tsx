@@ -6,13 +6,13 @@ import { useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CompanyTask } from '@/lib/types';
-import { ArrowLeft, Bot, User } from 'lucide-react';
+import { ArrowLeft, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { TaskChat } from '@/components/TaskChat';
-import { TaskAIExecution } from '@/components/TaskAIExecution';
+import { TaskAIArtifacts } from '@/components/TaskAIArtifacts';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -94,7 +94,7 @@ export default function TaskDetailPage() {
             
             <div className="flex items-center gap-4 mb-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                <Bot className="h-6 w-6 text-muted-foreground" />
+                <Sparkles className="h-6 w-6 text-muted-foreground" />
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{task.taskName}</h1>
@@ -106,7 +106,7 @@ export default function TaskDetailPage() {
             </div>
           </div>
 
-          <TaskAIExecution task={task} companyId={companyId || ''} />
+          <TaskAIArtifacts task={task} companyId={companyId || ''} />
         </div>
       </div>
     );
