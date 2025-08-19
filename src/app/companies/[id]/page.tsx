@@ -269,7 +269,6 @@ export default function CompanyDetailPage() {
         </Button>
         <div className="flex justify-between items-center">
             <div>
-              <p className="mb-2 font-bold uppercase text-base leading-4 text-muted-foreground">ID {company.id}</p>
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold">{company.name}</h1>
                 {company.website && (
@@ -294,21 +293,14 @@ export default function CompanyDetailPage() {
             </Button>
         </div>
         
+        {company.description && (
+          <div className="mt-6 mb-8">
+            <p className="text-muted-foreground">{company.description}</p>
+          </div>
+        )}
+        
         <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
       </div>
-      
-      {company.description && (
-        <Card className="border-0 shadow-none">
-          <CardContent className="p-0 pt-6">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="font-medium">Description</h3>
-                <p className="text-muted-foreground">{company.description}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
       
       <div className="mt-12">
         <div className="flex justify-between items-center">

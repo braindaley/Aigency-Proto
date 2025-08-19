@@ -86,9 +86,9 @@ export default function TaskDetailPage() {
         <div className="mx-auto max-w-[1400px]">
           <div className="max-w-[672px] mb-8">
             <Button asChild variant="ghost" className="mb-4 -ml-4">
-              <Link href={`/companies/${companyId}/tasks`}>
+              <Link href={`/companies/${companyId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Tasks
+                Back to Company
               </Link>
             </Button>
             
@@ -116,9 +116,9 @@ export default function TaskDetailPage() {
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <div className="mb-8">
         <Button asChild variant="ghost" className="mb-4 -ml-4">
-          <Link href={`/companies/${companyId}/tasks`}>
+          <Link href={`/companies/${companyId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Tasks
+            Back to Company
           </Link>
         </Button>
         

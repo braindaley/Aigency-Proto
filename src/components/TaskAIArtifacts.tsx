@@ -542,10 +542,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       <div className="w-1/2 flex flex-col">
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-medium">
-                {artifact?.title || task.taskName}
-              </CardTitle>
+            <div className="flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'source')}>
                   <TabsList className="h-8">
