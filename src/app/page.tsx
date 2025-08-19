@@ -6,9 +6,11 @@ export default function Home() {
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <h1 className="text-3xl font-bold">Dashboard</h1>
       <p className="text-muted-foreground mt-2">
-        Coming soon
+        Welcome to your Aigency dashboard
       </p>
-      <CompanyOverviewCards />
+      <div className="mt-6">
+        <CompanyOverviewCards />
+      </div>
     </div>
   );
 }

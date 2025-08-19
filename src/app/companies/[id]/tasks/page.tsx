@@ -274,83 +274,160 @@ export default function CompanyTasksPage() {
                 
             </div>
         )}
-        {activeRenewal && activeRenewal.date && (
-            <div className="mt-6">
-                <h2 className="text-xl font-semibold">
-                    {policyTypes.find(p => p.value === activeRenewal.type)?.label || activeRenewal.type}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Renewal Date: {format(activeRenewal.date, 'PPP')}
-                </p>
-            </div>
-        )}
 
-        {upcomingRenewals.length > 0 && (
-          <div className="mt-6 space-y-4">
-            {upcomingRenewals.map(renewal => (
-              <Alert key={renewal.id}>
-                <AlertDescription>
-                  <div className="flex justify-between items-center">
-                    <span>Start the renewal process for {policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}</span>
-                    <div className="flex items-center gap-2">
-                      {generatedRenewals.includes(renewal.type) ? (
-                        <>
-                         <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDeleteTasks(renewal.type)}
-                            aria-label={`Delete ${renewal.type} tasks`}
-                          >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                         <Button disabled>
-                           Tasks Created
-                         </Button>
-                        </>
-                      ) : (
-                        <Button onClick={() => handleCreateTasks(renewal)}>
-                           Create tasks
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        )}
       </div>
       
-      <Card className="border-0 shadow-none">
-          <CardContent className="p-0">
-            {tasksLoading ? (
-                <div className="space-y-4 p-6">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-3/4" />
-                </div>
-            ) : error ? (
-                <p className="text-destructive p-6">{error}</p>
-            ) : allTasksCount === 0 ? (
-                <p className="text-muted-foreground text-center p-6">No tasks have been created for this company yet.</p>
-            ) : (
-                <Accordion type="multiple" defaultValue={STATUS_ORDER} className="w-full">
-                    {STATUS_ORDER.map(status => (
-                        tasksByStatus[status] && tasksByStatus[status].length > 0 && (
-                            <AccordionItem value={status} key={status} className="border-b-0">
-                                <AccordionTrigger className="px-6 text-base font-semibold hover:no-underline">
-                                    <h3>{status} ({tasksByStatus[status].length})</h3>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-0">
-                                    {renderTaskList(tasksByStatus[status])}
-                                </AccordionContent>
-                            </AccordionItem>
-                        )
-                    ))}
-                </Accordion>
-            )}
-          </CardContent>
-      </Card>
+      <div>
+        {tasksLoading ? (
+            <div className="space-y-4 p-6">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-3/4" />
+            </div>
+        ) : error ? (
+            <p className="text-destructive p-6">{error}</p>
+        ) : allTasksCount === 0 ? (
+            <p className="text-muted-foreground text-center p-6">No tasks have been created for this company yet.</p>
+        ) : (
+            <div className="space-y-8">
+              {/* Show renewal sections that have tasks */}
+              {Object.entries(
+                Object.values(tasksByStatus).flat().reduce((groups: { [key: string]: { [key: string]: CompanyTask[] } }, task) => {
+                  const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
+                  const status = task.status || 'Upcoming';
+                  
+                  if (!groups[renewalType]) {
+                    groups[renewalType] = {};
+                  }
+                  if (!groups[renewalType][status]) {
+                    groups[renewalType][status] = [];
+                  }
+                  groups[renewalType][status].push(task);
+                  return groups;
+                }, {})
+              ).map(([renewalType, statusGroups]) => {
+                const renewalTypeValue = policyTypes.find(p => p.label === renewalType)?.value || renewalType.toLowerCase().replace(/\s+/g, '-');
+                const matchingRenewal = upcomingRenewals.find(r => r.type === renewalTypeValue);
+                
+                return (
+                  <div key={renewalType} className="border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold">{renewalType}</h3>
+                    {matchingRenewal && matchingRenewal.date && (
+                      <p className="text-sm text-muted-foreground mt-1 mb-6">
+                        Renewal Date: {format(matchingRenewal.date, 'PPP')}
+                      </p>
+                    )}
+                    {!matchingRenewal && (
+                      <div className="mb-6" />
+                    )}
+                    
+                    {/* Show renewal alert if there's a matching upcoming renewal */}
+                    {matchingRenewal && (
+                      <Alert className="mb-6">
+                        <AlertDescription>
+                          <div className="flex justify-between items-center">
+                            <span>Start the renewal process for {renewalType}</span>
+                            <div className="flex items-center gap-2">
+                              {generatedRenewals.includes(matchingRenewal.type) ? (
+                                <>
+                                 <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handleDeleteTasks(matchingRenewal.type)}
+                                    aria-label={`Delete ${matchingRenewal.type} tasks`}
+                                  >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                                 <Button disabled>
+                                   Tasks Created
+                                 </Button>
+                                </>
+                              ) : (
+                                <Button onClick={() => handleCreateTasks(matchingRenewal)}>
+                                   Create tasks
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    <div className="space-y-6">
+                      {STATUS_ORDER.map(status => {
+                        const tasks = statusGroups[status] || [];
+                        if (tasks.length === 0) return null;
+                        
+                        return (
+                          <div key={status}>
+                            <h4 className="text-base font-medium mb-4">{status}</h4>
+                            <ul className="divide-y">
+                              {tasks.map((task) => (
+                                <li key={task.id} className="flex items-center justify-between p-4">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                      {task.tag === 'ai' ? (
+                                        <Sparkles className="h-5 w-5 text-muted-foreground" />
+                                      ) : (
+                                        <User className="h-5 w-5 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                                    </div>
+                                    <Badge variant="secondary">{task.phase}</Badge>
+                                  </div>
+                                  <Button asChild variant="outline" size="sm">
+                                    <Link href={`/companies/${companyId}/tasks/${task.id}`}>
+                                      View
+                                    </Link>
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Show renewal sections that don't have tasks yet but have upcoming renewals */}
+              {upcomingRenewals.filter(renewal => {
+                const renewalLabel = policyTypes.find(p => p.value === renewal.type)?.label || renewal.type;
+                const hasExistingTasks = Object.values(tasksByStatus).flat().some(task => 
+                  (policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType) === renewalLabel
+                );
+                return !hasExistingTasks;
+              }).map(renewal => {
+                const renewalLabel = policyTypes.find(p => p.value === renewal.type)?.label || renewal.type;
+                return (
+                  <div key={renewal.type} className="border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold">{renewalLabel}</h3>
+                    {renewal.date && (
+                      <p className="text-sm text-muted-foreground mt-1 mb-6">
+                        Renewal Date: {format(renewal.date, 'PPP')}
+                      </p>
+                    )}
+                    <Alert>
+                      <AlertDescription>
+                        <div className="flex justify-between items-center">
+                          <span>Start the renewal process for {renewalLabel}</span>
+                          <div className="flex items-center gap-2">
+                            <Button onClick={() => handleCreateTasks(renewal)}>
+                               Create tasks
+                            </Button>
+                          </div>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                );
+              })}
+            </div>
+        )}
+      </div>
     </div>
   );
 }

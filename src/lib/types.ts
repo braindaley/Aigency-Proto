@@ -11,6 +11,11 @@ export interface Subtask {
   completed: boolean;
 }
 
+export interface PredefinedButton {
+  label: string;
+  action: string;
+}
+
 export interface Task {
   id: string;
   taskName: string;
@@ -24,6 +29,7 @@ export interface Task {
   systemPrompt?: string;
   templateId?: string | number;
   sortOrder?: number;
+  predefinedButtons?: PredefinedButton[];
 }
 
 export interface CompanyTask extends Task {

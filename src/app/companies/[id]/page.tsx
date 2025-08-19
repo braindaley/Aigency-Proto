@@ -225,7 +225,21 @@ export default function CompanyDetailPage() {
         <div className="flex justify-between items-center">
             <div>
               <p className="mb-2 font-bold uppercase text-base leading-4 text-muted-foreground">ID {company.id}</p>
-              <h1 className="text-3xl font-bold">{company.name}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">{company.name}</h1>
+                {company.website && (
+                  <Button asChild variant="outline" size="sm">
+                    <a 
+                      href={company.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
             <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
               <Link href={`/settings/companies/${company.id}`}>
@@ -238,30 +252,14 @@ export default function CompanyDetailPage() {
         <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
       </div>
       
-      {(company.description || company.website) && (
+      {company.description && (
         <Card className="border-0 shadow-none">
           <CardContent className="p-0 pt-6">
             <div className="space-y-6">
-              {company.description && (
-                <div className="space-y-2">
-                  <h3 className="font-medium">Description</h3>
-                  <p className="text-muted-foreground">{company.description}</p>
-                </div>
-              )}
-              {company.website && (
-                <div className="space-y-2">
-                  <h3 className="font-medium">Website</h3>
-                  <a 
-                      href={company.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="flex items-center text-primary hover:underline"
-                  >
-                      {company.website}
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                  </a>
-                </div>
-              )}
+              <div className="space-y-2">
+                <h3 className="font-medium">Description</h3>
+                <p className="text-muted-foreground">{company.description}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -277,37 +275,52 @@ export default function CompanyDetailPage() {
             </Link>
           </Button>
         </div>
-        {activeRenewalType && (
-          <h3 className="text-lg font-semibold mt-4">{activeRenewalType}</h3>
-        )}
+        
         <div className="mt-4">
           {tasksLoading ? (
             <p>Loading tasks...</p>
           ) : attentionTasks.length > 0 ? (
-            <ul className="divide-y">
-              {attentionTasks.map((task) => (
-                <li key={task.id} className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+            <div className="space-y-8">
+              {Object.entries(
+                attentionTasks.reduce((groups: { [key: string]: CompanyTask[] }, task) => {
+                  const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
+                  if (!groups[renewalType]) {
+                    groups[renewalType] = [];
+                  }
+                  groups[renewalType].push(task);
+                  return groups;
+                }, {})
+              ).map(([renewalType, tasks]) => (
+                <div key={renewalType} className="border rounded-lg p-6">
+                  <h3 className="text-lg font-semibold">{renewalType}</h3>
+                  <h4 className="text-base font-medium mb-4 mt-2">Needs Attention</h4>
+                  <ul className="divide-y">
+                    {tasks.map((task) => (
+                      <li key={task.id} className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                             {task.tag === 'ai' ? (
-                            <Sparkles className="h-5 w-5 text-muted-foreground" />
+                              <Sparkles className="h-5 w-5 text-muted-foreground" />
                             ) : (
-                            <User className="h-5 w-5 text-muted-foreground" />
+                              <User className="h-5 w-5 text-muted-foreground" />
                             )}
-                        </div>
-                        <div>
+                          </div>
+                          <div>
                             <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                          </div>
+                          <Badge variant="secondary">{task.phase}</Badge>
                         </div>
-                        <Badge variant="secondary">{task.phase}</Badge>
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/companies/${companyId}/tasks/${task.id}`}>
-                        View
-                      </Link>
-                    </Button>
-                </li>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/companies/${companyId}/tasks/${task.id}`}>
+                            View
+                          </Link>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
             <div className="rounded-lg p-6 text-center text-muted-foreground">
               <p>No tasks currently need attention.</p>
