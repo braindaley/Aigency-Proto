@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Conversation, ConversationContent } from '@/components/ai-elements/conversation';
 import { Message } from '@/components/ai-elements/message';
 import { Response } from '@/components/ai-elements/response';
 import { Loader } from '@/components/ai-elements/loader';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Send, Bot, User } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
@@ -16,6 +19,7 @@ interface ChatMessage {
 const CHAT_STORAGE_KEY = 'chat-interface-messages';
 
 export function ChatInterface() {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +33,20 @@ export function ChatInterface() {
         setMessages(parsedMessages);
       } catch (error) {
         console.error('Failed to load chat history:', error);
+        // Fall back to initial greeting
+        setMessages([{
+          id: 'initial',
+          role: 'assistant',
+          content: 'How can I help you today?'
+        }]);
       }
+    } else {
+      // Set initial greeting if no saved messages
+      setMessages([{
+        id: 'initial',
+        role: 'assistant',
+        content: 'How can I help you today?'
+      }]);
     }
   }, []);
 
@@ -39,6 +56,15 @@ export function ChatInterface() {
       localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,61 +146,97 @@ export function ChatInterface() {
   };
 
   return (
-    <Card className="flex flex-col h-[600px] w-full max-w-3xl mx-auto">
-      <Conversation className="flex-1">
-        <ConversationContent>
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              Start a conversation by typing a message below
-            </div>
-          )}
-          
+    <div className="relative h-[calc(100vh-200px)] flex flex-col w-full max-w-[672px] mx-auto">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto pb-4">
+        <div className="space-y-4">
           {messages.map((message) => (
-            <Message
+            <div
               key={message.id}
-              from={message.role}
-              className="mb-4"
+              className={`flex gap-3 ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
             >
-              {message.role === 'assistant' ? (
-                <Response>{message.content}</Response>
-              ) : (
-                <div className="prose dark:prose-invert">{message.content}</div>
-              )}
-            </Message>
+              <div
+                className={`flex gap-3 max-w-[80%] ${
+                  message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                }`}
+              >
+                <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-muted">
+                  {message.role === 'user' ? (
+                    <User className="h-4 w-4" />
+                  ) : (
+                    <Bot className="h-4 w-4" />
+                  )}
+                </div>
+                <div
+                  className={`rounded-lg px-4 py-2 ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap text-sm">
+                    {message.content}
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
           
           {isLoading && (
-            <Message from="assistant" className="mb-4">
-              <Loader />
-            </Message>
+            <div className="flex gap-3 justify-start">
+              <div className="flex gap-3 max-w-[80%]">
+                <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-muted">
+                  <Bot className="h-4 w-4" />
+                </div>
+                <div className="rounded-lg px-4 py-2 bg-muted">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-pulse flex space-x-1">
+                      <div className="rounded-full bg-slate-400 h-2 w-2"></div>
+                      <div className="rounded-full bg-slate-400 h-2 w-2"></div>
+                      <div className="rounded-full bg-slate-400 h-2 w-2"></div>
+                    </div>
+                    <span className="text-sm text-muted-foreground">Thinking...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
-        </ConversationContent>
-      </Conversation>
-      
-      <div className="border-t p-4">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            disabled={isLoading}
-            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Sending...' : 'Send'}
-          </button>
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Floating Input Box */}
+      <div className="sticky bottom-0 bg-background border-t pt-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 relative">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                className="min-h-[44px] max-h-[200px] resize-none pr-12"
+                disabled={isLoading}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+              />
+              <Button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                size="icon"
+                className="absolute right-1 bottom-1 h-8 w-8"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </form>
       </div>
-    </Card>
+    </div>
   );
 }

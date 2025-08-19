@@ -25,7 +25,7 @@ export function Header() {
           Companies
         </Link>
         <Link href="/chat" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-          AI Assistant
+          Chat
         </Link>
       </nav>
       
@@ -58,7 +58,7 @@ export function Header() {
                   href="/chat"
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  AI Assistant
+                  Chat
                 </Link>
                 <Link
                   href="/settings"
