@@ -12,7 +12,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import '@/styles/artifact.css';
+// Removed CSS import - using Tailwind classes instead
 
 interface ChatMessage {
   id: string;
@@ -585,10 +585,75 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
               <div className="p-6">
                 {artifact ? (
                   viewMode === 'preview' ? (
-                    <div className="artifact-content">
+                    <div className="prose prose-base max-w-none dark:prose-invert 
+                                      prose-headings:text-foreground prose-headings:font-semibold
+                                      prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6
+                                      prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold
+                                      prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-h3:font-semibold
+                                      prose-p:text-muted-foreground prose-p:leading-7 prose-p:mb-4
+                                      prose-strong:text-foreground prose-strong:font-semibold
+                                      prose-ul:my-4 prose-ul:pl-6 prose-ul:text-muted-foreground
+                                      prose-ol:my-4 prose-ol:pl-6 prose-ol:text-muted-foreground
+                                      prose-li:mb-2 prose-li:text-muted-foreground prose-li:leading-relaxed
+                                      prose-ul:prose-li:marker:text-muted-foreground
+                                      prose-blockquote:border-l-4 prose-blockquote:border-l-muted prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
+                                      prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm
+                                      prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:p-4 prose-pre:rounded-lg
+                                      prose-em:text-muted-foreground prose-em:italic
+                                      [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
+                          h1: ({ children, ...props }) => (
+                            <h1 className="text-2xl font-bold text-foreground border-b border-border pb-3 mb-6 mt-0" {...props}>
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children, ...props }) => (
+                            <h2 className="text-xl font-semibold text-foreground mt-8 mb-4 first:mt-0" {...props}>
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children, ...props }) => (
+                            <h3 className="text-lg font-semibold text-foreground mt-6 mb-3" {...props}>
+                              {children}
+                            </h3>
+                          ),
+                          p: ({ children, ...props }) => (
+                            <p className="text-muted-foreground leading-7 mb-4" {...props}>
+                              {children}
+                            </p>
+                          ),
+                          strong: ({ children, ...props }) => (
+                            <strong className="font-semibold text-foreground" {...props}>
+                              {children}
+                            </strong>
+                          ),
+                          ul: ({ children, ...props }) => (
+                            <ul className="my-4 pl-6 space-y-2 text-muted-foreground" {...props}>
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children, ...props }) => (
+                            <ol className="my-4 pl-6 space-y-2 text-muted-foreground" {...props}>
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children, ...props }) => (
+                            <li className="text-muted-foreground leading-relaxed" {...props}>
+                              {children}
+                            </li>
+                          ),
+                          em: ({ children, ...props }) => (
+                            <em className="italic text-muted-foreground" {...props}>
+                              {children}
+                            </em>
+                          ),
+                          blockquote: ({ children, ...props }) => (
+                            <blockquote className="border-l-4 border-l-muted pl-4 my-4 italic text-muted-foreground" {...props}>
+                              {children}
+                            </blockquote>
+                          ),
                           code({ className, children, ...props }: any) {
                             const match = /language-(\w+)/.exec(className || '');
                             const inline = !match;
@@ -597,12 +662,13 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                                 style={oneDark as any}
                                 language={match[1]}
                                 PreTag="div"
+                                className="rounded-lg !mt-4 !mb-4"
                                 {...props}
                               >
                                 {String(children).replace(/\n$/, '')}
                               </SyntaxHighlighter>
                             ) : (
-                              <code className={className} {...props}>
+                              <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
                                 {children}
                               </code>
                             );

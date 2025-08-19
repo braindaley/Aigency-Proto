@@ -120,6 +120,7 @@ export default function CompanyDetailPage() {
   const [timelineStartDate, setTimelineStartDate] = useState(new Date());
   
   const [attentionTasks, setAttentionTasks] = useState<CompanyTask[]>([]);
+  const [upcomingTasks, setUpcomingTasks] = useState<CompanyTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   
   const companyId = typeof id === 'string' ? id : '';
@@ -170,8 +171,22 @@ export default function CompanyDetailPage() {
         })) as CompanyTask[];
 
         tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
         setAttentionTasks(tasksList);
+
+        // Fetch upcoming tasks
+        const upcomingQuery = query(
+          collection(db, 'companyTasks'),
+          where('companyId', '==', companyId),
+          where('status', '==', 'Upcoming')
+        );
+        const upcomingSnapshot = await getDocs(upcomingQuery);
+        const upcomingTasksList = upcomingSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as CompanyTask[];
+
+        upcomingTasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setUpcomingTasks(upcomingTasksList);
       } catch (error) {
          console.error("Error fetching tasks:", error);
       } finally {
@@ -212,6 +227,36 @@ export default function CompanyDetailPage() {
   const activeRenewalType = attentionTasks.length > 0
     ? policyTypes.find(p => p.value === attentionTasks[0].renewalType)?.label || attentionTasks[0].renewalType
     : null;
+
+  // Helper function to get upcoming tasks for a specific renewal type
+  const getUpcomingTasksForRenewalType = (renewalTypeLabel: string): CompanyTask[] => {
+    const renewalTypeValue = policyTypes.find(p => p.label === renewalTypeLabel)?.value || renewalTypeLabel.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    return upcomingTasks
+      .filter(task => {
+        const taskRenewalTypeLabel = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
+        return taskRenewalTypeLabel === renewalTypeLabel;
+      })
+      .slice(0, 5); // First 5 upcoming tasks
+  };
+
+  // Get all renewal types that have either attention or upcoming tasks
+  const getAllRenewalTypes = () => {
+    const renewalTypes = new Set<string>();
+    
+    // Add renewal types from attention tasks
+    attentionTasks.forEach(task => {
+      const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
+      renewalTypes.add(renewalType);
+    });
+    
+    // Add renewal types from upcoming tasks
+    upcomingTasks.forEach(task => {
+      const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
+      renewalTypes.add(renewalType);
+    });
+    
+    return Array.from(renewalTypes);
+  };
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -279,47 +324,81 @@ export default function CompanyDetailPage() {
         <div className="mt-4">
           {tasksLoading ? (
             <p>Loading tasks...</p>
-          ) : attentionTasks.length > 0 ? (
+          ) : attentionTasks.length > 0 || upcomingTasks.length > 0 ? (
             <div className="space-y-8">
-              {Object.entries(
-                attentionTasks.reduce((groups: { [key: string]: CompanyTask[] }, task) => {
-                  const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
-                  if (!groups[renewalType]) {
-                    groups[renewalType] = [];
-                  }
-                  groups[renewalType].push(task);
-                  return groups;
-                }, {})
-              ).map(([renewalType, tasks]) => (
-                <div key={renewalType} className="border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold">{renewalType}</h3>
-                  <h4 className="text-base font-medium mb-4 mt-2">Needs Attention</h4>
-                  <ul className="divide-y">
-                    {tasks.map((task) => (
-                      <li key={task.id} className="flex items-center justify-between p-4">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                            {task.tag === 'ai' ? (
-                              <Sparkles className="h-5 w-5 text-muted-foreground" />
-                            ) : (
-                              <User className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
-                          </div>
-                          <Badge variant="secondary">{task.phase}</Badge>
-                        </div>
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/companies/${companyId}/tasks/${task.id}`}>
-                            View
-                          </Link>
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+              {getAllRenewalTypes().map((renewalType) => {
+                const attentionTasksForType = attentionTasks.filter(task => {
+                  const taskRenewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
+                  return taskRenewalType === renewalType;
+                });
+                const upcomingTasksForType = getUpcomingTasksForRenewalType(renewalType);
+                
+                return (
+                  <div key={renewalType} className="border rounded-lg p-6">
+                    <h3 className="text-lg font-semibold">{renewalType}</h3>
+                    
+                    {attentionTasksForType.length > 0 && (
+                      <>
+                        <h4 className="text-base font-medium mb-4 mt-2">Needs Attention</h4>
+                        <ul className="divide-y mb-6">
+                          {attentionTasksForType.map((task) => (
+                            <li key={task.id} className="flex items-center justify-between p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                  {task.tag === 'ai' ? (
+                                    <Sparkles className="h-5 w-5 text-muted-foreground" />
+                                  ) : (
+                                    <User className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                                </div>
+                                <Badge variant="secondary">{task.phase}</Badge>
+                              </div>
+                              <Button asChild variant="outline" size="sm">
+                                <Link href={`/companies/${companyId}/tasks/${task.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    
+                    {upcomingTasksForType.length > 0 && (
+                      <>
+                        <h4 className="text-base font-medium mb-4 mt-2 text-muted-foreground">Upcoming</h4>
+                        <ul className="divide-y">
+                          {upcomingTasksForType.map((task) => (
+                            <li key={task.id} className="flex items-center justify-between p-4 opacity-75">
+                              <div className="flex items-center gap-4">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                                  {task.tag === 'ai' ? (
+                                    <Sparkles className="h-5 w-5 text-muted-foreground" />
+                                  ) : (
+                                    <User className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-muted-foreground">{task.taskName || 'Unnamed Task'}</p>
+                                </div>
+                                <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30">{task.phase}</Badge>
+                              </div>
+                              <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                                <Link href={`/companies/${companyId}/tasks/${task.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-lg p-6 text-center text-muted-foreground">

@@ -11,8 +11,10 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
 
-// Log the configuration to the browser console to verify it's loaded
-console.log("Firebase Config:", firebaseConfig);
+// Only log in development and in the browser
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log("Firebase Config:", firebaseConfig);
+}
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

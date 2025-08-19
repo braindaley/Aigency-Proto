@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,9 +19,19 @@ export default function NewTaskPage() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [tag, setTag] = useState<TaskTag | ''>('');
   const [phase, setPhase] = useState<TaskPhase | ''>('');
+  const [policyType, setPolicyType] = useState('workers-comp');
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const policyType = searchParams.get('policyType') || 'workers-comp';
+
+  useEffect(() => {
+    // Get policy type from URL params after component mounts
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('policyType');
+      if (type) {
+        setPolicyType(type);
+      }
+    }
+  }, []);
 
   const handleAddTask = async () => {
     if (taskName.trim() && tag && phase) {
