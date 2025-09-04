@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { TaskChat } from '@/components/TaskChat';
 import { TaskAIArtifacts } from '@/components/TaskAIArtifacts';
+import { AITaskCompletion } from '@/components/AITaskCompletion';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -184,6 +185,7 @@ export default function TaskDetailPage() {
 
       </div>
 
+      <AITaskCompletion task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
       <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
     </div>
   );
