@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Settings, Sparkles, User } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Settings, Sparkles, User, FileText, Database } from 'lucide-react';
 import Link from 'next/link';
 import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
@@ -285,12 +285,26 @@ export default function CompanyDetailPage() {
                 )}
               </div>
             </div>
-            <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
-              <Link href={`/settings/companies/${company.id}`}>
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Company Settings</span>
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
+                <Link href={`/companies/${company.id}/artifacts`}>
+                  <Database className="h-5 w-5" />
+                  <span className="sr-only">Artifacts</span>
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
+                <Link href={`/companies/${company.id}/documents`}>
+                  <FileText className="h-5 w-5" />
+                  <span className="sr-only">Documents</span>
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
+                <Link href={`/companies/${company.id}/settings`}>
+                  <Settings className="h-5 w-5" />
+                  <span className="sr-only">Company Settings</span>
+                </Link>
+              </Button>
+            </div>
         </div>
         
         {company.description && (

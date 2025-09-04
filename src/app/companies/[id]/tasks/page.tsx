@@ -106,7 +106,16 @@ export default function CompanyTasksPage() {
         setGeneratedRenewals(generated);
 
         const groupedTasks = tasksList.reduce((acc, task) => {
-          const status: TaskStatus = task.status && STATUS_ORDER.includes(task.status) ? task.status : 'Upcoming';
+          // Map 'completed' (lowercase) to 'Complete' to match our TaskStatus type
+          let status: TaskStatus;
+          if (task.status === 'completed') {
+            status = 'Complete';
+          } else if (task.status && STATUS_ORDER.includes(task.status)) {
+            status = task.status;
+          } else {
+            status = 'Upcoming';
+          }
+          
           if (!acc[status]) {
             acc[status] = [];
           }
@@ -120,6 +129,9 @@ export default function CompanyTasksPage() {
         }, {} as Record<TaskStatus, CompanyTask[]>);
 
         setTasksByStatus(finalGroupedTasks);
+        
+        console.log('DEBUG: Total tasks found:', tasksList.length);
+        console.log('DEBUG: Tasks by status:', finalGroupedTasks);
 
       } catch (err) {
         console.error("Error fetching tasks: ", err);
@@ -136,26 +148,42 @@ export default function CompanyTasksPage() {
 
   useEffect(() => {
     if (company?.renewals) {
+      console.log('DEBUG: Company renewals data:', company.renewals);
       const today = new Date();
       const upcoming = company.renewals.filter(r => {
-        if (!r.date) return false;
+        console.log('DEBUG: Processing renewal:', r);
+        if (!r.date) {
+          console.log('DEBUG: No date for renewal:', r.type);
+          return false;
+        }
         const daysUntilRenewal = differenceInCalendarDays(r.date, today);
-        return daysUntilRenewal >= 0 && daysUntilRenewal <= 120;
+        console.log(`DEBUG: ${r.type} renewal - Days until: ${daysUntilRenewal}, Date: ${r.date}`);
+        const isUpcoming = daysUntilRenewal >= 0 && daysUntilRenewal <= 120;
+        console.log(`DEBUG: ${r.type} is upcoming: ${isUpcoming}`);
+        return isUpcoming;
       });
+      console.log('DEBUG: Upcoming renewals:', upcoming);
       setUpcomingRenewals(upcoming);
     }
   }, [company]);
 
   const handleCreateTasks = async (renewal: Renewal) => {
-    if (!companyId || !renewal.date) return;
+    console.log('DEBUG: handleCreateTasks called with:', renewal);
+    if (!companyId || !renewal.date) {
+      console.log('DEBUG: Missing companyId or renewal.date');
+      return;
+    }
 
+    console.log(`DEBUG: Querying templates for policyType: ${renewal.type}`);
     const templatesQuery = query(collection(db, 'tasks'), where('policyType', '==', renewal.type));
     const templatesSnapshot = await getDocs(templatesQuery);
 
     if (templatesSnapshot.empty) {
-        console.log(`No task templates found for policy type: ${renewal.type}`);
+        console.log(`DEBUG: No task templates found for policy type: ${renewal.type}`);
+        alert(`No task templates found for ${renewal.type}. Please create templates first in Settings > Task Settings.`);
         return;
     }
+    console.log(`DEBUG: Found ${templatesSnapshot.size} templates for ${renewal.type}`);
 
     const batch = writeBatch(db);
     const companyTasksCollection = collection(db, 'companyTasks');
@@ -286,15 +314,22 @@ export default function CompanyTasksPage() {
             </div>
         ) : error ? (
             <p className="text-destructive p-6">{error}</p>
-        ) : allTasksCount === 0 ? (
-            <p className="text-muted-foreground text-center p-6">No tasks have been created for this company yet.</p>
         ) : (
             <div className="space-y-8">
+              {/* Show message if no tasks exist */}
+              {allTasksCount === 0 && (
+                <p className="text-muted-foreground text-center p-6">No tasks have been created for this company yet.</p>
+              )}
+              
               {/* Show renewal sections that have tasks */}
-              {Object.entries(
+              {allTasksCount > 0 && Object.entries(
                 Object.values(tasksByStatus).flat().reduce((groups: { [key: string]: { [key: string]: CompanyTask[] } }, task) => {
                   const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
-                  const status = task.status || 'Upcoming';
+                  // Map 'completed' status to 'Complete' for consistency
+                  let status = task.status || 'Upcoming';
+                  if (status === 'completed') {
+                    status = 'Complete';
+                  }
                   
                   if (!groups[renewalType]) {
                     groups[renewalType] = {};
@@ -360,22 +395,43 @@ export default function CompanyTasksPage() {
                         
                         return (
                           <div key={status}>
-                            <h4 className="text-base font-medium mb-4">{status}</h4>
+                            <h4 className={`text-base font-medium mb-4 ${
+                              status === 'Complete' ? 'text-green-600 dark:text-green-500' : ''
+                            }`}>
+                              {status}
+                              {status === 'Complete' && (
+                                <span className="ml-2 inline-flex items-center text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full">
+                                  ✓ {tasks.length} completed
+                                </span>
+                              )}
+                            </h4>
                             <ul className="divide-y">
                               {tasks.map((task) => (
-                                <li key={task.id} className="flex items-center justify-between p-4">
+                                <li key={task.id} className={`flex items-center justify-between p-4 ${
+                                  status === 'Complete' ? 'bg-green-50 dark:bg-green-950/20 opacity-75' : ''
+                                }`}>
                                   <div className="flex items-center gap-4">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                      {task.tag === 'ai' ? (
+                                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                                      status === 'Complete' ? 'bg-green-100 dark:bg-green-900' : 'bg-muted'
+                                    }`}>
+                                      {status === 'Complete' ? (
+                                        <span className="text-green-600 dark:text-green-400 font-bold text-sm">✓</span>
+                                      ) : task.tag === 'ai' ? (
                                         <Sparkles className="h-5 w-5 text-muted-foreground" />
                                       ) : (
                                         <User className="h-5 w-5 text-muted-foreground" />
                                       )}
                                     </div>
                                     <div>
-                                      <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                                      <p className={`font-medium ${
+                                        status === 'Complete' ? 'line-through text-muted-foreground' : ''
+                                      }`}>
+                                        {task.taskName || 'Unnamed Task'}
+                                      </p>
                                     </div>
-                                    <Badge variant="secondary">{task.phase}</Badge>
+                                    <Badge variant={status === 'Complete' ? 'outline' : 'secondary'}>
+                                      {task.phase}
+                                    </Badge>
                                   </div>
                                   <Button asChild variant="outline" size="sm">
                                     <Link href={`/companies/${companyId}/tasks/${task.id}`}>
@@ -396,9 +452,17 @@ export default function CompanyTasksPage() {
               {/* Show renewal sections that don't have tasks yet but have upcoming renewals */}
               {upcomingRenewals.filter(renewal => {
                 const renewalLabel = policyTypes.find(p => p.value === renewal.type)?.label || renewal.type;
-                const hasExistingTasks = Object.values(tasksByStatus).flat().some(task => 
-                  (policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType) === renewalLabel
-                );
+                const allTasks = Object.values(tasksByStatus).flat();
+                console.log('DEBUG: Checking if tasks exist for', renewal.type);
+                console.log('DEBUG: All tasks:', allTasks);
+                console.log('DEBUG: Task renewal types:', allTasks.map(t => t.renewalType));
+                const hasExistingTasks = allTasks.some(task => {
+                  const taskRenewalType = task.renewalType;
+                  const matches = taskRenewalType === renewal.type;
+                  console.log(`DEBUG: Comparing task.renewalType "${taskRenewalType}" with renewal.type "${renewal.type}": ${matches}`);
+                  return matches;
+                });
+                console.log(`DEBUG: ${renewal.type} has existing tasks: ${hasExistingTasks}`);
                 return !hasExistingTasks;
               }).map(renewal => {
                 const renewalLabel = policyTypes.find(p => p.value === renewal.type)?.label || renewal.type;

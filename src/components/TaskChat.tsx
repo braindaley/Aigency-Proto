@@ -5,27 +5,43 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Paperclip, Send, Sparkles, User } from 'lucide-react';
+import { Paperclip, Send, Sparkles, User, CheckCircle2 } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
+import { TaskValidationResults } from './TaskValidationResults';
+import { processDocument, ProcessedDocument } from '@/lib/documentProcessor';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { db, storage } from '@/lib/firebase';
+import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { parseFileContent, formatFileDataForChat } from '@/lib/file-parser';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  documents?: ProcessedDocument[];
 }
 
 interface TaskChatProps {
   task: CompanyTask;
   companyId: string;
+  onTaskUpdate?: () => void;
 }
 
-export function TaskChat({ task, companyId }: TaskChatProps) {
+export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
+  const [taskCompleted, setTaskCompleted] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const { toast } = useToast();
 
   // Generate storage key based on task and company IDs
   const storageKey = `task-chat-${companyId}-${task.id}`;
@@ -95,16 +111,140 @@ How can I assist you with this task today?`,
     if (!input.trim() && attachedFiles.length === 0) return;
     if (isLoading) return;
 
+    console.log('Form submitted with files:', attachedFiles.length);
+
     let messageContent = input;
+    let filesUploaded = false;
+    let processedDocuments: ProcessedDocument[] = [];
+
+    // Check if this task requires document submission
+    const requiresDocuments = task.description?.toLowerCase().includes('upload') || 
+                            task.description?.toLowerCase().includes('provide') ||
+                            task.description?.toLowerCase().includes('submit') ||
+                            task.taskName?.toLowerCase().includes('documentation');
+    
+    console.log('Task requires documents:', requiresDocuments, {
+      taskName: task.taskName,
+      description: task.description
+    });
+
+    // Upload files to Firebase Storage and Documents
     if (attachedFiles.length > 0) {
-      const fileList = attachedFiles.map(f => f.name).join(', ');
-      messageContent += `\n\nAttached files: ${fileList}`;
+      console.log('Starting file upload process:', attachedFiles.length, 'files');
+      setUploadingFiles(true);
+      let fileContents = '\n\n=== FILE CONTENTS ===\n';
+      
+      try {
+        for (const file of attachedFiles) {
+          try {
+            // First, upload to Firebase Storage (this should succeed even if parsing fails)
+            const timestamp = Date.now();
+            const storageRef = ref(storage, `companies/${companyId}/documents/${timestamp}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            // Save document reference in Firestore
+            await addDoc(collection(db, `companies/${companyId}/documents`), {
+              name: file.name,
+              url: downloadURL,
+              size: file.size,
+              type: file.type,
+              uploadedAt: serverTimestamp(),
+              category: 'task-upload',
+              taskId: task.id,
+              taskName: task.taskName
+            });
+
+            console.log(`File uploaded successfully: ${file.name}`, { downloadURL, taskId: task.id });
+
+            // Then try to parse file content for AI
+            try {
+              const parsedFile = await parseFileContent(file);
+              const formattedContent = formatFileDataForChat(parsedFile);
+              fileContents += `\n📄 ${file.name}:\n${formattedContent}\n`;
+
+              // If Excel/CSV data, also save parsed data as an artifact
+              if ((parsedFile.type === 'excel' || parsedFile.type === 'csv') && parsedFile.data) {
+                // Convert nested arrays to strings for Firestore compatibility
+                const firestoreCompatibleData = Array.isArray(parsedFile.data) 
+                  ? parsedFile.data.map(row => 
+                      Array.isArray(row) ? row.join('|') : String(row)
+                    )
+                  : parsedFile.data;
+
+                await addDoc(collection(db, `companies/${companyId}/artifacts`), {
+                  name: `${task.taskName} - ${file.name} Data`,
+                  type: 'form_data',
+                  data: firestoreCompatibleData,
+                  originalFormat: 'excel_array',
+                  rowCount: Array.isArray(parsedFile.data) ? parsedFile.data.length : 0,
+                  description: `Parsed data from ${file.name} uploaded for task: ${task.taskName}`,
+                  taskId: task.id,
+                  taskName: task.taskName,
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                  tags: ['task-upload', parsedFile.type]
+                });
+              }
+            } catch (parseError) {
+              console.error(`Error parsing file ${file.name}:`, parseError);
+              fileContents += `\n📄 ${file.name}: [File uploaded but content parsing failed]\n`;
+            }
+          } catch (uploadError) {
+            console.error(`Error uploading file ${file.name}:`, uploadError);
+            toast({
+              title: 'Upload Error',
+              description: `Failed to upload ${file.name}`,
+              variant: 'destructive'
+            });
+          }
+        }
+
+        filesUploaded = true;
+        const fileList = attachedFiles.map(f => f.name).join(', ');
+        messageContent += `\n\nFiles uploaded successfully: ${fileList}`;
+        messageContent += fileContents;
+
+        toast({
+          title: 'Files Uploaded',
+          description: `${attachedFiles.length} file(s) saved to documents`,
+        });
+
+        // If task requires documents and files were uploaded, mark as complete
+        if (requiresDocuments && filesUploaded) {
+          await updateDoc(doc(db, `companies/${companyId}/tasks`, task.id), {
+            status: 'completed',
+            completedAt: serverTimestamp(),
+            completionNote: `Documents uploaded: ${fileList}`
+          });
+
+          toast({
+            title: 'Task Completed',
+            description: 'Task marked as complete with uploaded documents',
+          });
+
+          // Notify parent component
+          if (onTaskUpdate) {
+            onTaskUpdate();
+          }
+        }
+      } catch (error) {
+        console.error('Error in file upload process:', error);
+        toast({
+          title: 'Upload Process Error',
+          description: 'Some files may not have uploaded properly. Check console for details.',
+          variant: 'destructive'
+        });
+      } finally {
+        setUploadingFiles(false);
+      }
     }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: messageContent,
+      documents: processedDocuments.length > 0 ? processedDocuments : undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -195,6 +335,90 @@ How can I assist you with this task today?`,
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      
+      // Trigger task status refresh after AI response completes
+      if (onTaskUpdate) {
+        // Small delay to ensure any backend processing completes
+        setTimeout(() => {
+          onTaskUpdate();
+        }, 1000);
+      }
+    }
+  };
+
+  const handleValidateCompletion = async () => {
+    if (messages.length === 0) {
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '⚠️ No conversation to validate yet. Please have a conversation or upload some documents first, then try validation again.',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+
+    let templateId = task.templateId;
+    
+    // Debug logging
+    console.log('Task templateId:', task.templateId);
+    console.log('Task name:', task.taskName);
+    console.log('Full task object:', task);
+    
+    // Fallback: try to map task name to template ID for the first workers comp task as a test
+    if ((!templateId || templateId === '3' || templateId === 3) && task.taskName === 'Request employee count & job descriptions') {
+      templateId = 'Q41BkK5qUnMaZ0waRRla'; // Hard-coded template ID for testing
+      console.log('Using fallback templateId:', templateId);
+    }
+    
+    // Additional fallback for any task with ID 3
+    if (templateId === '3' || templateId === 3) {
+      templateId = 'Q41BkK5qUnMaZ0waRRla';
+      console.log('Converted templateId 3 to:', templateId);
+    }
+    
+    if (!templateId) {
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `⚠️ This task "${task.taskName}" does not have a template associated with it for validation. Please contact your administrator to add a templateId field to link it to its template.`,
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const response = await fetch('/api/validate-task-completion-v3', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyTaskId: task.id,
+          templateTaskId: templateId,
+          conversation: messages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Validation response error:', response.status, errorText);
+        throw new Error(`Validation failed with status ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Validation result:', result);
+      setValidationResult(result);
+    } catch (error) {
+      console.error('Validation error:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '❌ Failed to validate task completion. This could be due to a temporary issue with the validation service. Please try again in a moment.',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -223,14 +447,32 @@ How can I assist you with this task today?`,
                   )}
                 </div>
                 <div
-                  className={`rounded-lg px-4 py-2 ${
+                  className={`rounded-lg px-4 py-3 ${
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm">
-                    {message.content}
+                  <div className="text-sm leading-relaxed">
+                    {/* Debug: Show raw content */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <details className="mb-2 text-xs bg-gray-100 p-2 rounded">
+                        <summary>Debug: Raw Content</summary>
+                        <pre className="whitespace-pre-wrap mt-2">{message.content}</pre>
+                      </details>
+                    )}
+                    
+                    <div className="whitespace-pre-line">
+                      {message.content
+                        // Simple approach: just clean up the text and add proper line breaks
+                        .replace(/###\s*([^\n]*)/g, '\n\n$1\n' + '='.repeat(20) + '\n')
+                        .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove all bold formatting
+                        .replace(/(\d+)\.\s*([A-Za-z][^0-9]*?)(\d+\.|\n|$)/g, '\n\n$1. $2\n')
+                        .replace(/([a-z])\s*-\s*([A-Z])/g, '$1\n  - $2')
+                        .replace(/\n{3,}/g, '\n\n')
+                        .trim()
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -259,9 +501,21 @@ How can I assist you with this task today?`,
         </div>
       </div>
 
-      {/* Floating Input Box */}
+      {/* Chat Input */}
       <div className="sticky bottom-0 bg-background border-t pt-4">
-        <form onSubmit={handleFormSubmit} className="space-y-3">
+        <div>
+          <form onSubmit={handleFormSubmit} className="space-y-3">
+          {uploadingFiles && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-blue-600 dark:text-blue-400">
+                  Uploading and analyzing files...
+                </span>
+              </div>
+            </div>
+          )}
+          
           {attachedFiles.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Attached files:</p>
@@ -293,7 +547,7 @@ How can I assist you with this task today?`,
               multiple
               onChange={handleFileUpload}
               className="hidden"
-              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.xls,.xlsx"
             />
             <Button
               type="button"
@@ -328,7 +582,17 @@ How can I assist you with this task today?`,
             </div>
           </div>
         </form>
+        </div>
       </div>
+
+      {/* Validation Results Modal */}
+      {validationResult && (
+        <TaskValidationResults
+          validation={validationResult.validation}
+          taskName={validationResult.taskInfo?.taskName || task.taskName}
+          onClose={() => setValidationResult(null)}
+        />
+      )}
     </div>
   );
 }

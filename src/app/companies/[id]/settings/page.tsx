@@ -254,7 +254,7 @@ export default function CompanySettingsPage() {
           The company you are looking for does not exist.
         </p>
         <Button asChild>
-          <Link href="/settings/companies">
+          <Link href="/companies">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Companies
           </Link>
@@ -270,9 +270,9 @@ export default function CompanySettingsPage() {
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <div className="mb-6">
         <Button asChild variant="ghost" size="sm">
-          <Link href="/settings/companies">
+          <Link href={`/companies/${companyId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Companies
+            Back to Company
           </Link>
         </Button>
       </div>

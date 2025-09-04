@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, FileText, Download, User, Send, Paperclip } from 'lucide-react';
+import { Sparkles, FileText, Download, User, Send, Paperclip, CheckCircle } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
+import { db, storage } from '@/lib/firebase';
+import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { parseFileContent, formatFileDataForChat } from '@/lib/file-parser';
 
 interface ChatMessage {
   id: string;
@@ -17,15 +23,19 @@ interface ChatMessage {
 interface TaskAIExecutionProps {
   task: CompanyTask;
   companyId: string;
+  onTaskComplete?: () => void;
 }
 
-export function TaskAIExecution({ task, companyId }: TaskAIExecutionProps) {
+export function TaskAIExecution({ task, companyId, onTaskComplete }: TaskAIExecutionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
 
   // Generate storage key based on task and company IDs
   const storageKey = `task-chat-${companyId}-${task.id}`;
@@ -106,10 +116,123 @@ How can I assist you with this task today?`,
     if (!input.trim() && attachedFiles.length === 0) return;
     if (isLoading) return;
 
+    console.log('Form submitted with files:', attachedFiles.length);
+
     let messageContent = input;
+    let filesUploaded = false;
+
+    // Check if this task requires document submission
+    const requiresDocuments = task.description?.toLowerCase().includes('upload') || 
+                            task.description?.toLowerCase().includes('provide') ||
+                            task.description?.toLowerCase().includes('submit') ||
+                            task.taskName?.toLowerCase().includes('documentation');
+    
+    console.log('Task requires documents:', requiresDocuments, {
+      taskName: task.taskName,
+      description: task.description
+    });
+
+    // Upload files to Firebase Storage and Documents
     if (attachedFiles.length > 0) {
-      const fileList = attachedFiles.map(f => f.name).join(', ');
-      messageContent += `\n\nAttached files: ${fileList}`;
+      console.log('Starting file upload process:', attachedFiles.length, 'files');
+      setUploadingFiles(true);
+      let fileContents = '\n\n=== FILE CONTENTS ===\n';
+      
+      try {
+        for (const file of attachedFiles) {
+          try {
+            // First, upload to Firebase Storage (this should succeed even if parsing fails)
+            const timestamp = Date.now();
+            const storageRef = ref(storage, `companies/${companyId}/documents/${timestamp}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            // Save document reference in Firestore
+            await addDoc(collection(db, `companies/${companyId}/documents`), {
+              name: file.name,
+              url: downloadURL,
+              size: file.size,
+              type: file.type,
+              uploadedAt: serverTimestamp(),
+              category: 'task-upload',
+              taskId: task.id,
+              taskName: task.taskName
+            });
+
+            console.log(`File uploaded successfully: ${file.name}`, { downloadURL, taskId: task.id });
+
+            // Then try to parse file content for AI
+            try {
+              const parsedFile = await parseFileContent(file);
+              const formattedContent = formatFileDataForChat(parsedFile);
+              fileContents += `\n📄 ${file.name}:\n${formattedContent}\n`;
+
+              // If Excel/CSV data, also save parsed data as an artifact
+              if ((parsedFile.type === 'excel' || parsedFile.type === 'csv') && parsedFile.data) {
+                await addDoc(collection(db, `companies/${companyId}/artifacts`), {
+                  name: `${task.taskName} - ${file.name} Data`,
+                  type: 'form_data',
+                  data: parsedFile.data,
+                  description: `Parsed data from ${file.name} uploaded for task: ${task.taskName}`,
+                  taskId: task.id,
+                  taskName: task.taskName,
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                  tags: ['task-upload', parsedFile.type]
+                });
+              }
+            } catch (parseError) {
+              console.error(`Error parsing file ${file.name}:`, parseError);
+              fileContents += `\n📄 ${file.name}: [File uploaded but content parsing failed]\n`;
+            }
+          } catch (uploadError) {
+            console.error(`Error uploading file ${file.name}:`, uploadError);
+            toast({
+              title: 'Upload Error',
+              description: `Failed to upload ${file.name}`,
+              variant: 'destructive'
+            });
+          }
+        }
+
+        filesUploaded = true;
+        const fileList = attachedFiles.map(f => f.name).join(', ');
+        messageContent += `\n\nFiles uploaded successfully: ${fileList}`;
+        messageContent += fileContents;
+
+        toast({
+          title: 'Files Uploaded',
+          description: `${attachedFiles.length} file(s) saved to documents`,
+        });
+
+        // If task requires documents and files were uploaded, mark as complete
+        if (requiresDocuments && filesUploaded) {
+          await updateDoc(doc(db, `companies/${companyId}/tasks`, task.id), {
+            status: 'completed',
+            completedAt: serverTimestamp(),
+            completionNote: `Documents uploaded: ${fileList}`
+          });
+
+          toast({
+            title: 'Task Completed',
+            description: 'Task marked as complete with uploaded documents',
+          });
+
+          // Notify parent component
+          if (onTaskComplete) {
+            onTaskComplete();
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading files:', error);
+        toast({
+          title: 'Upload Failed',
+          description: 'Failed to upload files. Please try again.',
+          variant: 'destructive'
+        });
+      } finally {
+        setUploadingFiles(false);
+      }
     }
 
     const userMessage: ChatMessage = {
@@ -285,6 +408,17 @@ How can I assist you with this task today?`,
         {/* Floating Input Box */}
         <div className="sticky bottom-0 bg-background border-t pt-4">
           <form onSubmit={handleFormSubmit} className="space-y-3">
+            {uploadingFiles && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm text-blue-600 dark:text-blue-400">
+                    Uploading and analyzing files...
+                  </span>
+                </div>
+              </div>
+            )}
+            
             {attachedFiles.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Attached files:</p>

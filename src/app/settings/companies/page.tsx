@@ -83,7 +83,7 @@ export default function CompaniesSettingsPage() {
                   Configure settings for this company
                 </p>
                 <Button asChild size="sm">
-                  <Link href={`/settings/companies/${company.id}`}>
+                  <Link href={`/companies/${company.id}/settings`}>
                     Settings
                   </Link>
                 </Button>

@@ -48,6 +48,7 @@ export default function TaskPage() {
   
   const [taskName, setTaskName] = useState('');
   const [description, setDescription] = useState('');
+  const [testCriteria, setTestCriteria] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
@@ -79,6 +80,7 @@ export default function TaskPage() {
         setTask(taskData);
         setTaskName(taskData.taskName);
         setDescription(taskData.description);
+        setTestCriteria(taskData.testCriteria || '');
         setSystemPrompt(taskData.systemPrompt || '');
         setSubtasks(taskData.subtasks || []);
         setTag(taskData.tag || 'manual');
@@ -88,6 +90,7 @@ export default function TaskPage() {
         const currentState = {
           taskName: taskData.taskName,
           description: taskData.description,
+          testCriteria: taskData.testCriteria || '',
           systemPrompt: taskData.systemPrompt || '',
           subtasks: taskData.subtasks || [],
           tag: taskData.tag || 'manual',
@@ -129,6 +132,7 @@ export default function TaskPage() {
     const currentState = {
       taskName,
       description,
+      testCriteria,
       systemPrompt,
       subtasks,
       tag,
@@ -136,7 +140,7 @@ export default function TaskPage() {
       dependencies,
     };
     return JSON.stringify(initialState) !== JSON.stringify(currentState);
-  }, [task, taskName, description, systemPrompt, subtasks, tag, phase, dependencies, initialState]);
+  }, [task, taskName, description, testCriteria, systemPrompt, subtasks, tag, phase, dependencies, initialState]);
   
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
@@ -156,6 +160,7 @@ export default function TaskPage() {
       const updatedData = {
         taskName,
         description,
+        testCriteria,
         systemPrompt,
         subtasks,
         tag,
@@ -395,6 +400,15 @@ export default function TaskPage() {
               />
             </div>
           )}
+          <div className="space-y-2">
+            <Label htmlFor="testCriteria">Test criteria</Label>
+            <Textarea
+              id="testCriteria"
+              value={testCriteria}
+              onChange={(e) => setTestCriteria(e.target.value)}
+              placeholder="Enter test criteria for the task."
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

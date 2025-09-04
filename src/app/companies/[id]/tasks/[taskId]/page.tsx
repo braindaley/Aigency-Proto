@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -20,6 +20,30 @@ export default function TaskDetailPage() {
   const taskId = Array.isArray(params.taskId) ? params.taskId[0] : params.taskId;
   const [task, setTask] = useState<CompanyTask | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Function to refresh task data
+  const refreshTask = useCallback(async () => {
+    if (companyId && taskId) {
+      try {
+        const taskDocRef = doc(db, 'companyTasks', taskId);
+        const taskDoc = await getDoc(taskDocRef);
+
+        if (taskDoc.exists()) {
+          const newTaskData = { id: taskDoc.id, ...taskDoc.data() } as CompanyTask;
+          
+          setTask(prevTask => {
+            // Check if status changed to completed
+            if (prevTask && prevTask.status !== 'completed' && newTaskData.status === 'completed') {
+              console.log('Task automatically completed!');
+            }
+            return newTaskData;
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing task:', error);
+      }
+    }
+  }, [companyId, taskId]);
 
   useEffect(() => {
     if (companyId && taskId) {
@@ -44,6 +68,29 @@ export default function TaskDetailPage() {
       fetchTask();
     }
   }, [companyId, taskId]);
+
+  // Add page focus listener to refresh task data when user returns to page
+  useEffect(() => {
+    const handlePageFocus = () => {
+      // Refresh task data when page gains focus (user returns to tab/page)
+      refreshTask();
+    };
+
+    const handlePageVisibilityChange = () => {
+      // Also refresh when page becomes visible again
+      if (!document.hidden) {
+        refreshTask();
+      }
+    };
+
+    window.addEventListener('focus', handlePageFocus);
+    document.addEventListener('visibilitychange', handlePageVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handlePageFocus);
+      document.removeEventListener('visibilitychange', handlePageVisibilityChange);
+    };
+  }, [refreshTask]);
 
   if (loading) {
     return (
@@ -137,7 +184,7 @@ export default function TaskDetailPage() {
 
       </div>
 
-      <TaskChat task={task} companyId={companyId || ''} />
+      <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
     </div>
   );
 }
