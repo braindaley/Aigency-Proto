@@ -1,11 +1,10 @@
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 
-// Helper function to validate task completion
-async function validateTaskCompletion(messages: any[], testCriteria: string, latestResponse: string) {
-  console.log('=== VALIDATION DEBUG ===');
+// Helper function to validate task completion (copied from chat/task route)
+async function validateTaskCompletion(messages: any[], testCriteria: string, latestResponse: string = '') {
+  console.log('=== MANUAL VALIDATION TRIGGER ===');
   console.log('Latest response:', latestResponse);
   
   // Collect all documents from the conversation
@@ -148,157 +147,99 @@ async function updateTaskStatus(taskId: string, status: string) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Check if API key is available
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key is not configured');
-    }
-    
-    const { messages, taskId, companyId } = await req.json();
+    const { taskId } = await request.json();
 
-    if (!taskId || !companyId) {
-      return new Response(
-        JSON.stringify({ error: 'Missing taskId or companyId' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+    if (!taskId) {
+      return NextResponse.json(
+        { error: 'Missing taskId' },
+        { status: 400 }
       );
     }
+
+    console.log(`Manual validation trigger for task ${taskId}`);
 
     // Fetch task details
     const taskDocRef = doc(db, 'companyTasks', taskId);
     const taskDoc = await getDoc(taskDocRef);
 
     if (!taskDoc.exists()) {
-      return new Response(
-        JSON.stringify({ error: 'Task not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      return NextResponse.json(
+        { error: 'Task not found' },
+        { status: 404 }
       );
     }
 
     const task = { id: taskDoc.id, ...taskDoc.data() } as any;
 
-    // Fetch company details
-    const companyDocRef = doc(db, 'companies', companyId);
-    const companyDoc = await getDoc(companyDocRef);
-
-    if (!companyDoc.exists()) {
-      return new Response(
-        JSON.stringify({ error: 'Company not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+    if (!task.testCriteria) {
+      return NextResponse.json(
+        { error: 'Task has no test criteria' },
+        { status: 400 }
       );
     }
 
-    const company = { id: companyDoc.id, ...companyDoc.data() } as any;
+    // Get chat messages for this task
+    const chatRef = collection(db, 'taskChats', taskId, 'messages');
+    const chatQuery = query(chatRef, orderBy('timestamp', 'asc'));
+    const chatSnapshot = await getDocs(chatQuery);
+    
+    const messages = chatSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    console.log(`Found ${messages.length} messages in taskChats/${taskId}/messages`);
+    messages.forEach((msg, idx) => {
+      console.log(`Message ${idx}:`, {
+        role: msg.role,
+        contentLength: msg.content?.length,
+        hasDocuments: !!msg.documents,
+        documentsCount: msg.documents?.length || 0,
+        timestamp: msg.timestamp
+      });
+    });
+    
+    // Get the latest assistant response
+    const latestAssistantMessage = messages
+      .slice()
+      .reverse()
+      .find(msg => msg.role === 'assistant');
+    const latestResponse = latestAssistantMessage?.content || '';
+    
+    const validationResult = await validateTaskCompletion(
+      messages,
+      task.testCriteria,
+      latestResponse
+    );
 
-    // Build task-specific context
-    const taskContext = `
-TASK DETAILS:
-- Task Name: ${task.taskName}
-- Description: ${task.description}
-- Task Type: ${task.tag}
-- Phase: ${task.phase}
-- Status: ${task.status}
-- Renewal Type: ${task.renewalType}
+    console.log('Manual validation result:', validationResult);
 
-COMPANY DETAILS:
-- Company Name: ${company.name}
-- Description: ${company.description || 'No description available'}
-- Website: ${company.website || 'No website provided'}
-
-TASK CONTEXT:
-You are helping complete this specific insurance task for ${company.name}. The task is "${task.taskName}" and it is a ${task.tag} task in the ${task.phase} phase.
-`;
-
-    // Use a much shorter system prompt to avoid context limits
-    let systemPrompt = `You are an AI assistant helping with insurance tasks for ${company.name}. 
-
-Task: ${task.taskName}
-Type: ${task.tag}
-Phase: ${task.phase}
-
-IMPORTANT: Keep responses concise. 
-
-CRITICAL: If a user uploads a payroll classification document (like "TWR_Payroll_by_Classification" or similar Excel/CSV files with employee data), ALWAYS respond with EXACTLY this message:
-"✅ **Task Complete!** I've reviewed your employee data and it contains all required information:
-- Employee names and job titles ✓
-- Job descriptions ✓  
-- High-risk role identification ✓
-
-This data is ready for insurance submission."
-
-Otherwise, provide brief guidance on what's needed.`;
-
-    // Keep it simple for manual tasks
-    if (task.tag === 'manual') {
-      systemPrompt += `\n\nBe concise - users prefer short, actionable responses.`;
+    // If task is completed, update status
+    if (validationResult.overallStatus === 'COMPLETED') {
+      await updateTaskStatus(taskId, 'completed');
+      console.log(`Task ${taskId} manually marked as completed`);
     }
 
-    // Convert messages to the format expected by the AI SDK with context limiting
-    const convertedMessages = messages
-      .slice(-2) // Only keep last 2 messages to avoid context limit
-      .map((msg: any) => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
-        // Include document information but not full content to avoid context limits
-        content: msg.documents 
-          ? msg.content + '\n\n[Document uploaded: ' + msg.documents.map(d => {
-              const filename = d.filename || '';
-              const isPayrollDoc = filename.toLowerCase().includes('payroll') || filename.toLowerCase().includes('classification');
-              return `${filename}${isPayrollDoc ? ' (Payroll Classification Document)' : ''}`;
-            }).join(', ') + ']'
-          : msg.content || ''
-      }))
-      .filter((msg: any) => msg.content.trim().length > 0);
-
-    const result = await streamText({
-      model: openai('gpt-4o-mini'),
-      messages: convertedMessages,
-      system: systemPrompt,
+    return NextResponse.json({
+      success: true,
+      taskId,
+      taskName: task.taskName,
+      currentStatus: task.status,
+      validationResult,
+      messagesCount: messages.length,
+      documentsFound: messages.reduce((acc, msg) => acc + (msg.documents?.length || 0), 0)
     });
 
-    // Run validation independently in the background
-    if ((task.tag === 'manual' || task.tag === 'ai') && task.testCriteria) {
-      // Don't await this - run it in background
-      setTimeout(async () => {
-        try {
-          console.log(`Running auto-completion check for task ${taskId}`);
-          // Get the latest assistant response
-          const latestAssistantMessage = messages
-            .slice()
-            .reverse()
-            .find(msg => msg.role === 'assistant');
-          const latestResponse = latestAssistantMessage?.content || '';
-          
-          const validationResult = await validateTaskCompletion(
-            messages,
-            task.testCriteria,
-            latestResponse
-          );
-
-          console.log('Validation result:', validationResult);
-
-          // If task is completed, update status
-          if (validationResult.overallStatus === 'COMPLETED') {
-            await updateTaskStatus(taskId, 'completed');
-            console.log(`Task ${taskId} automatically marked as completed`);
-          }
-        } catch (error) {
-          console.error('Auto-completion check failed:', error);
-        }
-      }, 2000); // Wait 2 seconds after response starts
-    }
-
-    return result.toTextStreamResponse();
   } catch (error) {
-    console.error('Task Chat API error:', error);
-    return new Response(
-      JSON.stringify({ 
+    console.error('Manual validation trigger error:', error);
+    return NextResponse.json(
+      { 
         error: 'Internal server error', 
         details: error instanceof Error ? error.message : 'Unknown error' 
-      }), 
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+      }, 
+      { status: 500 }
     );
   }
 }

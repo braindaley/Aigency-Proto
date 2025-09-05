@@ -41,8 +41,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get all available context (company info, completed tasks, documents, artifacts)
-    const context = await DataService.getAITaskContext(companyId);
+    // Get enhanced context with vector search
+    const context = await DataService.getEnhancedAITaskContext(companyId, taskId);
+    
+    // DEBUG: Log what data we're actually getting
+    console.log('=== AI TASK COMPLETION DEBUG ===');
+    console.log('Task ID:', taskId);
+    console.log('Company ID:', companyId);
+    console.log('Available documents:', context.allDocuments.length);
+    console.log('Available artifacts:', context.allArtifacts.length);
+    console.log('Completed tasks:', context.completedTasks.length);
+    console.log('Context length:', context.relevantContent.length);
+    
+    if (context.allArtifacts.length > 0) {
+      console.log('First artifact sample:', context.allArtifacts[0]);
+    }
+    if (context.allDocuments.length > 0) {
+      console.log('First document sample:', context.allDocuments[0]);
+    }
+    
+    console.log('Relevant content preview:', context.relevantContent.substring(0, 500));
 
     // Build comprehensive prompt for AI task completion
     const systemPrompt = `You are an AI assistant that automatically completes insurance tasks using available company data and previous task artifacts.
@@ -58,15 +76,53 @@ ${task.systemPrompt || ''}
 AVAILABLE CONTEXT:
 ${context.relevantContent}
 
-INSTRUCTIONS:
-1. Analyze the task requirements and available data
-2. Use the documents and artifacts from previous tasks to complete this task
-3. Generate a comprehensive response that fulfills the task requirements
-4. If generating a document, wrap it in <artifact> tags
-5. Provide a clear summary of what was completed
-6. Be thorough and professional in your response
+ARTIFACT SEARCH & DATA UTILIZATION INSTRUCTIONS:
+You have access to extensive company data including:
+- ${context.allDocuments.length} documents from completed tasks
+- ${context.allArtifacts.length} artifacts (generated documents, reports, analysis) from previous work
+- ${context.completedTasks.length} completed tasks with full history
 
-Your response should directly complete the task using the available information. If you need additional information that's not available, mention what's missing.`;
+ENHANCED SEARCH CAPABILITIES:
+1. ANALYZE ALL ARTIFACTS: Search through all artifacts for relevant information including:
+   - Policy documents and certificates
+   - Risk assessments and analysis reports
+   - Financial data and calculations
+   - Compliance documents and audit reports
+   - Claims history and documentation
+   - Renewal information and recommendations
+   - Any JSON data structures with company/policy details
+
+2. CROSS-REFERENCE DATA: Look for patterns and connections across:
+   - Multiple completed tasks in the same phase
+   - Related documents that might contain complementary information
+   - Previous AI-generated artifacts that solved similar problems
+   - Historical data trends and analysis
+
+3. DATA EXTRACTION: Extract and utilize specific data points such as:
+   - Policy numbers, coverage amounts, deductibles
+   - Company financial metrics and ratios
+   - Risk scores and assessment criteria
+   - Renewal dates and notification requirements
+   - Regulatory compliance status
+   - Claims frequency and severity data
+
+TASK COMPLETION INSTRUCTIONS:
+1. COMPREHENSIVE SEARCH: First, thoroughly search through ALL available artifacts and documents
+2. DATA SYNTHESIS: Combine relevant information from multiple sources
+3. INTELLIGENT ANALYSIS: Apply insurance expertise to interpret the data
+4. COMPLETE EXECUTION: Generate a comprehensive response using found data
+5. ARTIFACT GENERATION: If creating documents, wrap them in <artifact> tags
+6. SOURCE REFERENCING: Mention which previous tasks/artifacts provided key information
+7. GAP IDENTIFICATION: Clearly state if critical information is missing
+
+QUALITY STANDARDS:
+- Use actual data from artifacts whenever possible (don't make assumptions)
+- Reference specific previous tasks that provided key information
+- If generating reports/documents, ensure they match industry standards
+- Provide calculations and analysis based on found financial data
+- Include compliance and regulatory considerations from previous work
+
+Your response should demonstrate deep utilization of the artifact data to complete the task professionally and accurately.`;
 
     // Process the task with AI
     const result = await generateText({

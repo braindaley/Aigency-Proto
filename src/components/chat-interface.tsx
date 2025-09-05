@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Sparkles, User } from 'lucide-react';
+import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
 
 interface ChatMessage {
   id: string;
@@ -176,8 +177,8 @@ export function ChatInterface() {
                       : 'bg-muted'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm">
-                    {message.content}
+                  <div className="text-sm">
+                    <SmartMessageRenderer content={message.content} role={message.role} />
                   </div>
                 </div>
               </div>

@@ -20,7 +20,9 @@ import {
   Eye,
   EyeOff,
   Code,
-  FileJson
+  FileJson,
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -88,7 +90,7 @@ export default function CompanyArtifacts() {
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('ai-canvas');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -110,11 +112,12 @@ export default function CompanyArtifacts() {
 
   const artifactTypes = [
     { value: 'all', label: 'All Types' },
+    { value: 'ai-canvas', label: 'AI Canvas (Documents)' },
+    { value: 'form_data', label: 'File Uploads' },
     { value: 'json', label: 'JSON Data' },
     { value: 'text', label: 'Text' },
     { value: 'api_response', label: 'API Response' },
     { value: 'calculation', label: 'Calculation' },
-    { value: 'form_data', label: 'Form Data' },
     { value: 'report', label: 'Report' },
     { value: 'other', label: 'Other' }
   ];
@@ -309,17 +312,31 @@ export default function CompanyArtifacts() {
       artifact.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artifact.taskName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artifact.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesType = selectedType === 'all' || artifact.type === selectedType;
+    
+    // Check type match - special handling for ai-canvas tag
+    const matchesType = selectedType === 'all' || 
+      artifact.type === selectedType || 
+      (selectedType === 'ai-canvas' && artifact.tags?.includes('ai-canvas'));
+    
     return matchesSearch && matchesType;
   });
 
-  const getTypeIcon = (type: string) => {
-    switch(type) {
+  const getTypeIcon = (artifact: Artifact) => {
+    // Check if it's an AI Canvas artifact first
+    if (artifact.tags?.includes('ai-canvas')) {
+      return <Sparkles className="h-5 w-5 text-purple-600" />;
+    }
+    
+    switch(artifact.type) {
       case 'json':
       case 'api_response':
         return <FileJson className="h-5 w-5" />;
+      case 'form_data':
+        return <FileText className="h-5 w-5 text-blue-600" />;
       case 'calculation':
         return <Database className="h-5 w-5" />;
+      case 'text':
+        return <FileText className="h-5 w-5" />;
       default:
         return <Code className="h-5 w-5" />;
     }
@@ -411,7 +428,7 @@ export default function CompanyArtifacts() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3 flex-1">
-                      {getTypeIcon(artifact.type)}
+                      {getTypeIcon(artifact)}
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{artifact.name}</p>

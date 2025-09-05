@@ -9,8 +9,7 @@ import { Paperclip, Send, Sparkles, User, CheckCircle2 } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
 import { TaskValidationResults } from './TaskValidationResults';
 import { processDocument, ProcessedDocument } from '@/lib/documentProcessor';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
 import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -447,32 +446,14 @@ How can I assist you with this task today?`,
                   )}
                 </div>
                 <div
-                  className={`rounded-lg px-4 py-3 ${
+                  className={`rounded-lg px-4 py-3 overflow-hidden ${
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
                   }`}
                 >
-                  <div className="text-sm leading-relaxed">
-                    {/* Debug: Show raw content */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <details className="mb-2 text-xs bg-gray-100 p-2 rounded">
-                        <summary>Debug: Raw Content</summary>
-                        <pre className="whitespace-pre-wrap mt-2">{message.content}</pre>
-                      </details>
-                    )}
-                    
-                    <div className="whitespace-pre-line">
-                      {message.content
-                        // Simple approach: just clean up the text and add proper line breaks
-                        .replace(/###\s*([^\n]*)/g, '\n\n$1\n' + '='.repeat(20) + '\n')
-                        .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove all bold formatting
-                        .replace(/(\d+)\.\s*([A-Za-z][^0-9]*?)(\d+\.|\n|$)/g, '\n\n$1. $2\n')
-                        .replace(/([a-z])\s*-\s*([A-Z])/g, '$1\n  - $2')
-                        .replace(/\n{3,}/g, '\n\n')
-                        .trim()
-                      }
-                    </div>
+                  <div className="text-sm leading-relaxed overflow-hidden">
+                    <SmartMessageRenderer content={message.content} role={message.role} />
                   </div>
                 </div>
               </div>

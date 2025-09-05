@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, User, Send, Download, Copy, FileText, Code, Eye, Loader2 } from 'lucide-react';
+import { Sparkles, User, Send, Download, Copy, FileText, Code, Eye, Loader2, Database, Check, RefreshCw } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
+import { saveArtifactToDatabase } from '@/lib/artifact-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -27,6 +28,8 @@ interface Artifact {
   type: 'document' | 'code' | 'markdown';
   createdAt: Date;
   updatedAt: Date;
+  savedToDatabase?: boolean;
+  databaseId?: string;
 }
 
 interface TaskAIArtifactsProps {
@@ -41,6 +44,8 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [artifact, setArtifact] = useState<Artifact | null>(null);
+  const [isSavingToDatabase, setIsSavingToDatabase] = useState(false);
+  const [lastSavedContent, setLastSavedContent] = useState<string>('');
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
 
   const storageKey = `task-artifact-${companyId}-${task.id}`;
@@ -75,6 +80,11 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   useEffect(() => {
     if (artifact) {
       localStorage.setItem(storageKey, JSON.stringify(artifact));
+      
+      // Automatically save/update to database when content actually changes
+      if (artifact.content.trim() && artifact.content !== lastSavedContent) {
+        saveArtifactToDb(artifact);
+      }
     }
   }, [artifact, storageKey]);
 
@@ -87,6 +97,49 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  const saveArtifactToDb = async (artifactToSave: Artifact) => {
+    if (isSavingToDatabase) return; // Only prevent if currently saving
+    
+    console.log('🔧 Saving artifact with databaseId:', artifactToSave.databaseId);
+    setIsSavingToDatabase(true);
+    try {
+      const databaseId = await saveArtifactToDatabase({
+        companyId,
+        taskId: task.id,
+        taskName: task.taskName,
+        title: artifactToSave.title,
+        content: artifactToSave.content,
+        type: artifactToSave.type,
+        description: `AI canvas artifact for ${task.taskName}`,
+        tags: ['ai-canvas', task.phase, task.tag],
+        databaseId: artifactToSave.databaseId // Pass existing ID for updates
+      });
+      
+      // Update the artifact to mark it as saved
+      const updatedArtifact = {
+        ...artifactToSave,
+        savedToDatabase: true,
+        databaseId
+      };
+      
+      setArtifact(updatedArtifact);
+      localStorage.setItem(storageKey, JSON.stringify(updatedArtifact));
+      setLastSavedContent(artifactToSave.content);
+      
+      const action = artifactToSave.databaseId ? 'updated' : 'created';
+      console.log(`✅ Artifact automatically ${action} in database:`, databaseId);
+      
+      // If we got a different databaseId back, it means the original was deleted and recreated
+      if (artifactToSave.databaseId && databaseId !== artifactToSave.databaseId) {
+        console.log('🔄 Artifact was recreated with new ID, updating references');
+      }
+    } catch (error) {
+      console.error('❌ Failed to save artifact to database:', error);
+    } finally {
+      setIsSavingToDatabase(false);
+    }
+  };
 
   const generateInitialArtifact = async () => {
     setIsGenerating(true);
@@ -179,6 +232,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                   type: 'document',
                   createdAt: new Date(),
                   updatedAt: new Date(),
+                  savedToDatabase: false
                 });
               }
               
@@ -209,6 +263,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
           type: 'document',
           createdAt: new Date(),
           updatedAt: new Date(),
+          savedToDatabase: false
         });
       }
 
@@ -346,6 +401,8 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                   type: 'document',
                   createdAt: prev?.createdAt || new Date(),
                   updatedAt: new Date(),
+                  savedToDatabase: prev?.savedToDatabase || false,
+                  databaseId: prev?.databaseId
                 }));
               }
               
@@ -393,6 +450,8 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
             type: 'document',
             createdAt: prev?.createdAt || new Date(),
             updatedAt: new Date(),
+            savedToDatabase: prev?.savedToDatabase || false,
+            databaseId: prev?.databaseId
           }));
         } else {
           assistantContent += buffer;
@@ -436,6 +495,19 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const regenerateDocument = async () => {
+    // Clear current artifact and messages
+    setArtifact(null);
+    setMessages([]);
+    
+    // Clear localStorage
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem(chatStorageKey);
+    
+    // Regenerate the document
+    await generateInitialArtifact();
   };
 
   return (
@@ -542,7 +614,22 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       <div className="w-1/2 flex flex-col">
         <Card className="flex flex-col h-full">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {isSavingToDatabase && (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {artifact?.databaseId ? 'Updating...' : 'Saving to database...'}
+                  </>
+                )}
+                {artifact?.savedToDatabase && !isSavingToDatabase && (
+                  <>
+                    <Check className="h-3 w-3 text-green-600" />
+                    <Database className="h-3 w-3 text-green-600" />
+                    {artifact?.databaseId ? 'Synced' : 'Saved to database'}
+                  </>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'source')}>
                   <TabsList className="h-8">
@@ -556,6 +643,16 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
+                <Button
+                  onClick={regenerateDocument}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title="Regenerate document from template"
+                  disabled={isGenerating || isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${(isGenerating || isLoading) ? 'animate-spin' : ''}`} />
+                </Button>
                 <Button
                   onClick={copyToClipboard}
                   variant="ghost"
