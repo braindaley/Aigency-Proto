@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles, User, Send, Download, Copy, FileText, Code, Eye, Loader2, Database, Check, RefreshCw } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
 import { saveArtifactToDatabase } from '@/lib/artifact-utils';
@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
 // Removed CSS import - using Tailwind classes instead
 
 interface ChatMessage {
@@ -38,6 +39,7 @@ interface TaskAIArtifactsProps {
 }
 
 export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -52,6 +54,20 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   const chatStorageKey = `task-artifact-chat-${companyId}-${task.id}`;
 
   useEffect(() => {
+    // Check for dark mode
+    const checkTheme = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    };
+    checkTheme();
+
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
     const savedArtifact = localStorage.getItem(storageKey);
     const savedMessages = localStorage.getItem(chatStorageKey);
     
@@ -75,6 +91,10 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       // Always generate initial artifact for AI tasks
       generateInitialArtifact();
     }
+
+    return () => {
+      observer.disconnect();
+    };
   }, [task.id, companyId]);
 
   useEffect(() => {
@@ -192,18 +212,26 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         for (const line of lines) {
           // Extract content from streaming format
           let content = '';
+
+          // Skip empty lines
+          if (!line.trim()) continue;
+
+          // Handle different streaming formats
           if (line.startsWith('0:')) {
-            content = line.slice(2);
+            content = line.slice(2).trim();
           } else if (line.startsWith('data: ')) {
             content = line.slice(6);
             if (content === '[DONE]') continue;
           } else if (line.startsWith(':')) {
             continue; // Skip comment lines
+          } else if (/^\d+:/.test(line)) {
+            // Handle any numeric prefix format (0:, 1:, etc.)
+            content = line.replace(/^\d+:/, '').trim();
           } else {
             content = line;
           }
 
-          if (content !== undefined) {
+          if (content !== undefined && content !== '') {
             // Check for artifact tags
             if (content.includes('<artifact>')) {
               inArtifact = true;
@@ -353,18 +381,26 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         for (const line of lines) {
           // Extract content from streaming format
           let content = '';
+
+          // Skip empty lines
+          if (!line.trim()) continue;
+
+          // Handle different streaming formats
           if (line.startsWith('0:')) {
-            content = line.slice(2);
+            content = line.slice(2).trim();
           } else if (line.startsWith('data: ')) {
             content = line.slice(6);
             if (content === '[DONE]') continue;
           } else if (line.startsWith(':')) {
             continue; // Skip comment lines
+          } else if (/^\d+:/.test(line)) {
+            // Handle any numeric prefix format (0:, 1:, etc.)
+            content = line.replace(/^\d+:/, '').trim();
           } else {
             content = line;
           }
 
-          if (content !== undefined) {
+          if (content !== undefined && content !== '') {
             // Check for artifact tags
             if (content.includes('<artifact>')) {
               inArtifact = true;
@@ -425,7 +461,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                 artifactContent += '\n';
               }
               artifactContent += content;
-            } else if (content !== undefined && !inArtifact) {
+            } else if (content !== undefined && content !== '' && !inArtifact) {
               assistantContent += content;
               setMessages(prev => 
                 prev.map(msg => 
@@ -511,7 +547,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-200px)]">
+    <div className="flex gap-6 h-[calc(100vh-200px)] bg-background">
       <div className="w-1/2 flex flex-col">
         <div className="flex-1 overflow-y-auto pb-4">
           <div className="space-y-4">
@@ -544,11 +580,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                     )}
                   </div>
                   <div
-                    className={`rounded-lg px-4 py-2 ${
-                      message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
+                    className={`rounded-lg px-4 py-2 bg-muted text-foreground`}
                   >
                     <div className="whitespace-pre-wrap text-sm">
                       {message.content}
@@ -567,9 +599,9 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                   <div className="rounded-lg px-4 py-2 bg-muted">
                     <div className="flex items-center gap-2">
                       <div className="animate-pulse flex space-x-1">
-                        <div className="rounded-full bg-slate-400 h-2 w-2"></div>
-                        <div className="rounded-full bg-slate-400 h-2 w-2"></div>
-                        <div className="rounded-full bg-slate-400 h-2 w-2"></div>
+                        <div className="rounded-full bg-muted-foreground/30 h-2 w-2"></div>
+                        <div className="rounded-full bg-muted-foreground/30 h-2 w-2"></div>
+                        <div className="rounded-full bg-muted-foreground/30 h-2 w-2"></div>
                       </div>
                       <span className="text-sm text-muted-foreground">Updating document...</span>
                     </div>
@@ -612,7 +644,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       </div>
 
       <div className="w-1/2 flex flex-col">
-        <Card className="flex flex-col h-full">
+        <Card className="flex flex-col h-full bg-background">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -674,25 +706,24 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0">
-            <ScrollArea className="h-full">
-              <div className="p-6">
+          <CardContent className="flex-1 overflow-hidden p-0 bg-background">
+            <ScrollArea className="h-full bg-background">
+              <div className="p-6 bg-background" style={{ backgroundColor: 'var(--background)' }}>
                 {artifact ? (
                   viewMode === 'preview' ? (
-                    <div className="prose prose-base max-w-none dark:prose-invert 
+                    <div className="prose prose-base max-w-none
                                       prose-headings:text-foreground prose-headings:font-semibold
                                       prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6
                                       prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold
                                       prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-h3:font-semibold
-                                      prose-p:text-muted-foreground prose-p:leading-7 prose-p:mb-4
+                                      prose-p:text-foreground prose-p:leading-7 prose-p:mb-4
                                       prose-strong:text-foreground prose-strong:font-semibold
-                                      prose-ul:my-4 prose-ul:pl-6 prose-ul:text-muted-foreground
-                                      prose-ol:my-4 prose-ol:pl-6 prose-ol:text-muted-foreground
-                                      prose-li:mb-2 prose-li:text-muted-foreground prose-li:leading-relaxed
-                                      prose-ul:prose-li:marker:text-muted-foreground
-                                      prose-blockquote:border-l-4 prose-blockquote:border-l-muted prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
-                                      prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm
-                                      prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:p-4 prose-pre:rounded-lg
+                                      prose-ul:my-4 prose-ul:pl-6 prose-ul:text-foreground
+                                      prose-ol:my-4 prose-ol:pl-6 prose-ol:text-foreground
+                                      prose-li:mb-2 prose-li:text-foreground prose-li:leading-relaxed
+                                      prose-blockquote:border-l-4 prose-blockquote:border-l-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
+                                      prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
+                                      prose-pre:bg-transparent prose-pre:p-0
                                       prose-em:text-muted-foreground prose-em:italic
                                       [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                       <ReactMarkdown
@@ -714,7 +745,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                             </h3>
                           ),
                           p: ({ children, ...props }) => (
-                            <p className="text-muted-foreground leading-7 mb-4" {...props}>
+                            <p className="text-foreground leading-7 mb-4" {...props}>
                               {children}
                             </p>
                           ),
@@ -724,17 +755,17 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                             </strong>
                           ),
                           ul: ({ children, ...props }) => (
-                            <ul className="my-4 pl-6 space-y-2 text-muted-foreground" {...props}>
+                            <ul className="my-4 pl-6 space-y-2 text-foreground list-disc" {...props}>
                               {children}
                             </ul>
                           ),
                           ol: ({ children, ...props }) => (
-                            <ol className="my-4 pl-6 space-y-2 text-muted-foreground" {...props}>
+                            <ol className="my-4 pl-6 space-y-2 text-foreground list-decimal" {...props}>
                               {children}
                             </ol>
                           ),
                           li: ({ children, ...props }) => (
-                            <li className="text-muted-foreground leading-relaxed" {...props}>
+                            <li className="text-foreground leading-relaxed" {...props}>
                               {children}
                             </li>
                           ),
@@ -753,10 +784,14 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                             const inline = !match;
                             return !inline ? (
                               <SyntaxHighlighter
-                                style={oneDark as any}
+                                style={(theme === 'dark' ? oneDark : oneLight) as any}
                                 language={match[1]}
                                 PreTag="div"
                                 className="rounded-lg !mt-4 !mb-4"
+                                customStyle={{
+                                  backgroundColor: theme === 'dark' ? 'rgb(40, 44, 52)' : 'rgb(250, 250, 250)',
+                                  margin: 0
+                                }}
                                 {...props}
                               >
                                 {String(children).replace(/\n$/, '')}
@@ -773,7 +808,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <pre className="text-sm font-mono whitespace-pre-wrap break-words bg-muted/50 p-4 rounded-lg">
+                    <pre className="text-sm font-mono whitespace-pre-wrap break-words bg-background text-foreground p-4 rounded-lg">
                       {artifact.content}
                     </pre>
                   )

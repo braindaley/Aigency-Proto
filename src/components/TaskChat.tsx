@@ -296,20 +296,27 @@ How can I assist you with this task today?`,
         const lines = chunk.split('\n').filter(line => line.trim());
 
         for (const line of lines) {
+          // Skip empty lines
+          if (!line.trim()) continue;
+
           // Handle different streaming formats
+          let content = '';
           if (line.startsWith('0:')) {
-            const content = line.slice(2);
-            if (content.trim()) {
-              fullContent += content;
-            }
+            content = line.slice(2).trim();
           } else if (line.startsWith('data: ')) {
-            const content = line.slice(6);
-            if (content.trim() && content !== '[DONE]') {
-              fullContent += content;
-            }
-          } else if (line.trim() && !line.startsWith(':')) {
-            // Direct content
-            fullContent += line;
+            content = line.slice(6);
+            if (content === '[DONE]') continue;
+          } else if (line.startsWith(':')) {
+            continue; // Skip comment lines
+          } else if (/^\d+:/.test(line)) {
+            // Handle any numeric prefix format (0:, 1:, etc.)
+            content = line.replace(/^\d+:/, '').trim();
+          } else {
+            content = line;
+          }
+
+          if (content !== undefined && content !== '') {
+            fullContent += content;
           }
           
           // Update the message
@@ -448,8 +455,8 @@ How can I assist you with this task today?`,
                 <div
                   className={`rounded-lg px-4 py-3 overflow-hidden ${
                     message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                      ? 'bg-muted text-foreground'
+                      : 'bg-muted text-foreground'
                   }`}
                 >
                   <div className="text-sm leading-relaxed overflow-hidden">

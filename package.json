@@ -46,6 +46,7 @@
     "@radix-ui/react-toast": "^1.2.6",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
+    "@tailwindcss/typography": "^0.5.18",
     "@types/papaparse": "^5.3.16",
     "ai": "^5.0.15",
     "class-variance-authority": "^0.7.1",
