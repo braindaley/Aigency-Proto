@@ -262,9 +262,9 @@ export default function CompanyDetailPage() {
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
       <div className="mb-8 pb-10">
         <Button asChild variant="ghost" className="mb-4 -ml-4">
-            <Link href="/companies">
+            <Link href="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Companies
+                Back to Home
             </Link>
         </Button>
         <div className="flex items-center gap-3">
