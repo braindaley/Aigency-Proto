@@ -267,62 +267,58 @@ export default function CompanyDetailPage() {
                 Back to Companies
             </Link>
         </Button>
-        <div className="flex justify-between items-center">
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold">{company.name}</h1>
-                {company.website && (
-                  <Button asChild variant="outline" size="sm">
-                    <a 
-                      href={company.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
-                <Link href={`/companies/${company.id}/artifacts`}>
-                  <Database className="h-5 w-5" />
-                  <span className="sr-only">Artifacts</span>
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
-                <Link href={`/companies/${company.id}/documents`}>
-                  <FileText className="h-5 w-5" />
-                  <span className="sr-only">Documents</span>
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
-                <Link href={`/companies/${company.id}/settings`}>
-                  <Settings className="h-5 w-5" />
-                  <span className="sr-only">Company Settings</span>
-                </Link>
-              </Button>
-            </div>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">{company.name}</h1>
+          {company.website && (
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          )}
         </div>
-        
+
         {company.description && (
           <div className="mt-6 mb-8">
             <p className="text-muted-foreground">{company.description}</p>
           </div>
         )}
-        
+
+        <div className="flex gap-2 mb-8">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/companies/${company.id}/artifacts`}>
+              <Database className="h-4 w-4 mr-2" />
+              Artifacts
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/companies/${company.id}/documents`}>
+              <FileText className="h-4 w-4 mr-2" />
+              Documents
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/companies/${company.id}/settings`}>
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Link>
+          </Button>
+        </div>
+
         <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
       </div>
       
       <div className="mt-12">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Tasks</h2>
-          <Button asChild variant="ghost" className="h-8 w-8 rounded-full bg-muted p-0">
+          <Button asChild variant="outline" size="sm">
             <Link href={`/companies/${company.id}/tasks`}>
-              <Settings className="h-5 w-5" />
-              <span className="sr-only">Task Settings</span>
+              View all tasks
             </Link>
           </Button>
         </div>
