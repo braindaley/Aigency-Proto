@@ -50,8 +50,138 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
 
+  // Helper function to convert JSON to readable markdown
+  const jsonToMarkdown = (obj: any, level: number = 1): string => {
+    let markdown = '';
+
+    const formatKey = (key: string): string => {
+      // Convert snake_case or camelCase to Title Case
+      return key
+        .replace(/_/g, ' ')
+        .replace(/([A-Z])/g, ' $1')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+        .trim();
+    };
+
+    const formatValue = (value: any): string => {
+      if (value === null || value === undefined) return '*Not provided*';
+      if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number') return value.toLocaleString();
+      return String(value);
+    };
+
+    if (Array.isArray(obj)) {
+      // Handle arrays
+      if (obj.length === 0) return '*None*\n\n';
+
+      // Check if array contains objects with consistent structure (table candidate)
+      if (obj.length > 0 && typeof obj[0] === 'object' && obj[0] !== null && !Array.isArray(obj[0])) {
+        // Try to render as table
+        const keys = Object.keys(obj[0]);
+        if (keys.length > 0 && keys.length <= 6) {
+          markdown += '| ' + keys.map(formatKey).join(' | ') + ' |\n';
+          markdown += '| ' + keys.map(() => '---').join(' | ') + ' |\n';
+          obj.forEach(item => {
+            markdown += '| ' + keys.map(k => formatValue(item[k])).join(' | ') + ' |\n';
+          });
+          markdown += '\n';
+          return markdown;
+        }
+      }
+
+      // Otherwise render as list
+      obj.forEach((item, index) => {
+        if (typeof item === 'object' && item !== null) {
+          markdown += `${index + 1}. **Item ${index + 1}**\n\n`;
+          markdown += jsonToMarkdown(item, level + 1);
+        } else {
+          markdown += `- ${formatValue(item)}\n`;
+        }
+      });
+      markdown += '\n';
+      return markdown;
+    }
+
+    if (typeof obj === 'object' && obj !== null) {
+      // Handle objects
+      Object.entries(obj).forEach(([key, value]) => {
+        const formattedKey = formatKey(key);
+
+        if (value === null || value === undefined || value === '') {
+          markdown += `**${formattedKey}:** *Not provided*\n\n`;
+        } else if (Array.isArray(value)) {
+          markdown += `${'#'.repeat(Math.min(level + 1, 6))} ${formattedKey}\n\n`;
+          markdown += jsonToMarkdown(value, level + 1);
+        } else if (typeof value === 'object') {
+          markdown += `${'#'.repeat(Math.min(level + 1, 6))} ${formattedKey}\n\n`;
+          markdown += jsonToMarkdown(value, level + 1);
+        } else {
+          markdown += `**${formattedKey}:** ${formatValue(value)}\n\n`;
+        }
+      });
+      return markdown;
+    }
+
+    return formatValue(obj) + '\n\n';
+  };
+
+  // Helper function to detect and format JSON content
+  const formatJsonIfNeeded = (content: string): { isJson: boolean; formatted: string; markdown?: string } => {
+    try {
+      // Try to parse as JSON
+      const parsed = JSON.parse(content);
+      // If successful, convert to markdown
+      const markdownContent = jsonToMarkdown(parsed);
+      return {
+        isJson: true,
+        formatted: JSON.stringify(parsed, null, 2),
+        markdown: markdownContent
+      };
+    } catch (e) {
+      // Check if content looks like JSON but has markdown formatting
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1]);
+          const markdownContent = jsonToMarkdown(parsed);
+          return {
+            isJson: true,
+            formatted: JSON.stringify(parsed, null, 2),
+            markdown: markdownContent
+          };
+        } catch (e2) {
+          // Not valid JSON
+        }
+      }
+      return { isJson: false, formatted: content };
+    }
+  };
+
   const storageKey = `task-artifact-${companyId}-${task.id}`;
   const chatStorageKey = `task-artifact-chat-${companyId}-${task.id}`;
+
+  // Process message content to replace artifact tags with brief summaries
+  const processMessageForDisplay = (content: string, taskName: string): string => {
+    // Check if message contains artifact tags
+    const artifactMatch = content.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+    if (artifactMatch) {
+      // Extract content before and after artifact
+      const beforeArtifact = content.substring(0, content.indexOf('<artifact>'));
+      const afterArtifact = content.substring(content.indexOf('</artifact>') + 11);
+
+      // Create a brief summary message
+      const summary = `Based on the information provided and data in the database, I have created the ${taskName}.`;
+
+      // Return message without artifact, just the summary
+      return `${beforeArtifact.trim()}\n\n${summary}\n\n${afterArtifact.trim()}`.trim();
+    }
+
+    return content;
+  };
 
   useEffect(() => {
     // Check for dark mode
@@ -68,34 +198,95 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       attributeFilter: ['class']
     });
 
-    const savedArtifact = localStorage.getItem(storageKey);
-    const savedMessages = localStorage.getItem(chatStorageKey);
-    
-    if (savedArtifact) {
-      try {
-        setArtifact(JSON.parse(savedArtifact));
-      } catch (error) {
-        console.error('Failed to load artifact:', error);
-      }
-    }
-
-    if (savedMessages) {
-      try {
-        setMessages(JSON.parse(savedMessages));
-      } catch (error) {
-        console.error('Failed to load chat history:', error);
-      }
-    }
-
-    if (!savedArtifact) {
-      // Always generate initial artifact for AI tasks
-      generateInitialArtifact();
-    }
+    // Load messages and artifacts from Firebase first (for auto-executed tasks)
+    loadFromFirebase();
 
     return () => {
       observer.disconnect();
     };
   }, [task.id, companyId]);
+
+  const loadFromFirebase = async () => {
+    try {
+      // Import Firebase functions
+      const { collection: firestoreCollection, getDocs, query: firestoreQuery, orderBy } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+
+      // Check if there are messages in Firebase from automatic execution
+      const messagesRef = firestoreCollection(db, 'taskChats', task.id, 'messages');
+      const q = firestoreQuery(messagesRef, orderBy('timestamp', 'asc'));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        console.log(`Found ${snapshot.size} messages from automatic execution`);
+
+        // Load messages from Firebase
+        const firebaseMessages: ChatMessage[] = snapshot.docs.map((doc, index) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            role: data.role || 'assistant',
+            content: data.content || ''
+          };
+        });
+
+        setMessages(firebaseMessages);
+
+        // Extract artifact from messages if present
+        const fullContent = firebaseMessages.map(m => m.content).join('\n');
+        const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+        if (artifactMatch && artifactMatch[1]) {
+          const artifactContent = artifactMatch[1].trim();
+          console.log('Extracted artifact from automatic execution:', artifactContent.substring(0, 200));
+
+          setArtifact({
+            id: Date.now().toString(),
+            title: task.taskName,
+            content: artifactContent,
+            type: 'document',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            savedToDatabase: false
+          });
+        }
+
+        // Don't generate initial artifact if we loaded from Firebase
+        return;
+      }
+
+      // Fallback to localStorage if no Firebase messages
+      const savedArtifact = localStorage.getItem(storageKey);
+      const savedMessages = localStorage.getItem(chatStorageKey);
+
+      if (savedArtifact) {
+        try {
+          setArtifact(JSON.parse(savedArtifact));
+        } catch (error) {
+          console.error('Failed to load artifact:', error);
+        }
+      }
+
+      if (savedMessages) {
+        try {
+          setMessages(JSON.parse(savedMessages));
+        } catch (error) {
+          console.error('Failed to load chat history:', error);
+        }
+      }
+
+      if (!savedArtifact && !savedMessages) {
+        // Generate initial artifact only if nothing is saved anywhere
+        generateInitialArtifact();
+      }
+
+    } catch (error) {
+      console.error('Error loading from Firebase:', error);
+
+      // Fallback to generating initial artifact
+      generateInitialArtifact();
+    }
+  };
 
   useEffect(() => {
     if (artifact) {
@@ -583,7 +774,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                     className={`rounded-lg px-4 py-2 bg-muted text-foreground`}
                   >
                     <div className="whitespace-pre-wrap text-sm">
-                      {message.content}
+                      {processMessageForDisplay(message.content, task.taskName)}
                     </div>
                   </div>
                 </div>
@@ -710,8 +901,14 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
             <ScrollArea className="h-full bg-background">
               <div className="p-6 bg-background" style={{ backgroundColor: 'var(--background)' }}>
                 {artifact ? (
-                  viewMode === 'preview' ? (
-                    <div className="prose prose-base max-w-none
+                  (() => {
+                    const { isJson, formatted, markdown } = formatJsonIfNeeded(artifact.content);
+
+                    // For preview mode, use the content as-is (markdown or converted JSON)
+                    const contentToRender = (isJson && markdown) ? markdown : artifact.content;
+
+                    return viewMode === 'preview' ? (
+                      <div className="prose prose-base max-w-none
                                       prose-headings:text-foreground prose-headings:font-semibold
                                       prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6
                                       prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold
@@ -804,14 +1001,15 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                           },
                         }}
                       >
-                        {artifact.content}
+                        {contentToRender}
                       </ReactMarkdown>
                     </div>
-                  ) : (
-                    <pre className="text-sm font-mono whitespace-pre-wrap break-words bg-background text-foreground p-4 rounded-lg">
-                      {artifact.content}
-                    </pre>
-                  )
+                    ) : (
+                      <pre className="text-sm font-mono whitespace-pre-wrap break-words bg-background text-foreground p-4 rounded-lg">
+                        {isJson ? formatted : artifact.content}
+                      </pre>
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />

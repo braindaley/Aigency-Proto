@@ -24,9 +24,11 @@ export interface Task {
   phase: TaskPhase;
   status: TaskStatus;
   dependencies?: string[];
+  showDependencyArtifacts?: boolean; // Show artifacts from dependency tasks for review
   policyType?: string;
   subtasks?: Subtask[];
   systemPrompt?: string;
+  testCriteria?: string;
   templateId?: string | number;
   sortOrder?: number;
   predefinedButtons?: PredefinedButton[];

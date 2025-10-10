@@ -42,40 +42,112 @@ export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const { toast } = useToast();
 
-  // Generate storage key based on task and company IDs
-  const storageKey = `task-chat-${companyId}-${task.id}`;
+  // Process message content to replace artifact tags with brief summaries
+  const processMessageForDisplay = (content: string, taskName: string): string => {
+    let processedContent = content;
+
+    // Check if message contains artifact tags
+    const artifactMatch = processedContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+    if (artifactMatch) {
+      // Extract content before and after artifact
+      const beforeArtifact = processedContent.substring(0, processedContent.indexOf('<artifact>'));
+      const afterArtifact = processedContent.substring(processedContent.indexOf('</artifact>') + 11);
+
+      // Create a brief summary message
+      const summary = `Based on the information provided and data in the database, I have created the ${taskName}.`;
+
+      // Return message without artifact, just the summary
+      processedContent = `${beforeArtifact.trim()}\n\n${summary}\n\n${afterArtifact.trim()}`.trim();
+    }
+
+    // Check if message contains file contents section
+    if (processedContent.includes('=== FILE CONTENTS ===')) {
+      // Remove everything from "=== FILE CONTENTS ===" onwards
+      const fileContentsIndex = processedContent.indexOf('=== FILE CONTENTS ===');
+      processedContent = processedContent.substring(0, fileContentsIndex).trim();
+    }
+
+    return processedContent;
+  };
+
+  // Generate storage key based on task and company IDs - include task tag to invalidate cache when type changes
+  const storageKey = `task-chat-${companyId}-${task.id}-${task.tag}`;
 
   // Initialize messages with default or saved messages
   useEffect(() => {
+    // Debug logging
+    console.log('TaskChat: Initializing with task.tag:', task.tag);
+    console.log('TaskChat: Storage key:', storageKey);
+
+    // Clear any old cached messages that don't include the task tag in the key
+    const oldStorageKey = `task-chat-${companyId}-${task.id}`;
+    if (localStorage.getItem(oldStorageKey)) {
+      console.log('TaskChat: Removing old cached messages');
+      localStorage.removeItem(oldStorageKey);
+    }
+
     const savedMessages = localStorage.getItem(storageKey);
-    
+
     if (savedMessages) {
       try {
         const parsedMessages = JSON.parse(savedMessages);
+        // Check if this is an old cached message for a manual task that needs updating
+        const firstMessage = parsedMessages[0];
+        const isOldManualTaskMessage = task.tag === 'manual' &&
+          firstMessage?.role === 'assistant' &&
+          firstMessage?.content?.startsWith('Hello! I\'m here to help you complete the task:');
+
+        if (isOldManualTaskMessage) {
+          // Clear old cache and regenerate
+          localStorage.removeItem(storageKey);
+          throw new Error('Cached message format is outdated for manual task');
+        }
+
         setMessages(parsedMessages);
       } catch (error) {
         console.error('Failed to load task chat history:', error);
         // Fall back to initial message
-        setMessages([{
-          id: 'initial',
-          role: 'assistant',
-          content: `Hello! I'm here to help you complete the task: "${task.taskName}". 
+        const initialMessage = task.tag === 'manual'
+          ? `Hi!
+
+To complete the submission I'll need the following:
 
 ${task.description}
 
-How can I assist you with this task today?`,
+Can you upload that so I can review and mark this task as completed?`
+          : `Hello! I'm here to help you complete the task: "${task.taskName}".
+
+${task.description}
+
+How can I assist you with this task today?`;
+
+        setMessages([{
+          id: 'initial',
+          role: 'assistant',
+          content: initialMessage,
         }]);
       }
     } else {
       // Set initial message if no saved messages
-      setMessages([{
-        id: 'initial',
-        role: 'assistant',
-        content: `Hello! I'm here to help you complete the task: "${task.taskName}". 
+      const initialMessage = task.tag === 'manual'
+        ? `Hi!
+
+To complete the submission I'll need the following:
 
 ${task.description}
 
-How can I assist you with this task today?`,
+Can you upload that so I can review and mark this task as completed?`
+        : `Hello! I'm here to help you complete the task: "${task.taskName}".
+
+${task.description}
+
+How can I assist you with this task today?`;
+
+      setMessages([{
+        id: 'initial',
+        role: 'assistant',
+        content: initialMessage,
       }]);
     }
   }, [task.id, task.taskName, task.description, companyId, storageKey]);
@@ -460,7 +532,10 @@ How can I assist you with this task today?`,
                   }`}
                 >
                   <div className="text-sm leading-relaxed overflow-hidden">
-                    <SmartMessageRenderer content={message.content} role={message.role} />
+                    <SmartMessageRenderer
+                      content={processMessageForDisplay(message.content, task.taskName)}
+                      role={message.role}
+                    />
                   </div>
                 </div>
               </div>

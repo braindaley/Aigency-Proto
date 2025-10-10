@@ -77,7 +77,7 @@ Your capabilities include:
 When asked about company or task counts, provide the actual numbers from the database. Be professional, knowledgeable about insurance processes, and focus on helping users manage their agency operations efficiently.`;
 
     const result = await streamText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.5-flash'),
       messages,
       system: systemPrompt,
     });

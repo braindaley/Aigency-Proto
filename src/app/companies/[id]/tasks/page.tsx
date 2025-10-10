@@ -195,13 +195,18 @@ export default function CompanyTasksPage() {
     templates.forEach((templateData, index) => {
       const { id, ...restOfTemplateData } = templateData;
       const newCompanyTaskRef = doc(companyTasksCollection);
+
+      // Tasks without dependencies should start with "Needs attention"
+      const hasDependencies = templateData.dependencies && templateData.dependencies.length > 0;
+      const initialStatus = hasDependencies ? 'Upcoming' : 'Needs attention';
+
       const newCompanyTask = {
         ...restOfTemplateData,
         templateId: id,
         companyId: companyId,
         renewalType: renewal.type,
         renewalDate: Timestamp.fromDate(renewal.date!),
-        status: (index === 0 ? 'Needs attention' : 'Upcoming') as const,
+        status: initialStatus as const,
       };
       batch.set(newCompanyTaskRef, newCompanyTask);
     });

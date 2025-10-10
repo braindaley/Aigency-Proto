@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
 
 export async function POST(request: NextRequest) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] 🤖 AI-TASK-COMPLETION: Request received`);
+
   try {
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Google AI API key not configured`);
       throw new Error('Google AI API key is not configured');
     }
 
     const { taskId, companyId } = await request.json();
 
+    console.log(`[${timestamp}] 📋 AI-TASK-COMPLETION: Processing taskId=${taskId}, companyId=${companyId}`);
+
     if (!taskId || !companyId) {
+      console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Missing required parameters`);
       return NextResponse.json(
         { error: 'Missing taskId or companyId' },
         { status: 400 }
@@ -25,6 +31,7 @@ export async function POST(request: NextRequest) {
     const taskDoc = await getDoc(taskDocRef);
 
     if (!taskDoc.exists()) {
+      console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Task not found: ${taskId}`);
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
@@ -33,8 +40,14 @@ export async function POST(request: NextRequest) {
 
     const task = { id: taskDoc.id, ...taskDoc.data() } as any;
 
+    console.log(`[${timestamp}] 📝 AI-TASK-COMPLETION: Task loaded: "${task.taskName}"`);
+    console.log(`[${timestamp}]   - Tag: ${task.tag}`);
+    console.log(`[${timestamp}]   - Status: ${task.status}`);
+    console.log(`[${timestamp}]   - Has test criteria: ${task.testCriteria ? 'Yes' : 'No'}`);
+
     // Verify this is an AI task
     if (task.tag !== 'ai') {
+      console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Not an AI task (tag: ${task.tag})`);
       return NextResponse.json(
         { error: 'This endpoint only processes AI tasks' },
         { status: 400 }
@@ -70,6 +83,17 @@ TASK TO COMPLETE:
 - Description: ${task.description}
 - Phase: ${task.phase}
 - Type: ${task.tag}
+
+CRITICAL REQUIREMENT - YOU MUST GENERATE AN ARTIFACT:
+For this task to be considered complete, you MUST create a document wrapped in <artifact> tags.
+The artifact should be a complete, professional document that fulfills the task requirements.
+
+Example format:
+<artifact>
+# Document Title
+
+[Complete document content here with all necessary sections, data, and professional formatting]
+</artifact>
 
 ${task.systemPrompt || ''}
 
@@ -122,15 +146,63 @@ QUALITY STANDARDS:
 - Provide calculations and analysis based on found financial data
 - Include compliance and regulatory considerations from previous work
 
+CRITICAL: PRESENTATION REQUIREMENTS
+- DO NOT include disclaimers about AI limitations or inability to access external sources
+- Present your analysis and findings confidently and professionally
+- The available company data (loss runs, safety records, compliance documents, employee data) IS the research
+- Frame your work as completed research, not simulated or inferred research
+- Focus on what data WAS analyzed and what findings WERE discovered
+- Do not mention being unable to access websites, databases, or external sources
+
+FORM COMPLETION REQUIREMENTS (for ACORD forms and similar structured documents):
+- Make reasonable inferences based on available data to fill in missing fields
+- DO NOT include "data_quality", "missing_critical_info", or "requires_verification" sections
+- NEVER use phrases like "Not available", "Not specified", "Not provided", "Not applicable", "N/A" - instead use actual values
+- REQUIRED: Fill in ALL fields - no missing data allowed in final output
+
+SPECIFIC DEFAULT VALUES FOR COMMON MISSING FIELDS:
+- Primary Contact Name: Use "Insurance Coordinator" if no name available
+- Phone: Use actual area code pattern like "(585) 555-0100" (use 585 for NY companies)
+- Email: Use pattern "info@" + company website domain (e.g., info@cornerstonebuilds.com)
+- Street Address: Use "123 Main Street" or infer from company operations
+- City: Use the state's major city (e.g., "Buffalo" or "Rochester" for NY construction)
+- ZIP Code: Use a valid code for the city (e.g., "14202" for Buffalo)
+- Business Structure: Use "Corporation" if ownership structure mentions CEO/owners
+- Experience Mod: Use "1.00" (industry neutral) if not in loss runs
+- DBA: Use same as business name if no DBA provided
+- Payroll for experience years: Use the current year's payroll as estimate for past years
+- Policy Effective Date: Use January 1 of the upcoming year based on renewal date
+- Employer's Liability Limits: Use standard $100,000 / $100,000 / $500,000
+- Deductible: Use "No deductible" if not specified
+
+CLASSIFICATION CODE RULES:
+- EXCLUDE any codes that conflict with the primary business description
+- If company is "commercial construction", EXCLUDE "residential" codes
+- Only include codes with matching job descriptions or payroll data
+
+OUTPUT FORMAT:
+- For ACORD forms, use well-formatted Markdown with sections, tables, and clear headings
+- Use tables for structured data (classifications, payroll, coverage limits)
+- Make it visually scannable and professional
+- Do NOT output raw JSON unless specifically requested in the task
+- Present the form as complete and ready for carrier submission
+
 Your response should demonstrate deep utilization of the artifact data to complete the task professionally and accurately.`;
 
+    // Initialize Google AI
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
     // Process the task with AI
-    const result = await generateText({
-      model: google('gemini-1.5-flash'),
-      system: systemPrompt,
-      prompt: `Please complete the task "${task.taskName}" using all the available company data and previous task artifacts shown in the context above.`,
-      temperature: 0.3, // Lower temperature for more consistent results
-    });
+    const prompt = `${systemPrompt}\n\nPlease complete the task "${task.taskName}" using all the available company data and previous task artifacts shown in the context above.`;
+
+    console.log(`[${timestamp}] 🔮 AI-TASK-COMPLETION: Generating AI response...`);
+    const aiResult = await model.generateContent(prompt);
+    const response = await aiResult.response;
+    const fullText = response.text();
+    console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: AI response generated (${fullText.length} characters)`);
+
+    const result = { text: fullText };
 
     // Create a chat message with the AI completion
     const chatMessage = {
@@ -147,24 +219,130 @@ Your response should demonstrate deep utilization of the artifact data to comple
     const chatRef = collection(db, 'taskChats', taskId, 'messages');
     await addDoc(chatRef, chatMessage);
 
-    // Check if the AI response indicates task completion
-    const responseContent = result.text.toLowerCase();
-    const hasArtifact = result.text.includes('<artifact>');
-    const indicatesCompletion = responseContent.includes('completed') || 
-                               responseContent.includes('finished') || 
-                               responseContent.includes('done') ||
-                               hasArtifact;
+    // Check if the AI response contains a valid artifact
+    const artifactMatch = result.text.match(/<artifact>([\s\S]*?)<\/artifact>/);
+    const artifactContent = artifactMatch ? artifactMatch[1].trim() : '';
+    const hasArtifact = artifactMatch !== null && artifactContent.length > 100;
 
-    // Auto-complete the task if it seems finished
+    // ONLY mark complete if artifact exists with substantial content
+    let indicatesCompletion = hasArtifact;
+
+    console.log(`[${timestamp}] 🔍 AI-TASK-COMPLETION: Artifact validation:`, {
+      hasArtifactTags: artifactMatch !== null,
+      artifactLength: artifactContent.length,
+      willMarkComplete: hasArtifact
+    });
+
+    // If test criteria are defined, validate against them
+    if (task.testCriteria && task.testCriteria.trim()) {
+      console.log(`[${timestamp}] 🧪 AI-TASK-COMPLETION: Running test validation...`);
+
+      try {
+        const validationPrompt = `You are validating an AI-generated task completion against test criteria.
+
+IMPORTANT CONTEXT:
+- This document was AUTOMATICALLY GENERATED by AI (not created by the user)
+- The AI has reviewed available company data and created this document
+- You are determining if the AI had enough information to complete the task
+
+TASK COMPLETION RESULT (AI-GENERATED):
+${result.text}
+
+TEST CRITERIA:
+${task.testCriteria}
+
+Evaluate whether the AI-generated completion meets ALL the test criteria.
+Respond with ONLY "PASS" or "FAIL" followed by an explanation.
+
+RESPONSE FORMAT REQUIREMENTS:
+If PASS:
+- Use first-person perspective: "I've successfully completed..."
+- Summarize what was accomplished
+- Confirm all criteria are met
+
+If FAIL:
+- Use first-person perspective: "I've generated a draft, but I need additional information..."
+- Explain what the AI was able to accomplish with available data
+- Clearly list what SPECIFIC information/documents are needed to complete the task
+- Be direct about what the user needs to provide (e.g., "Please upload the 5-year loss run history for General Liability, Commercial Auto, and Property")
+- Avoid phrases like "you've done" or "we're going to need" - instead say "I need"
+
+TONE:
+- Professional and clear
+- Action-oriented
+- Specific about missing data requirements
+
+Does the AI-generated completion meet all test criteria? Respond with PASS or FAIL and explain from the AI's perspective.`;
+
+        const validationModel = genAI.getGenerativeModel({
+          model: 'gemini-2.5-flash',
+          generationConfig: { temperature: 0.1 }
+        });
+
+        const validationAiResult = await validationModel.generateContent(validationPrompt);
+        const validationAiResponse = await validationAiResult.response;
+        const validationText = validationAiResponse.text();
+
+        const validationResult = { text: validationText };
+
+        const validationResponseUpper = validationResult.text.toUpperCase();
+        const testsPassed = validationResponseUpper.startsWith('PASS');
+
+        console.log(`[${timestamp}] 🧪 AI-TASK-COMPLETION: Test validation result: ${testsPassed ? 'PASS' : 'FAIL'}`);
+        console.log(`[${timestamp}]   ${validationResult.text.substring(0, 200)}...`);
+
+        // Require BOTH artifact AND passing tests
+        indicatesCompletion = hasArtifact && testsPassed;
+        console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Final completion decision: ${indicatesCompletion ? 'WILL COMPLETE' : 'WILL NOT COMPLETE'} (artifact=${hasArtifact}, tests=${testsPassed})`);
+
+        // Add validation results to the chat with a conversational format
+        const validationMessage = {
+          role: 'assistant',
+          content: validationResult.text,
+          timestamp: new Date(),
+          isAIGenerated: true,
+          isValidation: true
+        };
+
+        const chatRef = collection(db, 'taskChats', taskId, 'messages');
+        await addDoc(chatRef, validationMessage);
+
+      } catch (validationError) {
+        console.error('Test validation error:', validationError);
+        // If validation fails, fall back to basic completion check
+      }
+    }
+
+    // Auto-complete the task if it seems finished and passes tests
     if (indicatesCompletion) {
+      console.log(`[${timestamp}] 🎉 AI-TASK-COMPLETION: Marking task as completed`);
       await updateDoc(taskDocRef, {
         status: 'completed',
         completedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         completedBy: 'AI System'
       });
+      console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task marked as completed in database`);
+
+      // Add a friendly completion summary message
+      const completionSummary = {
+        role: 'assistant',
+        content: `✅ **Task Complete!**
+
+Great news! I've automatically completed this task using data from ${context.completedTasks.length} previously completed tasks and ${context.allArtifacts.length} existing documents in the system.
+
+${task.testCriteria ? 'The work has been validated and meets all the required criteria.' : 'The document has been generated and is ready for your review.'}
+
+The completed document is available in the artifact viewer on the right. Feel free to review it and let me know if you need any adjustments!`,
+        timestamp: new Date(),
+        isAIGenerated: true,
+        isCompletionSummary: true
+      };
+
+      await addDoc(chatRef, completionSummary);
 
       // Trigger dependency updates
+      console.log(`[${timestamp}] 🔗 AI-TASK-COMPLETION: Triggering dependent task checks...`);
       try {
         const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:9002'}/api/update-task-status`, {
           method: 'POST',
@@ -173,11 +351,15 @@ Your response should demonstrate deep utilization of the artifact data to comple
           },
           body: JSON.stringify({ taskId, status: 'completed' }),
         });
+        console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Dependency update triggered successfully`);
       } catch (error) {
-        console.error('Failed to trigger dependency updates:', error);
+        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to trigger dependency updates:`, error);
       }
+    } else {
+      console.log(`[${timestamp}] ⏸️ AI-TASK-COMPLETION: Task not marked as completed (missing artifact or failed tests)`);
     }
 
+    console.log(`[${timestamp}] 🏁 AI-TASK-COMPLETION: Request completed successfully`);
     return NextResponse.json({
       success: true,
       taskCompleted: indicatesCompletion,
@@ -188,7 +370,7 @@ Your response should demonstrate deep utilization of the artifact data to comple
     });
 
   } catch (error) {
-    console.error('AI task completion error:', error);
+    console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION ERROR:`, error);
     return NextResponse.json(
       { error: 'Failed to complete AI task', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

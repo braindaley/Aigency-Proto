@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { TaskChat } from '@/components/TaskChat';
 import { TaskAIArtifacts } from '@/components/TaskAIArtifacts';
 import { AITaskCompletion } from '@/components/AITaskCompletion';
+import { DependencyArtifactsReview } from '@/components/DependencyArtifactsReview';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -129,6 +130,8 @@ export default function TaskDetailPage() {
   }
 
   if (task.tag === 'ai') {
+    const wasAutoCompleted = task.status === 'completed' && (task as any).completedBy === 'AI System';
+
     return (
       <div className="px-4 py-8 md:py-12">
         <div className="mx-auto max-w-[1400px]">
@@ -139,7 +142,7 @@ export default function TaskDetailPage() {
                 Back to Company
               </Link>
             </Button>
-            
+
             <div className="flex items-center gap-4 mb-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                 <Sparkles className="h-6 w-6 text-muted-foreground" />
@@ -148,10 +151,33 @@ export default function TaskDetailPage() {
                 <h1 className="text-3xl font-bold">{task.taskName}</h1>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant="outline">{task.phase}</Badge>
-                  <Badge variant="outline">{task.status}</Badge>
+                  <Badge variant={task.status === 'completed' ? 'default' : 'outline'}>
+                    {task.status}
+                  </Badge>
+                  {wasAutoCompleted && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      ✓ Auto-Completed
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
+
+            {wasAutoCompleted && (
+              <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-green-900 dark:text-green-100">
+                      This task was automatically completed by AI
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                      The AI executed this task when all dependencies were met. You can view the results below.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <TaskAIArtifacts task={task} companyId={companyId || ''} />
@@ -184,6 +210,11 @@ export default function TaskDetailPage() {
         </div>
 
       </div>
+
+      {/* Show dependency artifacts review if task has dependencies and flag is enabled */}
+      {task.dependencies && task.dependencies.length > 0 && task.showDependencyArtifacts && (
+        <DependencyArtifactsReview task={task} companyId={companyId || ''} />
+      )}
 
       <AITaskCompletion task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
       <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />

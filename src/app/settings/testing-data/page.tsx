@@ -2,12 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { ArrowLeft, Download, FileText, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function TestingDataPage() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCreatingCompany, setIsCreatingCompany] = useState(false);
 
   const handleCreateWorkersCompData = async () => {
     setIsGenerating(true);
@@ -37,6 +38,56 @@ export default function TestingDataPage() {
       alert('Failed to generate test data. Please try again.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleCreateTestCompany = async () => {
+    setIsCreatingCompany(true);
+    try {
+      const response = await fetch('/api/testing-data/workers-comp/create-company', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create test company');
+      }
+
+      // Check if response is JSON or a blob
+      const contentType = response.headers.get('content-type');
+
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        if (data.companyId) {
+          // Redirect to the newly created company
+          window.location.href = `/companies/${data.companyId}`;
+        }
+      } else {
+        // It's a ZIP file with chat-upload files
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'chat-upload-files.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Show success message with company ID from headers
+        const companyId = response.headers.get('X-Company-Id');
+        if (companyId) {
+          alert(`Test company created successfully! Chat upload files downloaded. Redirecting to company...`);
+          window.location.href = `/companies/${companyId}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error creating test company:', error);
+      alert('Failed to create test company. Please try again.');
+    } finally {
+      setIsCreatingCompany(false);
     }
   };
 
@@ -74,6 +125,7 @@ export default function TestingDataPage() {
                 <li>• Employee count & job descriptions (Excel - chat upload)</li>
                 <li>• Payroll by classification (Excel - chat upload)</li>
                 <li>• Loss runs 3-5 years (Excel - chat upload)</li>
+                <li>• Prior insurance history GL/Auto/Property (Text - chat upload)</li>
                 <li>• OSHA research data (Word - create company upload)</li>
                 <li>• ACORD 130 Workers' Compensation Application (Word - create company upload)</li>
                 <li>• ACORD 125 Commercial Insurance Application (Word - create company upload)</li>
@@ -82,14 +134,26 @@ export default function TestingDataPage() {
               </ul>
             </div>
 
-            <Button
-              onClick={handleCreateWorkersCompData}
-              disabled={isGenerating}
-              className="w-full"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {isGenerating ? 'Generating Test Data...' : 'Create Workers Comp Test Data'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCreateWorkersCompData}
+                disabled={isGenerating || isCreatingCompany}
+                variant="outline"
+                className="flex-1"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {isGenerating ? 'Generating...' : 'Download ZIP'}
+              </Button>
+
+              <Button
+                onClick={handleCreateTestCompany}
+                disabled={isGenerating || isCreatingCompany}
+                className="flex-1"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {isCreatingCompany ? 'Creating Company...' : 'Create Test Company'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

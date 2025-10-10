@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,7 @@ export default function TaskPage() {
   
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [dependencies, setDependencies] = useState<string[]>([]);
+  const [showDependencyArtifacts, setShowDependencyArtifacts] = useState(false);
   const [initialState, setInitialState] = useState<any>({});
 
   useEffect(() => {
@@ -86,6 +88,7 @@ export default function TaskPage() {
         setTag(taskData.tag || 'manual');
         setPhase(taskData.phase || 'Submission');
         setDependencies(taskData.dependencies || []);
+        setShowDependencyArtifacts(taskData.showDependencyArtifacts || false);
 
         const currentState = {
           taskName: taskData.taskName,
@@ -96,6 +99,7 @@ export default function TaskPage() {
           tag: taskData.tag || 'manual',
           phase: taskData.phase || 'Submission',
           dependencies: taskData.dependencies || [],
+          showDependencyArtifacts: taskData.showDependencyArtifacts || false,
         };
         setInitialState(currentState);
 
@@ -138,9 +142,10 @@ export default function TaskPage() {
       tag,
       phase,
       dependencies,
+      showDependencyArtifacts,
     };
     return JSON.stringify(initialState) !== JSON.stringify(currentState);
-  }, [task, taskName, description, testCriteria, systemPrompt, subtasks, tag, phase, dependencies, initialState]);
+  }, [task, taskName, description, testCriteria, systemPrompt, subtasks, tag, phase, dependencies, showDependencyArtifacts, initialState]);
   
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
@@ -166,6 +171,7 @@ export default function TaskPage() {
         tag,
         phase,
         dependencies,
+        showDependencyArtifacts,
       };
       await updateDoc(taskDocRef, updatedData);
 
@@ -350,6 +356,26 @@ export default function TaskPage() {
               noResultsText="No dependencies found."
             />
           </div>
+          {dependencies.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="showDependencyArtifacts"
+                  checked={showDependencyArtifacts}
+                  onCheckedChange={(checked) => setShowDependencyArtifacts(!!checked)}
+                />
+                <Label
+                  htmlFor="showDependencyArtifacts"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Show dependency artifacts for review
+                </Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                When enabled, users will be able to review artifacts from dependency tasks before completing this task.
+              </p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Sub-tasks</Label>
             <div className="space-y-2">

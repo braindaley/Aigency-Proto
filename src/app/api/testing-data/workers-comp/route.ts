@@ -879,6 +879,210 @@ Premium factors may vary based on experience modification, safety programs, and 
     );
     zip.file('coverage-recommendations-create-company-upload.docx', coverageDoc);
 
+    // Add Prior Insurance History document (needed for ACORD 125 validation)
+    const priorInsuranceHistory = `PRIOR INSURANCE HISTORY (5 YEARS)
+${company.name}
+
+===============================================
+GENERAL LIABILITY COVERAGE HISTORY
+===============================================
+
+Policy Year 2024-2025:
+- Carrier: Hartford Insurance Company
+- Policy Number: GL-2024-558832
+- Policy Period: 01/01/2024 - 01/01/2025
+- General Aggregate Limit: $2,000,000
+- Per Occurrence Limit: $1,000,000
+- Products/Completed Operations: $2,000,000
+- Personal & Advertising Injury: $1,000,000
+- Annual Premium: $12,450
+- Claims: 1 claim - $15,000 paid (slip and fall at job site)
+
+Policy Year 2023-2024:
+- Carrier: Hartford Insurance Company
+- Policy Number: GL-2023-547291
+- Policy Period: 01/01/2023 - 01/01/2024
+- General Aggregate Limit: $2,000,000
+- Per Occurrence Limit: $1,000,000
+- Products/Completed Operations: $2,000,000
+- Personal & Advertising Injury: $1,000,000
+- Annual Premium: $11,800
+- Claims: None
+
+Policy Year 2022-2023:
+- Carrier: Travelers Insurance
+- Policy Number: GL-2022-TRV-9845
+- Policy Period: 01/01/2022 - 01/01/2023
+- General Aggregate Limit: $1,000,000
+- Per Occurrence Limit: $1,000,000
+- Products/Completed Operations: $1,000,000
+- Personal & Advertising Injury: $1,000,000
+- Annual Premium: $10,200
+- Claims: 1 claim - $8,500 paid (property damage)
+
+Policy Year 2021-2022:
+- Carrier: Travelers Insurance
+- Policy Number: GL-2021-TRV-9123
+- Policy Period: 01/01/2021 - 01/01/2022
+- General Aggregate Limit: $1,000,000
+- Per Occurrence Limit: $1,000,000
+- Products/Completed Operations: $1,000,000
+- Personal & Advertising Injury: $1,000,000
+- Annual Premium: $9,850
+- Claims: None
+
+Policy Year 2020-2021:
+- Carrier: Travelers Insurance
+- Policy Number: GL-2020-TRV-8756
+- Policy Period: 01/01/2020 - 01/01/2021
+- General Aggregate Limit: $1,000,000
+- Per Occurrence Limit: $1,000,000
+- Products/Completed Operations: $1,000,000
+- Personal & Advertising Injury: $1,000,000
+- Annual Premium: $9,400
+- Claims: None
+
+===============================================
+COMMERCIAL AUTO COVERAGE HISTORY
+===============================================
+
+Policy Year 2024-2025:
+- Carrier: Progressive Commercial
+- Policy Number: CA-2024-PC-445566
+- Policy Period: 01/01/2024 - 01/01/2025
+- Number of Vehicles: 8 (4 trucks, 3 vans, 1 sedan)
+- Combined Single Limit: $1,000,000
+- Physical Damage: Comprehensive & Collision ($500 deductible)
+- Uninsured/Underinsured Motorist: $1,000,000
+- Annual Premium: $8,920
+- Claims: 1 claim - $12,300 paid (rear-end collision, no injuries)
+
+Policy Year 2023-2024:
+- Carrier: Progressive Commercial
+- Policy Number: CA-2023-PC-438821
+- Policy Period: 01/01/2023 - 01/01/2024
+- Number of Vehicles: 7 (3 trucks, 3 vans, 1 sedan)
+- Combined Single Limit: $1,000,000
+- Physical Damage: Comprehensive & Collision ($500 deductible)
+- Uninsured/Underinsured Motorist: $1,000,000
+- Annual Premium: $8,100
+- Claims: None
+
+Policy Year 2022-2023:
+- Carrier: State Farm Business
+- Policy Number: CA-2022-SF-778899
+- Policy Period: 01/01/2022 - 01/01/2023
+- Number of Vehicles: 6 (2 trucks, 3 vans, 1 sedan)
+- Combined Single Limit: $500,000
+- Physical Damage: Comprehensive & Collision ($1,000 deductible)
+- Uninsured/Underinsured Motorist: $500,000
+- Annual Premium: $6,850
+- Claims: 1 claim - $4,200 paid (windshield replacement)
+
+Policy Year 2021-2022:
+- Carrier: State Farm Business
+- Policy Number: CA-2021-SF-756432
+- Policy Period: 01/01/2021 - 01/01/2022
+- Number of Vehicles: 5 (2 trucks, 2 vans, 1 sedan)
+- Combined Single Limit: $500,000
+- Physical Damage: Comprehensive & Collision ($1,000 deductible)
+- Uninsured/Underinsured Motorist: $500,000
+- Annual Premium: $6,200
+- Claims: None
+
+Policy Year 2020-2021:
+- Carrier: State Farm Business
+- Policy Number: CA-2020-SF-732109
+- Policy Period: 01/01/2020 - 01/01/2021
+- Number of Vehicles: 4 (1 truck, 2 vans, 1 sedan)
+- Combined Single Limit: $500,000
+- Physical Damage: Comprehensive & Collision ($1,000 deductible)
+- Uninsured/Underinsured Motorist: $500,000
+- Annual Premium: $5,400
+- Claims: None
+
+===============================================
+COMMERCIAL PROPERTY COVERAGE HISTORY
+===============================================
+
+Policy Year 2024-2025:
+- Carrier: Chubb Insurance
+- Policy Number: CP-2024-CH-992211
+- Policy Period: 01/01/2024 - 01/01/2025
+- Building Limit: $850,000 (office/warehouse at 123 Main St, Buffalo, NY)
+- Business Personal Property: $425,000 (tools, equipment, inventory)
+- Business Income: $250,000
+- Equipment Breakdown: Included
+- Deductible: $5,000
+- Annual Premium: $6,750
+- Claims: None
+
+Policy Year 2023-2024:
+- Carrier: Chubb Insurance
+- Policy Number: CP-2023-CH-981045
+- Policy Period: 01/01/2023 - 01/01/2024
+- Building Limit: $800,000
+- Business Personal Property: $400,000
+- Business Income: $200,000
+- Equipment Breakdown: Included
+- Deductible: $5,000
+- Annual Premium: $6,200
+- Claims: None
+
+Policy Year 2022-2023:
+- Carrier: Liberty Mutual
+- Policy Number: CP-2022-LM-665544
+- Policy Period: 01/01/2022 - 01/01/2023
+- Building Limit: $750,000
+- Business Personal Property: $350,000
+- Business Income: $150,000
+- Equipment Breakdown: Not Included
+- Deductible: $2,500
+- Annual Premium: $5,100
+- Claims: 1 claim - $18,500 paid (roof damage from storm)
+
+Policy Year 2021-2022:
+- Carrier: Liberty Mutual
+- Policy Number: CP-2021-LM-654321
+- Policy Period: 01/01/2021 - 01/01/2022
+- Building Limit: $750,000
+- Business Personal Property: $325,000
+- Business Income: $150,000
+- Equipment Breakdown: Not Included
+- Deductible: $2,500
+- Annual Premium: $4,900
+- Claims: None
+
+Policy Year 2020-2021:
+- Carrier: Liberty Mutual
+- Policy Number: CP-2020-LM-641278
+- Policy Period: 01/01/2020 - 01/01/2021
+- Building Limit: $700,000
+- Business Personal Property: $300,000
+- Business Income: $125,000
+- Equipment Breakdown: Not Included
+- Deductible: $2,500
+- Annual Premium: $4,650
+- Claims: None
+
+===============================================
+SUMMARY
+===============================================
+
+Total Premium History (All Lines):
+- 2024-2025: $28,120
+- 2023-2024: $26,100
+- 2022-2023: $22,150
+- 2021-2022: $20,950
+- 2020-2021: $19,450
+
+Total Claims (5 Years): 5 claims totaling $58,500
+
+No policy cancellations or non-renewals in the past 5 years.
+All policies renewed successfully with no coverage gaps.`;
+
+    zip.file('prior-insurance-history-chat-upload.txt', priorInsuranceHistory);
+
     // Generate ZIP file
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 

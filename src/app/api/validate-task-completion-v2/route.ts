@@ -123,7 +123,7 @@ Respond in JSON format:
 
     // Call Gemini API with completely fresh context and configuration
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         temperature: 0.1, // Very low temperature for consistent, logical responses
         topP: 0.8,

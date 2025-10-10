@@ -396,7 +396,7 @@ Please provide the missing information by uploading relevant documents or updati
     }
 
     const result = await streamText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.5-flash'),
       messages: convertedMessages,
       system: systemPrompt,
       temperature: 0.7,

@@ -137,7 +137,7 @@ Be thorough, objective, and specific in your analysis. Base your assessment on w
     console.log('First 500 chars of prompt:', validationPrompt.substring(0, 500));
     
     // Call Gemini API
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(validationPrompt);
     const response = await result.response;
     const text = response.text();
