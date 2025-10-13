@@ -337,9 +337,67 @@ Please provide helpful guidance and information to complete this task.`;
       content: msg.content || ''
     })).filter((msg: any) => msg.content.trim().length > 0);
 
-    // Check if user is asking to test - provide immediate validation feedback
+    // Check if user is explicitly approving/passing the task
     const latestUserMessage = convertedMessages[convertedMessages.length - 1];
-    const isTestRequest = latestUserMessage?.role === 'user' && 
+    const userContent = latestUserMessage?.content?.toLowerCase() || '';
+
+    const approvalPhrases = [
+      'pass this task',
+      'pass the task',
+      'approve this task',
+      'approve the task',
+      'mark as complete',
+      'mark as completed',
+      'mark this complete',
+      'mark this completed',
+      'this is ok',
+      'this is fine',
+      'this is good',
+      'looks good',
+      'approve this',
+      'complete this task',
+      'complete the task',
+      'accept this',
+      'this works'
+    ];
+
+    const userIsApproving = approvalPhrases.some(phrase => userContent.includes(phrase));
+
+    console.log('🔍 USER APPROVAL CHECK (artifact):', {
+      userContent: userContent.substring(0, 100),
+      userIsApproving,
+      currentTaskStatus: task.status,
+      taskId
+    });
+
+    // Check if task is not already completed (handle both 'completed' and 'Complete')
+    const isNotCompleted = task.status !== 'completed' && task.status !== 'Complete';
+
+    if (userIsApproving && isNotCompleted) {
+      console.log(`✅ User explicitly approved task ${taskId} (artifact), marking as completed`);
+      // Call immediately to ensure it executes
+      (async () => {
+        try {
+          console.log(`🔄 Calling updateTaskStatus for ${taskId}...`);
+          await updateTaskStatus(taskId, 'completed');
+          console.log(`✅ Task ${taskId} marked as completed by user approval (artifact)`);
+        } catch (error) {
+          console.error('❌ Failed to complete task on user approval (artifact):', error);
+        }
+      })();
+
+      // Return approval message immediately
+      return new Response('✅ **Task Approved!** Great, I\'m marking this task as completed. The work you\'ve done meets the requirements and is ready to proceed.', {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+        }
+      });
+    } else if (userIsApproving) {
+      console.log(`⏭️ Task ${taskId} already completed, skipping approval (artifact)`);
+    }
+
+    // Check if user is asking to test - provide immediate validation feedback
+    const isTestRequest = latestUserMessage?.role === 'user' &&
                          latestUserMessage?.content.toLowerCase().trim() === 'test';
                          
     if (isTestRequest && task.testCriteria) {

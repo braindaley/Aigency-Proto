@@ -368,7 +368,77 @@ export async function POST(req: NextRequest) {
     const narrativeRef = ref(storage, `companies/${companyRef.id}/operations-narrative-create-company-upload.docx`);
     await uploadBytes(narrativeRef, narrativeDoc);
 
-    console.log(`Uploaded ${2} create-company documents to Firebase Storage`);
+    // Generate ACORD 130 - Workers' Compensation Application
+    const acord130Content = `ACORD 130 - WORKERS' COMPENSATION APPLICATION\n\n` +
+      `Applicant Information:\n` +
+      `Business Name: ${company.name}\n` +
+      `Website: ${company.website}\n` +
+      `Description: ${company.description}\n` +
+      `Year Founded: ${company.yearFounded}\n` +
+      `Number of Employees: ${company.employeeCount}\n\n` +
+      `Business Operations:\n` +
+      `Industry: ${company.industry}\n` +
+      `Location: ${company.location}\n\n` +
+      `Classification Information:\n` +
+      `See attached payroll by classification document for detailed breakdown of employee classifications, payroll amounts, and premium calculations.\n\n` +
+      `Loss History:\n` +
+      `See attached loss runs for 3-5 year claims history including dates, nature of injuries, and amounts paid/reserved.`;
+    const acord130Doc = await createWordDocument('ACORD 130 - Workers Compensation Application', acord130Content);
+    const acord130Ref = ref(storage, `companies/${companyRef.id}/acord-130-workers-comp-application-create-company-upload.docx`);
+    await uploadBytes(acord130Ref, acord130Doc);
+
+    // Generate ACORD 125 - Commercial Insurance Application
+    const acord125Content = `ACORD 125 - COMMERCIAL INSURANCE APPLICATION\n\n` +
+      `General Information:\n` +
+      `Applicant Name: ${company.name}\n` +
+      `DBA: ${company.name}\n` +
+      `Physical Address: ${company.location}\n` +
+      `Website: ${company.website}\n` +
+      `Business Structure: Corporation\n` +
+      `Year Founded: ${company.yearFounded}\n\n` +
+      `Business Information:\n` +
+      `Primary Operations: ${company.description}\n` +
+      `Industry: ${company.industry}\n` +
+      `Number of Employees: ${company.employeeCount}\n\n` +
+      `Coverage Requests:\n` +
+      `Workers' Compensation: See ACORD 130 for detailed information\n` +
+      `General Liability: Coverage requested\n` +
+      `Commercial Auto: Coverage requested\n` +
+      `Property: Coverage requested\n\n` +
+      `Prior Insurance History:\n` +
+      `See attached prior insurance history document for 5-year carrier history.`;
+    const acord125Doc = await createWordDocument('ACORD 125 - Commercial Insurance Application', acord125Content);
+    const acord125Ref = ref(storage, `companies/${companyRef.id}/acord-125-commercial-insurance-application-create-company-upload.docx`);
+    await uploadBytes(acord125Ref, acord125Doc);
+
+    // Generate Coverage Recommendations
+    const coverageRecsContent = `COVERAGE RECOMMENDATIONS - ${company.name}\n\n` +
+      `Based on our review of ${company.name}'s operations, employee classifications, and loss history, we recommend the following coverage:\n\n` +
+      `Workers' Compensation:\n` +
+      `- Statutory limits as required by state\n` +
+      `- Employer's Liability: $100,000/$100,000/$500,000\n` +
+      `- Consider voluntary compensation for any excluded employees\n\n` +
+      `General Liability:\n` +
+      `- $1,000,000 per occurrence\n` +
+      `- $2,000,000 aggregate\n` +
+      `- Products/Completed Operations: $2,000,000 aggregate\n\n` +
+      `Commercial Auto:\n` +
+      `- $1,000,000 combined single limit\n` +
+      `- Physical damage coverage with $1,000 deductible\n` +
+      `- Hired and non-owned auto coverage\n\n` +
+      `Property:\n` +
+      `- Coverage based on building and contents values\n` +
+      `- Business income coverage recommended\n` +
+      `- Equipment breakdown coverage\n\n` +
+      `Umbrella/Excess Liability:\n` +
+      `- $1,000,000 to $2,000,000 recommended based on operations and exposure\n\n` +
+      `Rationale:\n` +
+      `These recommendations are based on ${company.industry.toLowerCase()} industry standards, the company's employee count of ${company.employeeCount}, and review of the loss history showing claims patterns that indicate standard risk levels.`;
+    const coverageRecsDoc = await createWordDocument('Coverage Recommendations', coverageRecsContent);
+    const coverageRecsRef = ref(storage, `companies/${companyRef.id}/coverage-recommendations-create-company-upload.docx`);
+    await uploadBytes(coverageRecsRef, coverageRecsDoc);
+
+    console.log(`Uploaded ${5} create-company documents to Firebase Storage`);
 
     // Generate "chat-upload" files and return as ZIP
     const JSZip = require('jszip');

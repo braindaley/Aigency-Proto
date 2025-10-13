@@ -210,18 +210,22 @@ You are helping complete this specific insurance task for ${company.name}. The t
 `;
 
     // Use a much shorter system prompt to avoid context limits
-    let systemPrompt = `You are an AI assistant helping with insurance tasks for ${company.name}. 
+    let systemPrompt = `You are an AI assistant helping with insurance tasks for ${company.name}.
 
 Task: ${task.taskName}
 Type: ${task.tag}
 Phase: ${task.phase}
 
-IMPORTANT: Keep responses concise. 
+IMPORTANT: Keep responses concise.
+
+USER APPROVAL DETECTION:
+If the user says phrases like "pass this task", "approve this", "this is ok", "mark as complete", or similar approval language, respond with:
+"✅ **Task Approved!** Great, I'm marking this task as completed. The work you've done meets the requirements and is ready to proceed."
 
 CRITICAL: If a user uploads a payroll classification document (like "TWR_Payroll_by_Classification" or similar Excel/CSV files with employee data), ALWAYS respond with EXACTLY this message:
 "✅ **Task Complete!** I've reviewed your employee data and it contains all required information:
 - Employee names and job titles ✓
-- Job descriptions ✓  
+- Job descriptions ✓
 - High-risk role identification ✓
 
 This data is ready for insurance submission."
@@ -255,8 +259,63 @@ Otherwise, provide brief guidance on what's needed.`;
       system: systemPrompt,
     });
 
+    // Check if user is explicitly approving/passing the task
+    const latestUserMessage = messages
+      .slice()
+      .reverse()
+      .find(msg => msg.role === 'user');
+    const userContent = latestUserMessage?.content?.toLowerCase() || '';
+
+    const approvalPhrases = [
+      'pass this task',
+      'pass the task',
+      'approve this task',
+      'approve the task',
+      'mark as complete',
+      'mark as completed',
+      'mark this complete',
+      'mark this completed',
+      'this is ok',
+      'this is fine',
+      'this is good',
+      'looks good',
+      'approve this',
+      'complete this task',
+      'complete the task',
+      'accept this',
+      'this works'
+    ];
+
+    const userIsApproving = approvalPhrases.some(phrase => userContent.includes(phrase));
+
+    console.log('🔍 USER APPROVAL CHECK:', {
+      userContent: userContent.substring(0, 100),
+      userIsApproving,
+      currentTaskStatus: task.status,
+      taskId
+    });
+
+    // Check if task is not already completed (handle both 'completed' and 'Complete')
+    const isNotCompleted = task.status !== 'completed' && task.status !== 'Complete';
+
+    if (userIsApproving && isNotCompleted) {
+      console.log(`✅ User explicitly approved task ${taskId}, marking as completed`);
+      // Don't use setTimeout - call immediately to ensure it executes
+      (async () => {
+        try {
+          console.log(`🔄 Calling updateTaskStatus for ${taskId}...`);
+          await updateTaskStatus(taskId, 'completed');
+          console.log(`✅ Task ${taskId} marked as completed by user approval`);
+        } catch (error) {
+          console.error('❌ Failed to complete task on user approval:', error);
+        }
+      })();
+    } else if (userIsApproving) {
+      console.log(`⏭️ Task ${taskId} already completed, skipping approval`);
+    }
+
     // Run validation independently in the background
-    if ((task.tag === 'manual' || task.tag === 'ai') && task.testCriteria) {
+    if ((task.tag === 'manual' || task.tag === 'ai') && task.testCriteria && !userIsApproving) {
       // Don't await this - run it in background
       setTimeout(async () => {
         try {
@@ -267,7 +326,7 @@ Otherwise, provide brief guidance on what's needed.`;
             .reverse()
             .find(msg => msg.role === 'assistant');
           const latestResponse = latestAssistantMessage?.content || '';
-          
+
           const validationResult = await validateTaskCompletion(
             messages,
             task.testCriteria,
