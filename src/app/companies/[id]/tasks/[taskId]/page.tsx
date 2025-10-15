@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CompanyTask } from '@/lib/types';
 import { ArrowLeft, Sparkles, User } from 'lucide-react';
@@ -68,6 +68,26 @@ export default function TaskDetailPage() {
       };
 
       fetchTask();
+
+      // Set up real-time listener for task status changes
+      const taskDocRef = doc(db, 'companyTasks', taskId);
+
+      const unsubscribe = onSnapshot(taskDocRef, (doc) => {
+        if (doc.exists()) {
+          const newTaskData = { id: doc.id, ...doc.data() } as CompanyTask;
+          setTask(prevTask => {
+            // Check if status changed to completed
+            if (prevTask && prevTask.status !== 'completed' && newTaskData.status === 'completed') {
+              console.log('🎉 Task status changed to completed!');
+            }
+            return newTaskData;
+          });
+        }
+      });
+
+      return () => {
+        unsubscribe();
+      };
     }
   }, [companyId, taskId]);
 

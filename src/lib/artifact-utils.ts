@@ -1,4 +1,4 @@
-import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface SaveArtifactParams {
@@ -37,17 +37,32 @@ export async function saveArtifactToDatabase({
       updatedAt: serverTimestamp()
     };
 
-    if (databaseId) {
-      // Try to update existing artifact
+    const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+
+    // First, try to find existing artifact by taskId and ai-canvas tag
+    const existingQuery = query(
+      artifactsRef,
+      where('taskId', '==', taskId),
+      where('tags', 'array-contains', 'ai-canvas')
+    );
+    const existingArtifacts = await getDocs(existingQuery);
+
+    if (!existingArtifacts.empty) {
+      // Update the first matching artifact (should only be one per task)
+      const existingDoc = existingArtifacts.docs[0];
+      await updateDoc(doc(db, `companies/${companyId}/artifacts`, existingDoc.id), artifactData);
+      console.log('✅ Artifact updated in database (found by taskId):', existingDoc.id);
+      return existingDoc.id;
+    } else if (databaseId) {
+      // Try to update using the provided databaseId
       try {
         const artifactRef = doc(db, `companies/${companyId}/artifacts`, databaseId);
         await updateDoc(artifactRef, artifactData);
-        console.log('✅ Artifact updated in database:', databaseId);
+        console.log('✅ Artifact updated in database (using databaseId):', databaseId);
         return databaseId;
       } catch (error) {
         // If update fails (document doesn't exist), create a new one
         console.warn('⚠️ Failed to update artifact (document may have been deleted), creating new one:', error);
-        const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
         const docRef = await addDoc(artifactsRef, {
           ...artifactData,
           createdAt: serverTimestamp()
@@ -57,7 +72,6 @@ export async function saveArtifactToDatabase({
       }
     } else {
       // Create new artifact
-      const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
       const docRef = await addDoc(artifactsRef, {
         ...artifactData,
         createdAt: serverTimestamp()

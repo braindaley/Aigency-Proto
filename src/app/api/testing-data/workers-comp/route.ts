@@ -575,51 +575,119 @@ Recent Safety Initiatives:
 
     const acord130Doc = await createWordDocument(
       'ACORD 130 - Workers Compensation Application',
-      `ACORD 130 (2013/09)
-WORKERS COMPENSATION APPLICATION
+      `ACORD 130 (2016/03)
+WORKERS' COMPENSATION APPLICATION
 
-AGENCY INFORMATION:
+═══════════════════════════════════════════════════════════════════════════════
+
+AGENCY INFORMATION
+
 Agency Name: ${company.industry === 'Construction' ? 'Premier Construction Insurance Services' :
               company.industry === 'Manufacturing' ? 'Industrial Risk Management Services' :
               'Commercial Insurance Solutions LLC'}
-Producer Name: ${['Michael Johnson, CIC', 'Sarah Davis, CPCU', 'Robert Wilson, CIC', 'Jennifer Martinez, CPCU'][Math.floor(Math.random() * 4)]}
+Producer/Agent Name: ${['Michael Johnson, CIC', 'Sarah Davis, CPCU', 'Robert Wilson, CIC', 'Jennifer Martinez, CPCU'][Math.floor(Math.random() * 4)]}
 Agency Phone: (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}
+Agency Email: ${['info@premierins.com', 'contact@industrialrisk.com', 'service@commercialins.com'][Math.floor(Math.random() * 3)]}
+Producer Code: PC${Math.floor(10000 + Math.random() * 89999)}
 
-APPLICANT INFORMATION:
-Business Name: ${company.name}
-Mailing Address: ${['123 Business Blvd', '456 Commerce St', '789 Industry Ave'][Math.floor(Math.random() * 3)]}
-${company.location}
+═══════════════════════════════════════════════════════════════════════════════
+
+APPLICANT INFORMATION
+
+Legal Business Name: ${company.name}
+DBA (if different): ${company.name}
+
+Mailing Address:
+Street: ${['123 Business Blvd, Suite 100', '456 Commerce St', '789 Industry Ave'][Math.floor(Math.random() * 3)]}
+City: ${company.location.split(',')[0]}
+State: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'NY'}
+ZIP Code: ${Math.floor(10000 + Math.random() * 89999)}
+
+Physical Address: Same as mailing address ☒  Different (specify below) ☐
+
+Primary Contact: ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.name || employees[0].name}
+Contact Title: ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.jobTitle || employees[0].jobTitle}
+Contact Phone: (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}
+Contact Email: info@${company.website.replace('www.', '')}
 Website: ${company.website}
 
-Federal Employer ID Number: ${Math.floor(10 + Math.random() * 89)}-${Math.floor(1000000 + Math.random() * 8999999)}
-Years in Business: ${new Date().getFullYear() - company.yearFounded}
+Federal Employer ID Number (FEIN): ${Math.floor(10 + Math.random() * 89)}-${Math.floor(1000000 + Math.random() * 8999999)}
+Years in Business (Current Ownership): ${new Date().getFullYear() - company.yearFounded}
+Years in Business (Total): ${new Date().getFullYear() - company.yearFounded}
+
 SIC Code: ${company.industry === 'Construction' ? '1542' : company.industry === 'Manufacturing' ? '3599' : '4225'}
 NAICS Code: ${company.industry === 'Construction' ? '236220' : company.industry === 'Manufacturing' ? '332999' : '493110'}
 
-Business Type: ☒ Corporation  ☐ LLC  ☐ Partnership  ☐ Sole Proprietor
+Business Structure:
+☒ Corporation    ☐ LLC    ☐ Partnership    ☐ Sole Proprietor    ☐ Other: __________
 
-POLICY INFORMATION:
-Proposed Effective Date: ${new Date().toLocaleDateString()}
-Proposed Expiration Date: ${new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString()}
+State of Incorporation: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'NY'}
 
-Coverage Limits:
-Part 1 - Workers Compensation: Statutory
-Part 2 - Employer's Liability:
-  Each Accident: $1,000,000
-  Disease - Policy Limit: $1,000,000
-  Disease - Each Employee: $1,000,000
+═══════════════════════════════════════════════════════════════════════════════
 
-LOCATIONS:
+POLICY INFORMATION
+
+Requested Policy Period:
+Effective Date: ${new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+Expiration Date: ${new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+
+Coverage Requested:
+Part 1 - Workers Compensation: Statutory Limits
+Part 2 - Employers Liability:
+  • Each Accident: $1,000,000
+  • Disease - Policy Limit: $1,000,000
+  • Disease - Each Employee: $1,000,000
+
+Voluntary Compensation: ☐ Yes  ☒ No
+USL&H Coverage: ☐ Yes  ☒ No
+Foreign Coverage: ☐ Yes  ☒ No
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LOCATIONS
+
+List all business locations where work is performed:
+
 Location #1:
-${['123 Business Blvd', '456 Commerce St', '789 Industry Ave'][Math.floor(Math.random() * 3)]}
-${company.location}
+Street Address: ${['123 Business Blvd, Suite 100', '456 Commerce St', '789 Industry Ave'][Math.floor(Math.random() * 3)]}
+City, State, ZIP: ${company.location}, ${Math.floor(10000 + Math.random() * 89999)}
+County: ${['Erie', 'Travis', 'Fulton', 'Wayne'][Math.floor(Math.random() * 4)]}
+Years at Location: ${Math.floor(Math.random() * 10) + 3}
+Owned ☐  Rented ☒
+Square Footage: ${Math.floor(5000 + Math.random() * 45000).toLocaleString()}
 
-RATING INFORMATION - Classification Codes and Payroll:
+═══════════════════════════════════════════════════════════════════════════════
 
+PARTNERS, OFFICERS, MEMBERS & RELATIVES
+
+List all owners, partners, officers, members who actively engage in the operation of the business:
+
+| Name | Title | Ownership % | State | Duties | Annual Remuneration | Include/Exclude |
+|------|-------|-------------|-------|--------|---------------------|-----------------|
+${employees.filter(e => e.jobTitle.toLowerCase().includes('ceo') || e.jobTitle.toLowerCase().includes('president') || e.jobTitle.toLowerCase().includes('owner')).slice(0, 3).map(emp =>
+`| ${emp.name} | ${emp.jobTitle} | ${emp.jobTitle.toLowerCase().includes('ceo') ? '100.0' : (Math.random() * 30 + 10).toFixed(1)}% | ${company.location.split(',')[1]?.trim().split(' ')[0] || 'NY'} | ${emp.description.substring(0, 50)}... | $${emp.annualSalary.toLocaleString()} | ${emp.jobTitle.toLowerCase().includes('ceo') ? 'Exclude' : 'Include'} |`
+).join('\n')}
+
+Officers/Owners Requesting INCLUSION in Coverage:
+${employees.filter(e => !e.jobTitle.toLowerCase().includes('ceo')).slice(0, 2).map(e => `• ${e.name} - ${e.jobTitle}`).join('\n')}
+
+Officers/Owners Requesting EXCLUSION from Coverage:
+${employees.filter(e => e.jobTitle.toLowerCase().includes('ceo')).slice(0, 1).map(e => `• ${e.name} - ${e.jobTitle}`).join('\n')}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STATE RATING WORKSHEET
+
+State: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'New York'}
+
+Classification Table:
+
+| Loc # | Class Code | Classification Description | # Employees | Est. Annual Remuneration | Rate per $100 | Estimated Premium |
+|-------|------------|----------------------------|-------------|--------------------------|---------------|-------------------|
 ${(() => {
         const classificationMap = new Map();
         const classificationDescriptions = {
-          8810: 'Clerical Office Employees',
+          8810: 'Clerical Office Employees NOC',
           8742: 'Salespersons - Outside',
           8292: 'Warehouse Operations',
           8601: 'Accounting Services',
@@ -639,6 +707,13 @@ ${(() => {
           8227: 'Warehouse (Construction or Erection Perm Yard)'
         };
 
+        const rateMap = {
+          8810: 0.35, 8742: 0.42, 8292: 2.84, 8601: 0.29, 8832: 0.18,
+          9014: 6.23, 9102: 6.23, 3632: 4.82, 7380: 4.67, 7219: 8.89,
+          5474: 2.88, 5645: 8.96, 5190: 4.19, 5538: 9.27, 5606: 4.44,
+          5403: 8.96, 5432: 8.96, 8227: 2.84
+        };
+
         employees.forEach(emp => {
           const code = emp.classificationCode;
           if (!classificationMap.has(code)) {
@@ -646,32 +721,154 @@ ${(() => {
               code,
               description: classificationDescriptions[code] || 'Other Operations',
               count: 0,
-              payroll: 0
+              payroll: 0,
+              rate: rateMap[code] || 3.50
             });
           }
           const c = classificationMap.get(code);
           c.count++; c.payroll += emp.annualSalary;
         });
 
-        return Array.from(classificationMap.values()).map(c =>
-          `Class Code: ${c.code} - ${c.description}
-   Employees: ${c.count}
-   Annual Payroll: $${c.payroll.toLocaleString()}`
-        ).join('\n\n');
+        return Array.from(classificationMap.values()).map(c => {
+          const premium = Math.floor((c.payroll / 100) * c.rate);
+          return `| 1 | ${c.code} | ${c.description} | ${c.count} | $${c.payroll.toLocaleString()} | $${c.rate.toFixed(2)} | $${premium.toLocaleString()} |`;
+        }).join('\n');
       })()}
 
-INDIVIDUALS TO BE INCLUDED/EXCLUDED:
-${employees.slice(0, 3).map(emp =>
-  `Name: ${emp.name}
-   Title: ${emp.jobTitle}
-   Ownership %: ${emp.jobTitle.toLowerCase().includes('ceo') || emp.jobTitle.toLowerCase().includes('owner') ? '100.0' : '0.0'}
-   Classification: ${emp.classificationCode}
-   Include/Exclude: ${emp.jobTitle.toLowerCase().includes('ceo') || emp.jobTitle.toLowerCase().includes('owner') ? 'E' : 'I'}`
-).join('\n\n')}
+Payroll Summary:
+• Total Full-time Employees: ${employees.filter(e => e.employmentType === 'Full-time').length}
+• Total Part-time Employees: ${employees.filter(e => e.employmentType === 'Part-time').length}
+• Total Seasonal Employees: 0
+• Total Estimated Annual Payroll: $${employees.reduce((sum, e) => sum + e.annualSalary, 0).toLocaleString()}
 
-PRIOR CARRIER INFORMATION (Last 5 Years):
+Experience Modification Rate (EMR): 1.00 (Current Year)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+GENERAL INFORMATION QUESTIONS
+
+Please answer YES or NO. If YES, provide detailed explanation in REMARKS section.
+
+1. Is any work performed underground or above 15 feet?
+   ${company.industry === 'Construction' ? '☒ YES  ☐ NO' : '☐ YES  ☒ NO'}
+
+2. Do operations involve handling, storage, or use of hazardous materials?
+   ${company.industry === 'Manufacturing' ? '☒ YES  ☐ NO' : '☐ YES  ☒ NO'}
+
+3. Is work sublet without requiring certificates of insurance from subcontractors?
+   ☐ YES  ☒ NO
+
+4. Is any work performed on barges, vessels, docks, or bridges over water?
+   ☐ YES  ☒ NO
+
+5. Are any employees leased or borrowed from other employers?
+   ☐ YES  ☒ NO
+
+6. Do any employees work from home?
+   ☐ YES  ☒ NO
+
+7. Has any workers comp coverage been declined, canceled, or non-renewed in last 3 years?
+   ☐ YES  ☒ NO
+
+8. Are there any undisputed, unpaid workers compensation premiums?
+   ☐ YES  ☒ NO
+
+9. Any tax liens or bankruptcy within the last 5 years?
+   ☐ YES  ☒ NO
+
+10. Does the business use independent contractors or subcontractors?
+    ${company.industry === 'Construction' ? '☒ YES  ☐ NO' : '☐ YES  ☒ NO'}
+
+11. Are certificates of insurance obtained from ALL subcontractors before work begins?
+    ${company.industry === 'Construction' ? '☒ YES  ☐ NO' : 'N/A'}
+
+12. Is there a written safety program in place?
+    ☒ YES  ☐ NO
+
+13. Is there a return-to-work/modified duty program?
+    ☒ YES  ☐ NO
+
+14. Are regular safety meetings conducted?
+    ☒ YES  ☐ NO
+
+15. Is personal protective equipment (PPE) provided to all employees who need it?
+    ☒ YES  ☐ NO
+
+16. Are pre-employment physicals required after conditional job offers?
+    ☐ YES  ☒ NO
+
+17. Do any employees travel outside the United States?
+    ☐ YES  ☒ NO
+
+18. Does applicant own, operate, or lease any aircraft or watercraft?
+    ☐ YES  ☒ NO
+
+19. Does applicant provide group transportation for employees?
+    ☐ YES  ☒ NO
+
+20. Are any employees under age 16 or over age 70?
+    ☐ YES  ☒ NO
+
+21. Is volunteer or donated labor used?
+    ☐ YES  ☒ NO
+
+22. Does applicant sponsor any athletic teams?
+    ☐ YES  ☒ NO
+
+23. Are employee health/medical plans provided?
+    ☒ YES  ☐ NO
+
+24. Do employees perform work for other businesses using their own equipment?
+    ☐ YES  ☒ NO
+
+═══════════════════════════════════════════════════════════════════════════════
+
+BUSINESS OPERATIONS DESCRIPTION
+
+Primary Business Activities:
+${company.description}
+
+Specific Operations Performed:
+${company.industry === 'Construction' ? `• Commercial building construction
+• Office building development
+• Retail space construction
+• Project management
+• Site supervision
+• General contracting services` :
+  company.industry === 'Manufacturing' ? `• Precision metal component manufacturing
+• CNC machining operations
+• Quality control and inspection
+• Assembly operations
+• Shipping and receiving` :
+  `• Warehousing operations
+• Distribution services
+• Inventory management
+• Order fulfillment
+• Logistics coordination`}
+
+Products/Services:
+${company.industry === 'Construction' ? 'Commercial construction projects including new construction, renovations, and tenant improvements for office and retail spaces.' :
+  company.industry === 'Manufacturing' ? 'Precision metal components for aerospace and automotive industries, manufactured to exact specifications.' :
+  'Third-party logistics including warehousing, distribution, and fulfillment services.'}
+
+Territory of Operations:
+Primary: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'New York'}
+${company.industry === 'Construction' ? 'Additional work performed in neighboring states on a project basis.' : 'Operations limited to facility location.'}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXPERIENCE MODIFICATION & LOSS HISTORY
+
+Current Experience Modification Rate (EMR): 1.00
+Prior Year EMR: 1.00
+Two Years Prior EMR: 1.02
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIOR CARRIER INFORMATION (Last 5 Years)
+
 ${(() => {
-  const carriers = ['State Compensation Insurance Fund', 'Liberty Mutual', 'Travelers Insurance', 'The Hartford', 'Zurich Insurance'];
+  const carriers = ['State Compensation Insurance Fund', 'Liberty Mutual Insurance', 'Travelers Insurance Company', 'The Hartford', 'Zurich American Insurance Company'];
   const currentYear = new Date().getFullYear();
   let priorInfo = '';
 
@@ -679,66 +876,146 @@ ${(() => {
     const year = currentYear - i;
     const carrier = carriers[Math.floor(Math.random() * carriers.length)];
     const premium = Math.floor(Math.random() * 500000) + 100000;
-    const mod = (0.8 + Math.random() * 0.6).toFixed(2);
-    const claims = Math.floor(Math.random() * 10);
+    const mod = (0.85 + Math.random() * 0.30).toFixed(2);
+    const claims = Math.floor(Math.random() * 8);
     const paidAmount = claims * (Math.floor(Math.random() * 50000) + 10000);
-    const reserveAmount = Math.floor(paidAmount * 0.3);
+    const reserveAmount = Math.floor(paidAmount * 0.25);
 
-    priorInfo += `${year}: ${carrier}
-   Annual Premium: $${premium.toLocaleString()}
-   Experience Mod: ${mod}
-   # Claims: ${claims}
-   Amount Paid: $${paidAmount.toLocaleString()}
-   Reserve: $${reserveAmount.toLocaleString()}
+    priorInfo += `Policy Year ${year}-${year + 1}:
+Carrier: ${carrier}
+Policy Number: WC${year}${Math.floor(100000 + Math.random() * 899999)}
+Annual Premium: $${premium.toLocaleString()}
+Experience Modification: ${mod}
+Number of Claims: ${claims}
+Total Incurred: $${(paidAmount + reserveAmount).toLocaleString()}
+  - Paid Losses: $${paidAmount.toLocaleString()}
+  - Outstanding Reserves: $${reserveAmount.toLocaleString()}
+Claims Status: ${claims === 0 ? 'No claims' : `${claims} claims - ${Math.floor(claims * 0.8)} closed, ${Math.ceil(claims * 0.2)} open`}
 
 `;
   }
   return priorInfo;
 })()}
 
-NATURE OF BUSINESS:
-${company.industry === 'Construction' ? 'Residential Framer' :
-  company.industry === 'Manufacturing' ? 'Precision metal component manufacturing' :
-  'Warehouse and distribution operations'}
+═══════════════════════════════════════════════════════════════════════════════
 
-${company.description}
+EMPLOYER'S LIABILITY LIMITS
 
-GENERAL INFORMATION:
-1. Does applicant own, operate or lease aircraft/watercraft? NO
-2. Do operations involve hazardous materials? NO
-3. Any work performed underground or above 15 feet? ${company.industry === 'Construction' ? 'YES' : 'NO'}
-4. Any work performed on barges, vessels, docks, bridges over water? NO
-5. Is applicant engaged in any other type of business? NO
-6. Are sub-contractors used? ${company.industry === 'Construction' ? 'NO' : 'NO'}
-7. Any work sublet without certificates of insurance? NO
-8. Is a written safety program in operation? YES
-9. Any group transportation provided? NO
-10. Any employees under 16 or over 60 years of age? NO
-11. Any seasonal employees? ${Math.random() > 0.7 ? 'YES' : 'NO'}
-12. Is there any volunteer or donated labor? NO
-13. Any employees with physical handicaps? NO
-14. Do employees travel out of state? NO
-15. Are athletic teams sponsored? NO
-16. Are physicals required after offers of employment? NO
-17. Any other insurance with this insurer? NO
-18. Any prior coverage declined/cancelled/non-renewed? NO
-19. Are employee health plans provided? YES
-20. Do employees perform work for other businesses? NO
-21. Do you lease employees to/from other employers? NO
-22. Do employees predominantly work at home? NO
-23. Any tax liens or bankruptcy within last 5 years? NO
-24. Any undisputed workers compensation premium due? NO
+Current Policy Limits:
+• Each Accident: $1,000,000
+• Disease - Policy Limit: $1,000,000
+• Disease - Each Employee: $1,000,000
 
-REMARKS:
+Waiver of Subrogation Required: ${company.industry === 'Construction' ? '☒ YES  ☐ NO' : '☐ YES  ☒ NO'}
+${company.industry === 'Construction' ? 'Blanket waiver requested for all contracts requiring such endorsement.' : ''}
+
+Alternate Employer Endorsement Required: ☐ YES  ☒ NO
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ADDITIONAL COVERAGES/ENDORSEMENTS
+
+☐ Voluntary Compensation Coverage
+☐ USL&H Coverage (Longshore & Harbor Workers)
+☐ Foreign Voluntary Workers Compensation
+☐ Federal Employees (Defense Base Act)
+${company.industry === 'Construction' ? '☒ Blanket Waiver of Subrogation' : '☐ Blanket Waiver of Subrogation'}
+☐ Alternate Employer Endorsement
+☐ Other: _________________________________
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SAFETY & LOSS CONTROL INFORMATION
+
+Written Safety Program: ☒ YES  ☐ NO
+Program Last Updated: ${new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+
+Safety Training Programs:
+• New Employee Orientation: Comprehensive safety training for all new hires
+• Ongoing Safety Training: ${company.industry === 'Construction' ? 'Monthly toolbox talks, annual OSHA 30-hour for supervisors' : 'Quarterly safety meetings, job-specific training'}
+• Emergency Response Training: Fire safety, first aid, emergency evacuation procedures
+${company.industry === 'Construction' ? '• Fall Protection Training: Annual certification for all workers working at heights' : ''}
+${company.industry === 'Manufacturing' ? '• Machine-Specific Training: Required certification for all equipment operators' : ''}
+
+Safety Equipment Provided:
+${company.industry === 'Construction' ? `• Hard hats, safety glasses, steel-toed boots
+• Fall protection equipment (harnesses, lanyards, lifelines)
+• High-visibility vests
+• Hearing protection
+• Respiratory protection as needed` :
+  company.industry === 'Manufacturing' ? `• Safety glasses, hearing protection
+• Steel-toed boots, cut-resistant gloves
+• Machine guards on all equipment
+• First aid stations throughout facility
+• Emergency eyewash stations` :
+  `• Safety glasses, steel-toed boots
+• High-visibility vests
+• Back support belts available
+• Material handling equipment (forklifts, pallet jacks)
+• First aid kits throughout facility`}
+
+Safety Inspections:
+• Frequency: ${company.industry === 'Construction' ? 'Daily job site inspections' : 'Weekly facility inspections'}
+• Inspector: ${employees.find(e => e.jobTitle.includes('Manager') || e.jobTitle.includes('Supervisor'))?.name || 'Safety Manager'}
+• Documentation: All inspections logged and maintained
+
+Incident Investigation Procedure: All incidents investigated within 24 hours with written reports
+
+Return-to-Work Program: Modified duty program available for injured workers
+
+Safety Committee: ${Math.random() > 0.5 ? 'Monthly meetings with employee representatives' : 'Quarterly safety meetings with management and employees'}
+
+Recent Safety Improvements:
+• Enhanced training programs implemented ${new Date().getFullYear() - 1}
+• New safety equipment purchased ${new Date().getFullYear()}
+• Ergonomic assessments completed for high-risk positions
+${company.industry === 'Construction' ? '• Fall protection systems upgraded' : ''}
+${company.industry === 'Manufacturing' ? '• Machine guarding enhancements completed' : ''}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+REMARKS / ADDITIONAL INFORMATION
+
 ${company.industry === 'Construction' ?
-  '30 DAYS NOTICE OF CANCELLATION AND INCLUDE A BLANKET WAIVER OF SUBROGATION. Field laborers work part-time occasionally.' :
-  'Standard commercial operations with comprehensive safety programs in place.'}
+  `30 DAYS NOTICE OF CANCELLATION REQUIRED. BLANKET WAIVER OF SUBROGATION to be included.
 
-The undersigned represents that reasonable inquiry has been made to obtain the answers to questions on this application and that the answers are true, correct and complete to the best of their knowledge.
+The business specializes in commercial construction with a focus on office buildings and retail spaces. All projects are managed by experienced supervisors with extensive safety training. Comprehensive subcontractor management program ensures all subs maintain proper insurance coverage.
 
-APPLICANT SIGNATURE: ___________________________ DATE: ${new Date().toLocaleDateString()}
+Field operations follow strict safety protocols with daily safety briefings and regular site inspections. All employees working at heights are trained and certified in fall protection. The company has maintained a strong safety record with proactive loss control measures.` :
+  company.industry === 'Manufacturing' ?
+  `All manufacturing operations performed in-house at our facility location. Comprehensive quality control program ensures product specifications and safety standards are met. All machine operators are certified and trained on specific equipment.
 
-TOTAL ESTIMATED ANNUAL PREMIUM: $${(() => {
+Regular maintenance schedules followed for all production equipment. Safety guards and emergency stops maintained on all machinery. Ergonomic assessments completed for all workstations to minimize repetitive motion injuries.
+
+Strong emphasis on preventive safety measures with ongoing training and equipment upgrades.` :
+  `Operations conducted entirely within our warehouse facility. Material handling equipment regularly inspected and maintained. All forklift operators are certified through an accredited training program.
+
+Comprehensive safety program includes regular training on proper lifting techniques, material handling procedures, and emergency response. Back injury prevention program emphasizes mechanical assists and team lifting for heavy items.
+
+Strong safety culture with employee engagement and regular safety communications.`}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPLICANT'S SIGNATURE & FRAUD WARNING
+
+The undersigned authorized representative of the applicant declares that the statements set forth herein are true and that the written statements and materials furnished in conjunction with this application have been reviewed and are accurate and complete to the best of their knowledge and belief. The undersigned is aware that the withholding or misrepresenting of any material fact or circumstances known to the applicant will render this application null and void.
+
+The signing of this application does not bind the applicant or the Company to complete the insurance, but it is agreed that the information contained herein shall be the basis of the contract should a policy be issued, and it will be attached to and become part of the policy if issued.
+
+FRAUD WARNING (Varies by State): Any person who knowingly and with intent to defraud any insurance company or other person files an application for insurance or statement of claim containing any materially false information or conceals for the purpose of misleading, information concerning any fact material thereto commits a fraudulent insurance act, which is a crime and subjects such person to criminal and civil penalties.
+
+Applicant's Signature: _________________________________ Date: ${new Date().toLocaleDateString()}
+
+Print Name: ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.name || employees[0].name}
+
+Title: ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.jobTitle || employees[0].jobTitle}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FOR AGENT/BROKER USE ONLY
+
+Submission Date: ${new Date().toLocaleDateString()}
+Target Premium: $${(() => {
         const rateMap = {
           8810: 0.35, 8742: 0.42, 8292: 2.84, 8601: 0.29, 8832: 0.18,
           9014: 6.23, 9102: 6.23, 3632: 4.82, 7380: 4.67, 7219: 8.89,
@@ -749,32 +1026,543 @@ TOTAL ESTIMATED ANNUAL PREMIUM: $${(() => {
           const rate = rateMap[emp.classificationCode] || 3.50;
           return sum + (emp.annualSalary / 100 * rate);
         }, 0)).toLocaleString();
-      })()}`
+      })()}
+Account Notes: New business submission - ${company.industry} industry
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF ACORD 130 APPLICATION
+
+This is a specimen form for demonstration purposes. Actual ACORD 130 forms may vary by state and carrier.`
     );
     zip.file('acord-130-workers-comp-application-create-company-upload.docx', acord130Doc);
 
     const acord125Doc = await createWordDocument(
       'ACORD 125 - Commercial Insurance Application',
-      `COMMERCIAL INSURANCE APPLICATION
-ACORD Form 125
+      `ACORD 125 (2016/03)
+COMMERCIAL INSURANCE APPLICATION
 
-General Information:
-Business Name: ${company.name}
-Business Description: ${company.description}
-Years in Business: ${new Date().getFullYear() - company.yearFounded}
+═══════════════════════════════════════════════════════════════════════════════
+
+AGENCY INFORMATION
+
+Agency Name: ${company.industry === 'Construction' ? 'Premier Construction Insurance Services' :
+              company.industry === 'Manufacturing' ? 'Industrial Risk Management Services' :
+              'Commercial Insurance Solutions LLC'}
+National Producer Number: NPN${Math.floor(100000 + Math.random() * 899999)}
+Agency Contact: ${['Michael Johnson, CIC', 'Sarah Davis, CPCU', 'Robert Wilson, CIC', 'Jennifer Martinez, CPCU'][Math.floor(Math.random() * 4)]}
+Agency Phone: (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}
+Agency Email: ${['info@premierins.com', 'contact@industrialrisk.com', 'service@commercialins.com'][Math.floor(Math.random() * 3)]}
+Producer Code: PC${Math.floor(10000 + Math.random() * 89999)}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LINES OF BUSINESS
+
+Coverage Requested (Check all that apply):
+☒ Commercial General Liability
+☒ Property
+☐ Crime
+☒ Business Auto
+☒ Umbrella/Excess Liability
+☒ Workers Compensation
+☐ Other: __________
+
+═══════════════════════════════════════════════════════════════════════════════
+
+POLICY INFORMATION
+
+Proposed Effective Date: ${new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+Proposed Expiration Date: ${new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+Policy Term: 12 Months (Annual)
+
+Billing Information:
+Who Will Be Billed: Applicant
+Payment Plan: Annual / Semi-Annual / Quarterly / Monthly (Select)
+Prior Policy Number (if renewal): N/A - New Business
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPLICANT INFORMATION
+
+Legal Business Name: ${company.name}
+DBA/Trade Name(s): ${company.name}
+
+Mailing Address:
+Street: ${['123 Business Blvd, Suite 100', '456 Commerce St', '789 Industry Ave'][Math.floor(Math.random() * 3)]}
+City: ${company.location.split(',')[0]}
+State: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'NY'}
+ZIP Code: ${Math.floor(10000 + Math.random() * 89999)}
+
+Physical Address: ☒ Same as mailing  ☐ Different (see below)
+
+Business Contact Information:
+Primary Phone: (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}
+Business Email: info@${company.website.replace('www.', '')}
 Website: ${company.website}
-Business Structure: LLC
-SIC Code: ${company.industry === 'Manufacturing' ? '3599' : company.industry === 'Construction' ? '1542' : '4225'}
 
-Requested Coverage:
-- General Liability: $2,000,000 per occurrence / $4,000,000 aggregate
-- Commercial Property: $${Math.floor(Math.random() * 5000000 + 1000000).toLocaleString()}
-- Commercial Auto: $1,000,000 combined single limit
-- Workers Compensation: As required by state law
-- Umbrella: $5,000,000
+Federal ID Number (FEIN): ${Math.floor(10 + Math.random() * 89)}-${Math.floor(1000000 + Math.random() * 8999999)}
+Years in Business: ${new Date().getFullYear() - company.yearFounded}
 
-Operations Description:
-Primary operations involve ${company.description.toLowerCase()}. Business operates from ${company.location} with ${company.employeeCount} employees.`
+Business Structure:
+☒ Corporation  ☐ LLC  ☐ Partnership  ☐ Sole Proprietorship  ☐ Other
+State of Incorporation: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'NY'}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTACT INFORMATION
+
+| Contact Type | Name | Title | Phone | Email |
+|--------------|------|-------|-------|-------|
+| Primary Contact | ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.name || employees[0].name} | ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.jobTitle || employees[0].jobTitle} | (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000} | info@${company.website.replace('www.', '')} |
+| Billing Contact | ${employees.find(e => e.jobTitle.includes('Manager') || e.jobTitle.includes('Director'))?.name || employees[1]?.name} | ${employees.find(e => e.jobTitle.includes('Manager') || e.jobTitle.includes('Director'))?.jobTitle || 'Office Manager'} | (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000} | billing@${company.website.replace('www.', '')} |
+| Claims Contact | ${employees.find(e => e.jobTitle.includes('Manager') || e.jobTitle.includes('Director'))?.name || employees[1]?.name} | ${employees.find(e => e.jobTitle.includes('Manager') || e.jobTitle.includes('Director'))?.jobTitle || 'Operations Manager'} | (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000} | claims@${company.website.replace('www.', '')} |
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PREMISES INFORMATION
+
+Location 1 (Primary):
+Location Number: 1
+Street Address: ${['123 Business Blvd, Suite 100', '456 Commerce St', '789 Industry Ave'][Math.floor(Math.random() * 3)]}
+City, State, ZIP: ${company.location}, ${Math.floor(10000 + Math.random() * 89999)}
+County: ${['Erie', 'Travis', 'Fulton', 'Wayne'][Math.floor(Math.random() * 4)]}
+Inside/Outside City Limits: Inside
+Owned or Leased: ${Math.random() > 0.5 ? 'Leased' : 'Owned'}
+Number of Employees at Location: ${employees.length}
+Annual Revenues at Location: $${employees.reduce((sum, e) => sum + e.annualSalary, 0).toLocaleString()}
+Total Building Square Footage: ${Math.floor(10000 + Math.random() * 40000).toLocaleString()}
+Square Footage Occupied: ${Math.floor(8000 + Math.random() * 32000).toLocaleString()}
+Square Footage Open to Public: ${company.industry === 'Construction' || company.industry === 'Manufacturing' ? '0' : Math.floor(500 + Math.random() * 2000).toLocaleString()}
+Any Part Leased to Others: No
+
+Building Details (Location 1):
+Year Built: ${Math.floor(1980 + Math.random() * 40)}
+Number of Stories: ${Math.floor(1 + Math.random() * 3)}
+Construction Type: ${['Masonry Non-Combustible', 'Frame', 'Fire Resistive', 'Modified Fire Resistive'][Math.floor(Math.random() * 4)]}
+Roof Type: ${['Flat Built-up', 'Metal', 'Composition Shingle'][Math.floor(Math.random() * 3)]}
+Roof Age: ${Math.floor(5 + Math.random() * 15)} years
+Fire Protection:
+  - Sprinkler System: ${Math.random() > 0.5 ? 'Full' : 'Partial'}
+  - Fire Alarm: Yes - Central Station
+  - Burglar Alarm: Yes
+  - Distance to Fire Hydrant: ${Math.floor(100 + Math.random() * 900)} feet
+  - Distance to Fire Station: ${(Math.random() * 5 + 0.5).toFixed(1)} miles
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NATURE OF BUSINESS
+
+Business Operations Description:
+${company.description}
+
+Primary Business Activities:
+${company.industry === 'Construction' ? `• Commercial building construction and development
+• Office building construction
+• Retail space construction and tenant improvements
+• Project management and general contracting
+• Site supervision and safety management` :
+  company.industry === 'Manufacturing' ? `• Precision metal component manufacturing
+• CNC machining and fabrication
+• Quality control and inspection
+• Assembly and finishing operations
+• Shipping and logistics` :
+  `• Third-party logistics and warehousing
+• Distribution and fulfillment services
+• Inventory management
+• Order processing and shipping
+• Transportation coordination`}
+
+Products or Services Provided:
+${company.industry === 'Construction' ? 'Commercial construction services including new construction, renovations, and tenant improvements for office buildings and retail spaces.' :
+  company.industry === 'Manufacturing' ? 'Precision-machined metal components for aerospace and automotive industries, manufactured to exact specifications with comprehensive quality control.' :
+  'Complete third-party logistics solutions including warehousing, distribution, order fulfillment, and transportation services.'}
+
+Date Business Started: ${String(company.yearFounded).padStart(2, '0')}/01/${company.yearFounded}
+
+Business Classification:
+SIC Code: ${company.industry === 'Construction' ? '1542' : company.industry === 'Manufacturing' ? '3599' : '4225'}
+NAICS Code: ${company.industry === 'Construction' ? '236220' : company.industry === 'Manufacturing' ? '332999' : '493110'}
+Industry Description: ${company.industry === 'Construction' ? 'Commercial and Institutional Building Construction' :
+                       company.industry === 'Manufacturing' ? 'All Other Miscellaneous Fabricated Metal Product Manufacturing' :
+                       'General Warehousing and Storage'}
+
+Gross Annual Revenue:
+Current Year Estimate: $${Math.floor(employees.reduce((sum, e) => sum + e.annualSalary, 0) * 2.5).toLocaleString()}
+Prior Year Actual: $${Math.floor(employees.reduce((sum, e) => sum + e.annualSalary, 0) * 2.3).toLocaleString()}
+2 Years Ago: $${Math.floor(employees.reduce((sum, e) => sum + e.annualSalary, 0) * 2.1).toLocaleString()}
+
+Number of Employees:
+Full-Time: ${employees.filter(e => e.employmentType === 'Full-time').length}
+Part-Time: ${employees.filter(e => e.employmentType === 'Part-time').length}
+Seasonal: 0
+Total: ${employees.length}
+
+Annual Payroll: $${employees.reduce((sum, e) => sum + e.annualSalary, 0).toLocaleString()}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ADDITIONAL INTERESTS
+
+| Interest Type | Name & Address | Loan/Lease Number | Location Applicable |
+|---------------|----------------|-------------------|---------------------|
+| ${Math.random() > 0.5 ? 'Mortgagee' : 'Lessor'} | ${['First National Bank', 'City Commercial Lending', 'Regional Business Bank'][Math.floor(Math.random() * 3)]}, ${company.location} | ${Math.random() > 0.5 ? 'LOAN-' + Math.floor(100000 + Math.random() * 899999) : 'LEASE-' + Math.floor(100000 + Math.random() * 899999)} | Location 1 |
+
+═══════════════════════════════════════════════════════════════════════════════
+
+GENERAL INFORMATION QUESTIONS
+
+Please answer YES or NO. If YES, provide explanation in Remarks section.
+
+1. Has the applicant or any predecessor ever had insurance canceled or non-renewed?
+   ☐ YES  ☒ NO
+
+2. Does applicant have any business owned or operated under a different name?
+   ☐ YES  ☒ NO
+
+3. Does applicant lease, rent or loan equipment to others?
+   ☐ YES  ☒ NO
+
+4. Any work subcontracted?
+   ${company.industry === 'Construction' ? '☒ YES  ☐ NO' : '☐ YES  ☒ NO'}
+
+5. Are certificates of insurance obtained from all subcontractors?
+   ${company.industry === 'Construction' ? '☒ YES  ☐ NO (See Remarks)' : 'N/A'}
+
+6. Any operations on customer premises?
+   ${company.industry === 'Construction' ? '☒ YES  ☐ NO' : company.industry === 'Manufacturing' ? '☐ YES  ☒ NO' : '☒ YES  ☐ NO'}
+
+7. Any products sold or distributed under another name?
+   ☐ YES  ☒ NO
+
+8. Any products recalled in last 5 years?
+   ☐ YES  ☒ NO
+
+9. Any business conducted outside the United States?
+   ☐ YES  ☒ NO
+
+10. Does applicant have an employee safety program?
+    ☒ YES  ☐ NO
+
+11. Does applicant have a return-to-work/modified duty program?
+    ☒ YES  ☐ NO
+
+12. Any hazardous materials handled, stored, or disposed of?
+    ${company.industry === 'Manufacturing' ? '☒ YES  ☐ NO (See Remarks)' : '☐ YES  ☒ NO'}
+
+13. Any swimming pools, elevators, or escalators on premises?
+    ${Math.floor(1 + Math.random() * 3) > 1 ? '☒ YES  ☐ NO (Elevator)' : '☐ YES  ☒ NO'}
+
+14. Any underground storage tanks?
+    ☐ YES  ☒ NO
+
+15. Any environmental violations in last 5 years?
+    ☐ YES  ☒ NO
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIOR INSURANCE HISTORY (Last 5 Years)
+
+${(() => {
+  const carriers = [
+    { name: 'The Hartford', gl: true, property: true, auto: true, wc: true },
+    { name: 'Liberty Mutual', gl: true, property: true, auto: true, wc: true },
+    { name: 'Travelers', gl: true, property: true, auto: true, wc: true },
+    { name: 'Zurich', gl: true, property: false, auto: true, wc: true },
+    { name: 'CNA', gl: true, property: true, auto: false, wc: false }
+  ];
+  const currentYear = new Date().getFullYear();
+  let priorInfo = '| Year | General Liability | Property | Auto | Workers Comp |\n';
+  priorInfo += '|------|-------------------|----------|------|---------------|\n';
+
+  for (let i = 1; i <= 5; i++) {
+    const year = currentYear - i;
+    const carrier = carriers[Math.floor(Math.random() * carriers.length)];
+    priorInfo += `| ${year}-${year + 1} | ${carrier.gl ? carrier.name : 'N/A'} | ${carrier.property ? carrier.name : 'N/A'} | ${carrier.auto ? carrier.name : 'N/A'} | ${carrier.wc ? carrier.name : 'N/A'} |\n`;
+  }
+
+  return priorInfo;
+})()}
+
+Cancellations/Non-Renewals in Last 5 Years: None
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LOSS HISTORY (Last 5 Years)
+
+Summary of All Claims (GL, Property, Auto, WC):
+
+${(() => {
+  const currentYear = new Date().getFullYear();
+  let lossInfo = '| Year | Coverage Type | # Claims | Total Incurred | Status |\n';
+  lossInfo += '|------|---------------|----------|----------------|--------|\n';
+
+  for (let i = 1; i <= 5; i++) {
+    const year = currentYear - i;
+    const wcClaims = Math.floor(Math.random() * 5);
+    const glClaims = Math.floor(Math.random() * 3);
+    const autoClaims = Math.floor(Math.random() * 2);
+    const propClaims = Math.random() > 0.8 ? 1 : 0;
+
+    if (wcClaims > 0) {
+      const wcIncurred = wcClaims * (Math.floor(Math.random() * 40000) + 10000);
+      lossInfo += `| ${year} | Workers Comp | ${wcClaims} | $${wcIncurred.toLocaleString()} | ${Math.random() > 0.7 ? '1 Open, ' + (wcClaims - 1) + ' Closed' : 'All Closed'} |\n`;
+    }
+    if (glClaims > 0) {
+      const glIncurred = glClaims * (Math.floor(Math.random() * 30000) + 5000);
+      lossInfo += `| ${year} | General Liability | ${glClaims} | $${glIncurred.toLocaleString()} | All Closed |\n`;
+    }
+    if (autoClaims > 0) {
+      const autoIncurred = autoClaims * (Math.floor(Math.random() * 25000) + 8000);
+      lossInfo += `| ${year} | Auto | ${autoClaims} | $${autoIncurred.toLocaleString()} | All Closed |\n`;
+    }
+    if (propClaims > 0) {
+      const propIncurred = Math.floor(Math.random() * 50000) + 10000;
+      lossInfo += `| ${year} | Property | ${propClaims} | $${propIncurred.toLocaleString()} | Closed |\n`;
+    }
+  }
+
+  const totalClaims = Math.floor(Math.random() * 15) + 10;
+  const totalIncurred = Math.floor(Math.random() * 400000) + 150000;
+  lossInfo += `\nTotal Claims Last 5 Years: ${totalClaims}\n`;
+  lossInfo += `Total Incurred Amount: $${totalIncurred.toLocaleString()}`;
+
+  return lossInfo;
+})()}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+GENERAL LIABILITY COVERAGE
+
+Requested Limits:
+General Aggregate: $2,000,000
+Products/Completed Operations Aggregate: $2,000,000
+Personal & Advertising Injury: $1,000,000
+Each Occurrence: $1,000,000
+Fire Damage (Any one fire): $50,000
+Medical Expense (Any one person): $5,000
+
+Deductible: $1,000
+
+Estimated Gross Annual Sales/Receipts: $${Math.floor(employees.reduce((sum, e) => sum + e.annualSalary, 0) * 2.5).toLocaleString()}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PROPERTY COVERAGE
+
+Coverage Type: ☒ Building  ☒ Business Personal Property  ☒ Business Income
+
+Building Coverage:
+Limit of Insurance: $${Math.floor(500000 + Math.random() * 1500000).toLocaleString()}
+Valuation: ☒ Replacement Cost  ☐ Actual Cash Value
+
+Business Personal Property:
+Limit of Insurance: $${Math.floor(100000 + Math.random() * 400000).toLocaleString()}
+Valuation: ☒ Replacement Cost  ☐ Actual Cash Value
+
+Business Income Coverage:
+Limit of Insurance: $${Math.floor(250000 + Math.random() * 750000).toLocaleString()}
+Maximum Period of Indemnity: 12 months
+
+Deductible: $${[2500, 5000, 10000][Math.floor(Math.random() * 3)].toLocaleString()}
+
+Additional Coverages Requested:
+☒ Equipment Breakdown
+☒ Ordinance or Law (25%)
+☐ Flood
+☐ Earthquake
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMMERCIAL AUTO COVERAGE
+
+Number of Vehicles: ${Math.floor(3 + Math.random() * 8)}
+
+Vehicle Types:
+${company.industry === 'Construction' ? `• Pick-up Trucks (${Math.floor(2 + Math.random() * 4)})
+• Cargo Vans (${Math.floor(1 + Math.random() * 3)})
+• Light Duty Trucks (${Math.floor(0 + Math.random() * 2)})` :
+  company.industry === 'Manufacturing' ? `• Sedans (${Math.floor(1 + Math.random() * 2)})
+• Cargo Vans (${Math.floor(1 + Math.random() * 2)})
+• Light Duty Trucks (${Math.floor(1 + Math.random() * 3)})` :
+  `• Cargo Vans (${Math.floor(2 + Math.random() * 4)})
+• Box Trucks (${Math.floor(1 + Math.random() * 3)})
+• Sedans (${Math.floor(0 + Math.random() * 2)})`}
+
+Liability Limits:
+Combined Single Limit: $1,000,000
+
+Physical Damage:
+Comprehensive Deductible: $500
+Collision Deductible: $1,000
+
+Coverages Requested:
+☒ Hired Auto
+☒ Non-Owned Auto
+☒ Uninsured/Underinsured Motorist
+
+Driver Information:
+Total number of drivers: ${employees.length}
+Youngest driver age: ${Math.floor(22 + Math.random() * 8)}
+All drivers have valid licenses: Yes
+
+═══════════════════════════════════════════════════════════════════════════════
+
+UMBRELLA/EXCESS LIABILITY COVERAGE
+
+Requested Umbrella Limit: $5,000,000
+
+Underlying Policies:
+General Liability: $1,000,000
+Auto Liability: $1,000,000
+Employers Liability: $1,000,000
+
+Self-Insured Retention (SIR): $10,000
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WORKERS COMPENSATION COVERAGE
+
+States Where Coverage Applies: ${company.location.split(',')[1]?.trim().split(' ')[0] || 'NY'}
+
+Estimated Annual Payroll by Classification:
+
+${(() => {
+  const classificationMap = new Map();
+  const classificationDescriptions = {
+    8810: 'Clerical Office Employees NOC',
+    8742: 'Salespersons - Outside',
+    8292: 'Warehouse Operations',
+    8601: 'Accounting Services',
+    8832: 'Information Technology Services',
+    9014: 'Maintenance - General',
+    3632: 'Machine Shop Operations',
+    7380: 'Drivers - Commercial Vehicles',
+    7219: 'Trucking - Local',
+    5474: 'Contractor - Executive Supervisor',
+    5645: 'Carpentry - Residential',
+    5190: 'Electrical Wiring - Within Buildings',
+    5538: 'Construction - General Laborer',
+    5606: 'Contractor - Executive Officer',
+    5403: 'Carpentry Below $41/Hr',
+    8227: 'Warehouse (Construction Perm Yard)'
+  };
+
+  employees.forEach(emp => {
+    const code = emp.classificationCode;
+    if (!classificationMap.has(code)) {
+      classificationMap.set(code, {
+        code,
+        description: classificationDescriptions[code] || 'Other Operations',
+        count: 0,
+        payroll: 0
+      });
+    }
+    const c = classificationMap.get(code);
+    c.count++; c.payroll += emp.annualSalary;
+  });
+
+  let table = '| Class Code | Description | # Employees | Annual Payroll |\n';
+  table += '|------------|-------------|-------------|----------------|\n';
+
+  Array.from(classificationMap.values()).forEach(c => {
+    table += `| ${c.code} | ${c.description} | ${c.count} | $${c.payroll.toLocaleString()} |\n`;
+  });
+
+  return table;
+})()}
+
+Total Estimated Annual Payroll: $${employees.reduce((sum, e) => sum + e.annualSalary, 0).toLocaleString()}
+
+Employers Liability Limits:
+Each Accident: $1,000,000
+Disease - Policy Limit: $1,000,000
+Disease - Each Employee: $1,000,000
+
+Experience Modification Rate (EMR): 1.00
+
+Waiver of Subrogation Required: ${company.industry === 'Construction' ? 'Yes - Blanket waiver for all contracts' : 'No'}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+REMARKS / ADDITIONAL INFORMATION
+
+${company.industry === 'Construction' ?
+  `CONSTRUCTION OPERATIONS:
+This business specializes in commercial construction with a primary focus on office buildings and retail spaces. All construction projects are managed by experienced supervisors with comprehensive safety training and OSHA certification.
+
+SUBCONTRACTOR MANAGEMENT:
+The company utilizes subcontractors for specialized trades. Certificates of insurance are required from all subcontractors prior to commencement of work, and all certificates are verified to meet the company's insurance requirements including general liability and workers compensation coverage.
+
+SAFETY PROGRAM:
+Comprehensive written safety program in place with daily toolbox talks, weekly safety meetings, and regular site inspections. All employees working at heights receive fall protection training and certification. PPE is mandatory for all personnel on job sites.
+
+SPECIAL REQUIREMENTS:
+• 30 Days Notice of Cancellation Required
+• Blanket Waiver of Subrogation to be included for all contracts requiring such endorsement
+• Primary & Non-Contributory language where required by contract` :
+  company.industry === 'Manufacturing' ?
+  `MANUFACTURING OPERATIONS:
+All manufacturing operations are performed in-house at the facility location listed above. The company specializes in precision metal component manufacturing for aerospace and automotive industries with strict quality control standards.
+
+EQUIPMENT & MACHINERY:
+Modern CNC machining equipment with comprehensive maintenance schedules. All machine operators are certified and trained on specific equipment. Safety guards and emergency stops are maintained on all machinery.
+
+HAZARDOUS MATERIALS:
+Limited quantities of cutting fluids, lubricants, and metal working fluids are stored on premises. All materials are stored in accordance with OSHA and EPA regulations. Proper ventilation and safety equipment are in place.
+
+SAFETY PROGRAM:
+Written safety program includes machine-specific training, lockout/tagout procedures, PPE requirements, and emergency response procedures. Regular safety inspections and ergonomic assessments are conducted.` :
+  `WAREHOUSING & LOGISTICS OPERATIONS:
+All operations are conducted within the warehouse facility listed above. Services include inventory management, order fulfillment, and distribution for various commercial clients.
+
+MATERIAL HANDLING:
+All forklift operators are certified through an accredited training program. Regular equipment inspections and maintenance schedules are followed. Proper loading dock procedures and traffic management systems are in place.
+
+SAFETY PROGRAM:
+Comprehensive safety program emphasizing proper lifting techniques, material handling procedures, and slip/trip/fall prevention. Back injury prevention program includes mechanical assists and team lifting requirements for heavy items.
+
+OPERATIONS:
+Standard warehousing operations with no temperature-controlled storage, no hazardous materials, and no high-value merchandise requiring special security measures.`}
+
+The applicant maintains comprehensive insurance records and has a history of stable insurance relationships with no cancellations or non-renewals.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPLICANT'S SIGNATURE & FRAUD WARNING
+
+The undersigned authorized representative of the applicant declares that the statements in this application and any attachments are true and complete to the best of their knowledge and belief. The undersigned acknowledges that the insurer will rely upon the information contained herein and that this information forms the basis of any policy issued.
+
+The signing of this application does not bind the applicant or insurer to complete the insurance, but it is agreed that this application shall be the basis of the contract should a policy be issued and it will be attached to and become part of the policy.
+
+FRAUD WARNING: Any person who knowingly and with intent to defraud any insurance company or other person files an application for insurance or statement of claim containing any materially false information or conceals for the purpose of misleading, information concerning any fact material thereto commits a fraudulent insurance act, which is a crime and subjects such person to criminal and civil penalties.
+
+Applicant's Signature: _________________________________
+
+Print Name: ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.name || employees[0].name}
+Title: ${employees.find(e => e.jobTitle.includes('CEO') || e.jobTitle.includes('President'))?.jobTitle || employees[0].jobTitle}
+Date: ${new Date().toLocaleDateString()}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FOR AGENT/BROKER USE ONLY
+
+Submission Date: ${new Date().toLocaleDateString()}
+Target Premium (All Lines): $${Math.floor(employees.reduce((sum, emp) => {
+        const rateMap = {
+          8810: 0.35, 8742: 0.42, 8292: 2.84, 8601: 0.29, 8832: 0.18,
+          9014: 6.23, 3632: 4.82, 7380: 4.67, 7219: 8.89,
+          5474: 2.88, 5645: 8.96, 5190: 4.19, 5538: 9.27, 5606: 4.44
+        };
+        return sum + (emp.annualSalary / 100 * (rateMap[emp.classificationCode] || 3.50));
+      }, 0) * 1.5).toLocaleString()}
+Account Notes: New business submission - ${company.industry} industry, ${employees.length} employees
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF ACORD 125 APPLICATION
+
+This is a specimen form for demonstration purposes. Actual ACORD 125 forms may vary by state and carrier.`
     );
     zip.file('acord-125-commercial-insurance-application-create-company-upload.docx', acord125Doc);
 

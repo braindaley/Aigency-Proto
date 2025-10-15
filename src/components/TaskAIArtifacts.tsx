@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
+import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
 // Removed CSS import - using Tailwind classes instead
 
 interface ChatMessage {
@@ -201,8 +202,71 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
     // Load messages and artifacts from Firebase first (for auto-executed tasks)
     loadFromFirebase();
 
+    // Set up real-time listener for new messages
+    let unsubscribe: (() => void) | null = null;
+
+    const setupRealtimeListener = async () => {
+      try {
+        const { collection: firestoreCollection, query: firestoreQuery, orderBy, onSnapshot } = await import('firebase/firestore');
+        const { db } = await import('@/lib/firebase');
+
+        const messagesRef = firestoreCollection(db, 'taskChats', task.id, 'messages');
+        const q = firestoreQuery(messagesRef, orderBy('timestamp', 'asc'));
+
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            console.log(`🔄 Real-time update: ${snapshot.size} messages`);
+
+            const firebaseMessages: ChatMessage[] = snapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                role: data.role || 'assistant',
+                content: data.content || ''
+              };
+            });
+
+            setMessages(firebaseMessages);
+
+            // Extract artifact from messages if present
+            const fullContent = firebaseMessages.map(m => m.content).join('\n');
+            const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+            if (artifactMatch && artifactMatch[1]) {
+              const artifactContent = artifactMatch[1].trim();
+
+              setArtifact(prev => {
+                // Only update if content changed to avoid unnecessary re-renders
+                if (prev?.content !== artifactContent) {
+                  console.log('📝 Artifact updated from real-time listener');
+                  return {
+                    id: prev?.id || Date.now().toString(),
+                    title: task.taskName,
+                    content: artifactContent,
+                    type: 'document',
+                    createdAt: prev?.createdAt || new Date(),
+                    updatedAt: new Date(),
+                    savedToDatabase: prev?.savedToDatabase || false,
+                    databaseId: prev?.databaseId
+                  };
+                }
+                return prev;
+              });
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error setting up real-time listener:', error);
+      }
+    };
+
+    setupRealtimeListener();
+
     return () => {
       observer.disconnect();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [task.id, companyId]);
 
@@ -520,6 +584,23 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
     setInput('');
     setIsLoading(true);
 
+    // Save user message to Firebase so it persists on refresh
+    try {
+      const { collection: firestoreCollection, addDoc } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+
+      const chatRef = firestoreCollection(db, 'taskChats', task.id, 'messages');
+      await addDoc(chatRef, {
+        role: 'user',
+        content: userMessage.content,
+        timestamp: new Date(),
+        isUserMessage: true
+      });
+      console.log('✅ User message saved to Firebase');
+    } catch (error) {
+      console.error('❌ Failed to save user message to Firebase:', error);
+    }
+
     try {
       const response = await fetch('/api/chat/artifact', {
         method: 'POST',
@@ -771,10 +852,13 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                     )}
                   </div>
                   <div
-                    className={`rounded-lg px-4 py-2 bg-muted text-foreground`}
+                    className={`rounded-lg px-4 py-3 overflow-hidden bg-muted text-foreground`}
                   >
-                    <div className="whitespace-pre-wrap text-sm">
-                      {processMessageForDisplay(message.content, task.taskName)}
+                    <div className="text-sm leading-relaxed overflow-hidden">
+                      <SmartMessageRenderer
+                        content={processMessageForDisplay(message.content, task.taskName)}
+                        role={message.role}
+                      />
                     </div>
                   </div>
                 </div>

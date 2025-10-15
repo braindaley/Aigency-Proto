@@ -141,13 +141,28 @@ async function extractTextFromPDF(file: File): Promise<string> {
 
 async function extractTextFromDocx(file: File): Promise<string> {
   try {
-    // For DOCX, we can try to read as zip and extract the document.xml
-    // This is a simplified approach - would need mammoth.js or similar for full support
+    const mammoth = await import('mammoth');
     const arrayBuffer = await file.arrayBuffer();
-    
-    // For now, return a placeholder
-    return `[DOCX Document: ${file.name} - Word document text extraction would require additional libraries. File size: ${file.size} bytes. Please describe the content of this document in your message.]`;
+    const buffer = Buffer.from(arrayBuffer);
+
+    const result = await mammoth.extractRawText({ buffer });
+
+    if (result.value && result.value.trim()) {
+      const content = `WORD DOCUMENT: ${file.name}\n\n` +
+                     `File Size: ${file.size} bytes\n` +
+                     `=`.repeat(60) + '\n\n' +
+                     result.value.trim();
+
+      console.log(`✅ Successfully extracted ${result.value.length} characters from DOCX: ${file.name}`);
+      return content;
+    } else {
+      return `WORD DOCUMENT: ${file.name}\n\n` +
+             `File Size: ${file.size} bytes\n` +
+             `=`.repeat(60) + '\n\n' +
+             `[No readable text content found in document]`;
+    }
   } catch (error) {
+    console.error(`Error extracting DOCX content from ${file.name}:`, error);
     return `[Error reading DOCX file: ${error instanceof Error ? error.message : 'Unknown error'}]`;
   }
 }

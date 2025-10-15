@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, FileText, Download, User, Send, Paperclip, CheckCircle } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -169,17 +169,40 @@ How can I assist you with this task today?`,
 
               // If Excel/CSV data, also save parsed data as an artifact
               if ((parsedFile.type === 'excel' || parsedFile.type === 'csv') && parsedFile.data) {
-                await addDoc(collection(db, `companies/${companyId}/artifacts`), {
-                  name: `${task.taskName} - ${file.name} Data`,
-                  type: 'form_data',
-                  data: parsedFile.data,
-                  description: `Parsed data from ${file.name} uploaded for task: ${task.taskName}`,
-                  taskId: task.id,
-                  taskName: task.taskName,
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                  tags: ['task-upload', parsedFile.type]
-                });
+                // Check if artifact already exists for this task and file
+                const artifactName = `${task.taskName} - ${file.name} Data`;
+                const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+                const existingQuery = query(
+                  artifactsRef,
+                  where('name', '==', artifactName),
+                  where('taskId', '==', task.id)
+                );
+                const existingArtifacts = await getDocs(existingQuery);
+
+                if (existingArtifacts.empty) {
+                  // Only create artifact if it doesn't already exist
+                  await addDoc(artifactsRef, {
+                    name: artifactName,
+                    type: 'form_data',
+                    data: parsedFile.data,
+                    description: `Parsed data from ${file.name} uploaded for task: ${task.taskName}`,
+                    taskId: task.id,
+                    taskName: task.taskName,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    tags: ['task-upload', parsedFile.type]
+                  });
+                  console.log(`Created new artifact: ${artifactName}`);
+                } else {
+                  // Update existing artifact instead
+                  const existingDoc = existingArtifacts.docs[0];
+                  await updateDoc(doc(db, `companies/${companyId}/artifacts`, existingDoc.id), {
+                    data: parsedFile.data,
+                    updatedAt: serverTimestamp(),
+                    description: `Parsed data from ${file.name} uploaded for task: ${task.taskName} (updated)`
+                  });
+                  console.log(`Updated existing artifact: ${artifactName}`);
+                }
               }
             } catch (parseError) {
               console.error(`Error parsing file ${file.name}:`, parseError);
@@ -207,7 +230,7 @@ How can I assist you with this task today?`,
 
         // If task requires documents and files were uploaded, mark as complete
         if (requiresDocuments && filesUploaded) {
-          await updateDoc(doc(db, `companies/${companyId}/tasks`, task.id), {
+          await updateDoc(doc(db, 'companyTasks', task.id), {
             status: 'completed',
             completedAt: serverTimestamp(),
             completionNote: `Documents uploaded: ${fileList}`

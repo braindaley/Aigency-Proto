@@ -1,0 +1,355 @@
+ACORD 125 (2016/03)
+COMMERCIAL INSURANCE APPLICATION
+
+═══════════════════════════════════════════════════════════════════════════════
+
+AGENCY INFORMATION
+
+Agency Name: {{agencyName}}
+National Producer Number: {{producerNumber}}
+Agency Contact: {{agencyContact}}
+Agency Phone: {{agencyPhone}}
+Agency Email: {{agencyEmail}}
+Producer Code: {{producerCode}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LINES OF BUSINESS
+
+Coverage Requested (Check all that apply):
+☒ Commercial General Liability
+☒ Property
+☐ Crime
+☒ Business Auto
+☒ Umbrella/Excess Liability
+☒ Workers Compensation
+☐ Other: __________
+
+═══════════════════════════════════════════════════════════════════════════════
+
+POLICY INFORMATION
+
+Proposed Effective Date: {{effectiveDate}}
+Proposed Expiration Date: {{expirationDate}}
+Policy Term: 12 Months (Annual)
+
+Billing Information:
+Who Will Be Billed: Applicant
+Payment Plan: Annual / Semi-Annual / Quarterly / Monthly (Select)
+Prior Policy Number (if renewal): N/A - New Business
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPLICANT INFORMATION
+
+Legal Business Name: {{companyName}}
+DBA/Trade Name(s): {{dbaName}}
+
+Mailing Address:
+Street: {{mailingStreet}}
+City: {{city}}
+State: {{state}}
+ZIP Code: {{zipCode}}
+
+Physical Address: ☒ Same as mailing  ☐ Different (see below)
+
+Business Contact Information:
+Primary Phone: {{businessPhone}}
+Business Email: {{businessEmail}}
+Website: {{website}}
+
+Federal ID Number (FEIN): {{fein}}
+Years in Business: {{yearsInBusiness}}
+
+Business Structure:
+☒ Corporation  ☐ LLC  ☐ Partnership  ☐ Sole Proprietorship  ☐ Other
+State of Incorporation: {{stateOfIncorporation}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTACT INFORMATION
+
+| Contact Type | Name | Title | Phone | Email |
+|--------------|------|-------|-------|-------|
+| Primary Contact | {{primaryContactName}} | {{primaryContactTitle}} | {{primaryContactPhone}} | {{primaryContactEmail}} |
+| Billing Contact | {{billingContactName}} | {{billingContactTitle}} | {{billingContactPhone}} | {{billingContactEmail}} |
+| Claims Contact | {{claimsContactName}} | {{claimsContactTitle}} | {{claimsContactPhone}} | {{claimsContactEmail}} |
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PREMISES INFORMATION
+
+Location 1 (Primary):
+Location Number: 1
+Street Address: {{location1Street}}
+City, State, ZIP: {{location1City}}, {{location1State}} {{location1Zip}}
+County: {{location1County}}
+Inside/Outside City Limits: Inside
+Owned or Leased: {{location1Owned}}
+Number of Employees at Location: {{location1Employees}}
+Annual Revenues at Location: ${{location1Revenue}}
+Total Building Square Footage: {{location1TotalSqFt}}
+Square Footage Occupied: {{location1OccupiedSqFt}}
+Square Footage Open to Public: {{location1PublicSqFt}}
+Any Part Leased to Others: No
+
+Building Details (Location 1):
+Year Built: {{location1YearBuilt}}
+Number of Stories: {{location1Stories}}
+Construction Type: {{location1ConstructionType}}
+Roof Type: {{location1RoofType}}
+Roof Age: {{location1RoofAge}} years
+Fire Protection:
+  - Sprinkler System: {{location1Sprinklers}}
+  - Fire Alarm: {{location1FireAlarm}}
+  - Burglar Alarm: {{location1BurglarAlarm}}
+  - Distance to Fire Hydrant: {{location1HydrantDistance}}
+  - Distance to Fire Station: {{location1FireStationDistance}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NATURE OF BUSINESS
+
+Business Operations Description:
+{{businessDescription}}
+
+Primary Business Activities:
+{{primaryActivities}}
+
+Products or Services Provided:
+{{productsServices}}
+
+Date Business Started: {{businessStartDate}}
+
+Business Classification:
+SIC Code: {{sicCode}}
+NAICS Code: {{naicsCode}}
+Industry Description: {{industryDescription}}
+
+Gross Annual Revenue:
+Current Year Estimate: ${{currentYearRevenue}}
+Prior Year Actual: ${{priorYearRevenue}}
+2 Years Ago: ${{twoYearsAgoRevenue}}
+
+Number of Employees:
+Full-Time: {{fullTimeEmployees}}
+Part-Time: {{partTimeEmployees}}
+Seasonal: {{seasonalEmployees}}
+Total: {{totalEmployees}}
+
+Annual Payroll: ${{annualPayroll}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ADDITIONAL INTERESTS
+
+| Interest Type | Name & Address | Loan/Lease Number | Location Applicable |
+|---------------|----------------|-------------------|---------------------|
+| {{interestType1}} | {{interestName1}} | {{interestNumber1}} | Location 1 |
+
+═══════════════════════════════════════════════════════════════════════════════
+
+GENERAL INFORMATION QUESTIONS
+
+Please answer YES or NO. If YES, provide explanation in Remarks section.
+
+1. Has the applicant or any predecessor ever had insurance canceled or non-renewed?
+   ☐ YES  ☒ NO
+
+2. Does applicant have any business owned or operated under a different name?
+   ☐ YES  ☒ NO
+
+3. Does applicant lease, rent or loan equipment to others?
+   {{leasesEquipment}}
+
+4. Any work subcontracted?
+   {{hasSubcontractors}}
+
+5. Are certificates of insurance obtained from all subcontractors?
+   {{certificatesRequired}}
+
+6. Any operations on customer premises?
+   {{operationsOnCustomerPremises}}
+
+7. Any products sold or distributed under another name?
+   ☐ YES  ☒ NO
+
+8. Any products recalled in last 5 years?
+   ☐ YES  ☒ NO
+
+9. Any business conducted outside the United States?
+   ☐ YES  ☒ NO
+
+10. Does applicant have an employee safety program?
+    ☒ YES  ☐ NO
+
+11. Does applicant have a return-to-work/modified duty program?
+    {{hasReturnToWork}}
+
+12. Any hazardous materials handled, stored, or disposed of?
+    {{hazardousMaterials}}
+
+13. Any swimming pools, elevators, or escalators on premises?
+    {{hasSpecialEquipment}}
+
+14. Any underground storage tanks?
+    ☐ YES  ☒ NO
+
+15. Any environmental violations in last 5 years?
+    ☐ YES  ☒ NO
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRIOR INSURANCE HISTORY (Last 5 Years)
+
+{{priorCarriersTable}}
+
+Cancellations/Non-Renewals in Last 5 Years: None
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LOSS HISTORY (Last 5 Years)
+
+Summary of All Claims (GL, Property, Auto, WC):
+
+{{lossHistoryTable}}
+
+Total Claims Last 5 Years: {{totalClaims}}
+Total Incurred Amount: ${{totalIncurred}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+GENERAL LIABILITY COVERAGE
+
+Requested Limits:
+General Aggregate: ${{glAggregate}}
+Products/Completed Operations Aggregate: ${{glProductsAggregate}}
+Personal & Advertising Injury: ${{glPersonalInjury}}
+Each Occurrence: ${{glOccurrence}}
+Fire Damage (Any one fire): ${{glFireDamage}}
+Medical Expense (Any one person): ${{glMedicalExpense}}
+
+Deductible: ${{glDeductible}}
+
+Estimated Gross Annual Sales/Receipts: ${{estimatedSales}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PROPERTY COVERAGE
+
+Coverage Type: ☒ Building  ☒ Business Personal Property  ☐ Business Income
+
+Building Coverage:
+Limit of Insurance: ${{buildingLimit}}
+Valuation: ☒ Replacement Cost  ☐ Actual Cash Value
+
+Business Personal Property:
+Limit of Insurance: ${{bppLimit}}
+Valuation: ☒ Replacement Cost  ☐ Actual Cash Value
+
+Business Income Coverage:
+Limit of Insurance: ${{businessIncomeLimit}}
+Maximum Period of Indemnity: {{maxIndemnityPeriod}} months
+
+Deductible: ${{propertyDeductible}}
+
+Additional Coverages Requested:
+☒ Equipment Breakdown
+☒ Ordinance or Law ({{ordinanceLawPercent}}%)
+☐ Flood
+☐ Earthquake
+
+═══════════════════════════════════════════════════════════════════════════════
+
+COMMERCIAL AUTO COVERAGE
+
+Number of Vehicles: {{numVehicles}}
+
+Vehicle Types:
+{{vehicleTypes}}
+
+Liability Limits:
+Combined Single Limit: ${{autoLiability}}
+
+Physical Damage:
+Comprehensive Deductible: ${{autoCompDeductible}}
+Collision Deductible: ${{autoCollisionDeductible}}
+
+Coverages Requested:
+☒ Hired Auto
+☒ Non-Owned Auto
+☒ Uninsured/Underinsured Motorist
+
+Driver Information:
+Total number of drivers: {{numDrivers}}
+Youngest driver age: {{youngestDriverAge}}
+All drivers have valid licenses: Yes
+
+═══════════════════════════════════════════════════════════════════════════════
+
+UMBRELLA/EXCESS LIABILITY COVERAGE
+
+Requested Umbrella Limit: ${{umbrellaLimit}}
+
+Underlying Policies:
+General Liability: ${{underlyingGL}}
+Auto Liability: ${{underlyingAuto}}
+Employers Liability: ${{underlyingEL}}
+
+Self-Insured Retention (SIR): ${{umbrellaSIR}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WORKERS COMPENSATION COVERAGE
+
+States Where Coverage Applies: {{wcStates}}
+
+Estimated Annual Payroll by Classification:
+{{wcClassificationsTable}}
+
+Total Estimated Annual Payroll: ${{wcTotalPayroll}}
+
+Employers Liability Limits:
+Each Accident: ${{wcELAccident}}
+Disease - Policy Limit: ${{wcELDiseasePolicyLimit}}
+Disease - Each Employee: ${{wcELDiseaseEmployee}}
+
+Experience Modification Rate (EMR): {{wcEMR}}
+
+Waiver of Subrogation Required: {{wcWaiverRequired}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+REMARKS / ADDITIONAL INFORMATION
+
+{{remarksContent}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+APPLICANT'S SIGNATURE & FRAUD WARNING
+
+The undersigned authorized representative of the applicant declares that the statements in this application and any attachments are true and complete to the best of their knowledge and belief. The undersigned acknowledges that the insurer will rely upon the information contained herein and that this information forms the basis of any policy issued.
+
+The signing of this application does not bind the applicant or insurer to complete the insurance, but it is agreed that this application shall be the basis of the contract should a policy be issued and it will be attached to and become part of the policy.
+
+FRAUD WARNING: Any person who knowingly and with intent to defraud any insurance company or other person files an application for insurance or statement of claim containing any materially false information or conceals for the purpose of misleading, information concerning any fact material thereto commits a fraudulent insurance act, which is a crime and subjects such person to criminal and civil penalties.
+
+Applicant's Signature: _________________________________
+
+Print Name: {{signerName}}
+Title: {{signerTitle}}
+Date: {{signatureDate}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FOR AGENT/BROKER USE ONLY
+
+Submission Date: {{submissionDate}}
+Target Premium: ${{targetPremium}}
+Account Notes: {{accountNotes}}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+END OF ACORD 125 APPLICATION
+
+This is a specimen form for demonstration purposes. Actual ACORD 125 forms may vary by state and carrier.

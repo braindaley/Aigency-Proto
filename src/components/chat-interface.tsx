@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Sparkles, User } from 'lucide-react';
 import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'firebase/firestore';
 
 interface ChatMessage {
   id: string;
@@ -25,33 +27,63 @@ export function ChatInterface() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load messages from localStorage on component mount
+  // Load messages from Firestore on component mount
   useEffect(() => {
-    const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
-    if (savedMessages) {
+    const loadMessages = async () => {
       try {
-        const parsedMessages = JSON.parse(savedMessages);
-        setMessages(parsedMessages);
+        // Load messages from Firestore
+        const messagesRef = collection(db, 'generalChat', 'main', 'messages');
+        const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+        const messagesSnapshot = await getDocs(messagesQuery);
+
+        if (!messagesSnapshot.empty) {
+          // Convert Firestore documents to ChatMessage format
+          const firestoreMessages = messagesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              role: data.role,
+              content: data.content,
+            } as ChatMessage;
+          });
+          setMessages(firestoreMessages);
+          console.log('ChatInterface: Loaded', firestoreMessages.length, 'messages from Firestore');
+        } else {
+          // No messages in Firestore, create initial greeting
+          const initialMsg: ChatMessage = {
+            id: 'initial',
+            role: 'assistant',
+            content: 'How can I help you today?'
+          };
+
+          setMessages([initialMsg]);
+
+          // Save initial message to Firestore
+          try {
+            await addDoc(collection(db, 'generalChat', 'main', 'messages'), {
+              role: initialMsg.role,
+              content: initialMsg.content,
+              timestamp: serverTimestamp(),
+            });
+          } catch (error) {
+            console.error('Failed to save initial message to Firestore:', error);
+          }
+        }
       } catch (error) {
-        console.error('Failed to load chat history:', error);
-        // Fall back to initial greeting
+        console.error('Failed to load chat history from Firestore:', error);
+        // Fallback to initial greeting
         setMessages([{
           id: 'initial',
           role: 'assistant',
           content: 'How can I help you today?'
         }]);
       }
-    } else {
-      // Set initial greeting if no saved messages
-      setMessages([{
-        id: 'initial',
-        role: 'assistant',
-        content: 'How can I help you today?'
-      }]);
-    }
+    };
+
+    loadMessages();
   }, []);
 
-  // Save messages to localStorage whenever messages change
+  // Keep localStorage as backup (secondary to Firestore)
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
@@ -80,6 +112,17 @@ export function ChatInterface() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+
+    // Save user message to Firestore
+    try {
+      await addDoc(collection(db, 'generalChat', 'main', 'messages'), {
+        role: userMessage.role,
+        content: userMessage.content,
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Failed to save user message to Firestore:', error);
+    }
 
     try {
       const response = await fetch('/api/chat', {
@@ -112,6 +155,7 @@ export function ChatInterface() {
 
       const decoder = new TextDecoder();
       let done = false;
+      let fullContent = '';
 
       while (!done) {
         const { value, done: readerDone } = await reader.read();
@@ -119,18 +163,32 @@ export function ChatInterface() {
 
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          
+
           // For text streams from AI SDK, we can append the chunk directly
           if (chunk) {
+            fullContent += chunk;
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMessage = newMessages[newMessages.length - 1];
               if (lastMessage && lastMessage.role === 'assistant') {
-                lastMessage.content += chunk;
+                lastMessage.content = fullContent;
               }
               return newMessages;
             });
           }
+        }
+      }
+
+      // Save assistant message to Firestore after streaming completes
+      if (fullContent) {
+        try {
+          await addDoc(collection(db, 'generalChat', 'main', 'messages'), {
+            role: 'assistant',
+            content: fullContent,
+            timestamp: serverTimestamp(),
+          });
+        } catch (error) {
+          console.error('Failed to save assistant message to Firestore:', error);
         }
       }
     } catch (error) {
@@ -141,6 +199,17 @@ export function ChatInterface() {
         content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`,
       };
       setMessages(prev => [...prev, errorMessage]);
+
+      // Save error message to Firestore
+      try {
+        await addDoc(collection(db, 'generalChat', 'main', 'messages'), {
+          role: errorMessage.role,
+          content: errorMessage.content,
+          timestamp: serverTimestamp(),
+        });
+      } catch (firestoreError) {
+        console.error('Failed to save error message to Firestore:', firestoreError);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -171,13 +240,13 @@ export function ChatInterface() {
                   )}
                 </div>
                 <div
-                  className={`rounded-lg px-4 py-2 ${
+                  className={`rounded-lg px-4 py-3 overflow-hidden ${
                     message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                      ? 'bg-muted text-foreground'
+                      : 'bg-muted text-foreground'
                   }`}
                 >
-                  <div className="text-sm">
+                  <div className="text-sm leading-relaxed overflow-hidden">
                     <SmartMessageRenderer content={message.content} role={message.role} />
                   </div>
                 </div>

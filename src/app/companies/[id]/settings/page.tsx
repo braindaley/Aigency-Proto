@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Save, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Save, X, Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Popover,
   PopoverContent,
@@ -127,16 +137,20 @@ const Timeline = ({ renewals, startDate }: { renewals: Renewal[], startDate: Dat
 
 export default function CompanySettingsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { toast } = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
   const [timelineStartDate, setTimelineStartDate] = useState(new Date());
-  
+
   const [editedName, setEditedName] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
   const [editedWebsite, setEditedWebsite] = useState('');
-  
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const companyId = typeof id === 'string' ? id : '';
 
   useEffect(() => {
@@ -196,7 +210,7 @@ export default function CompanySettingsPage() {
 
     try {
       const companyRef = doc(db, 'companies', company.id);
-      
+
       const renewalsToSave = renewals
         .filter(r => r.type && r.date)
         .map(r => ({
@@ -235,6 +249,38 @@ export default function CompanySettingsPage() {
         title: "Error",
         description: "Failed to update company settings.",
       });
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!company) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/companies/${company.id}/delete`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete company');
+      }
+
+      toast({
+        title: "Success",
+        description: "Company deleted successfully.",
+      });
+
+      // Redirect to companies list
+      router.push('/companies');
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete company. Please try again.",
+      });
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -410,6 +456,71 @@ export default function CompanySettingsPage() {
           Save Changes
         </Button>
       </div>
+
+      <Card className="mt-8 border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Danger Zone
+          </CardTitle>
+          <CardDescription>
+            Permanently delete this company and all associated data
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            This action cannot be undone. This will permanently delete the company, including:
+          </p>
+          <ul className="text-sm text-muted-foreground mb-4 list-disc list-inside space-y-1">
+            <li>All documents and files</li>
+            <li>All tasks and task history</li>
+            <li>All artifacts and generated content</li>
+            <li>All conversations and messages</li>
+            <li>All company settings and data</li>
+          </ul>
+          <Button
+            variant="destructive"
+            onClick={() => setDeleteDialogOpen(true)}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Company
+          </Button>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Company
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete <strong>{company?.name}</strong> and all associated data including:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="text-sm text-muted-foreground my-4 list-disc list-inside space-y-1">
+            <li>All documents and files</li>
+            <li>All tasks and task history</li>
+            <li>All artifacts and generated content</li>
+            <li>All conversations and messages</li>
+            <li>All company settings and data</li>
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCompany}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Company'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

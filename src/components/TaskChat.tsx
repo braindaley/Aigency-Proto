@@ -11,7 +11,7 @@ import { TaskValidationResults } from './TaskValidationResults';
 import { processDocument, ProcessedDocument } from '@/lib/documentProcessor';
 import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, serverTimestamp, getDocs, query, orderBy, where, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { parseFileContent, formatFileDataForChat } from '@/lib/file-parser';
 import { useToast } from '@/hooks/use-toast';
@@ -74,39 +74,65 @@ export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
   // Generate storage key based on task and company IDs - include task tag to invalidate cache when type changes
   const storageKey = `task-chat-${companyId}-${task.id}-${task.tag}`;
 
-  // Initialize messages with default or saved messages
+  // Load messages from Firestore on component mount
   useEffect(() => {
-    // Debug logging
-    console.log('TaskChat: Initializing with task.tag:', task.tag);
-    console.log('TaskChat: Storage key:', storageKey);
-
-    // Clear any old cached messages that don't include the task tag in the key
-    const oldStorageKey = `task-chat-${companyId}-${task.id}`;
-    if (localStorage.getItem(oldStorageKey)) {
-      console.log('TaskChat: Removing old cached messages');
-      localStorage.removeItem(oldStorageKey);
-    }
-
-    const savedMessages = localStorage.getItem(storageKey);
-
-    if (savedMessages) {
+    const loadMessages = async () => {
       try {
-        const parsedMessages = JSON.parse(savedMessages);
-        // Check if this is an old cached message for a manual task that needs updating
-        const firstMessage = parsedMessages[0];
-        const isOldManualTaskMessage = task.tag === 'manual' &&
-          firstMessage?.role === 'assistant' &&
-          firstMessage?.content?.startsWith('Hello! I\'m here to help you complete the task:');
+        // Load messages from Firestore
+        const messagesRef = collection(db, 'taskChats', task.id, 'messages');
+        const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+        const messagesSnapshot = await getDocs(messagesQuery);
 
-        if (isOldManualTaskMessage) {
-          // Clear old cache and regenerate
-          localStorage.removeItem(storageKey);
-          throw new Error('Cached message format is outdated for manual task');
+        if (!messagesSnapshot.empty) {
+          // Convert Firestore documents to ChatMessage format
+          const firestoreMessages = messagesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              role: data.role,
+              content: data.content,
+            } as ChatMessage;
+          });
+          setMessages(firestoreMessages);
+          console.log('TaskChat: Loaded', firestoreMessages.length, 'messages from Firestore');
+        } else {
+          // No messages in Firestore, create initial message
+          const initialMessage = task.tag === 'manual'
+            ? `Hi!
+
+To complete the submission I'll need the following:
+
+${task.description}
+
+Can you upload that so I can review and mark this task as completed?`
+            : `Hello! I'm here to help you complete the task: "${task.taskName}".
+
+${task.description}
+
+How can I assist you with this task today?`;
+
+          const initialMsg: ChatMessage = {
+            id: 'initial',
+            role: 'assistant',
+            content: initialMessage,
+          };
+
+          setMessages([initialMsg]);
+
+          // Save initial message to Firestore
+          try {
+            await addDoc(collection(db, 'taskChats', task.id, 'messages'), {
+              role: initialMsg.role,
+              content: initialMsg.content,
+              timestamp: serverTimestamp(),
+            });
+          } catch (error) {
+            console.error('Failed to save initial message to Firestore:', error);
+          }
         }
-
-        setMessages(parsedMessages);
       } catch (error) {
-        console.error('Failed to load task chat history:', error);
+        console.error('Failed to load task chat history from Firestore:', error);
+
         // Fall back to initial message
         const initialMessage = task.tag === 'manual'
           ? `Hi!
@@ -128,36 +154,10 @@ How can I assist you with this task today?`;
           content: initialMessage,
         }]);
       }
-    } else {
-      // Set initial message if no saved messages
-      const initialMessage = task.tag === 'manual'
-        ? `Hi!
+    };
 
-To complete the submission I'll need the following:
-
-${task.description}
-
-Can you upload that so I can review and mark this task as completed?`
-        : `Hello! I'm here to help you complete the task: "${task.taskName}".
-
-${task.description}
-
-How can I assist you with this task today?`;
-
-      setMessages([{
-        id: 'initial',
-        role: 'assistant',
-        content: initialMessage,
-      }]);
-    }
-  }, [task.id, task.taskName, task.description, companyId, storageKey]);
-
-  // Save messages to localStorage whenever messages change
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    }
-  }, [messages, storageKey]);
+    loadMessages();
+  }, [task.id, task.taskName, task.description, task.tag, companyId]);
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -189,10 +189,13 @@ How can I assist you with this task today?`;
     let processedDocuments: ProcessedDocument[] = [];
 
     // Check if this task requires document submission
-    const requiresDocuments = task.description?.toLowerCase().includes('upload') || 
+    const requiresDocuments = task.description?.toLowerCase().includes('upload') ||
                             task.description?.toLowerCase().includes('provide') ||
                             task.description?.toLowerCase().includes('submit') ||
-                            task.taskName?.toLowerCase().includes('documentation');
+                            task.description?.toLowerCase().includes('collect') ||
+                            task.description?.toLowerCase().includes('request') ||
+                            task.taskName?.toLowerCase().includes('documentation') ||
+                            task.taskName?.toLowerCase().includes('request');
     
     console.log('Task requires documents:', requiresDocuments, {
       taskName: task.taskName,
@@ -237,25 +240,49 @@ How can I assist you with this task today?`;
               // If Excel/CSV data, also save parsed data as an artifact
               if ((parsedFile.type === 'excel' || parsedFile.type === 'csv') && parsedFile.data) {
                 // Convert nested arrays to strings for Firestore compatibility
-                const firestoreCompatibleData = Array.isArray(parsedFile.data) 
-                  ? parsedFile.data.map(row => 
+                const firestoreCompatibleData = Array.isArray(parsedFile.data)
+                  ? parsedFile.data.map(row =>
                       Array.isArray(row) ? row.join('|') : String(row)
                     )
                   : parsedFile.data;
 
-                await addDoc(collection(db, `companies/${companyId}/artifacts`), {
-                  name: `${task.taskName} - ${file.name} Data`,
-                  type: 'form_data',
-                  data: firestoreCompatibleData,
-                  originalFormat: 'excel_array',
-                  rowCount: Array.isArray(parsedFile.data) ? parsedFile.data.length : 0,
-                  description: `Parsed data from ${file.name} uploaded for task: ${task.taskName}`,
-                  taskId: task.id,
-                  taskName: task.taskName,
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                  tags: ['task-upload', parsedFile.type]
-                });
+                // Check if artifact already exists for this task and file
+                const artifactName = `${task.taskName} - ${file.name} Data`;
+                const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+                const existingQuery = query(
+                  artifactsRef,
+                  where('name', '==', artifactName),
+                  where('taskId', '==', task.id)
+                );
+                const existingArtifacts = await getDocs(existingQuery);
+
+                if (existingArtifacts.empty) {
+                  // Only create artifact if it doesn't already exist
+                  await addDoc(artifactsRef, {
+                    name: artifactName,
+                    type: 'form_data',
+                    data: firestoreCompatibleData,
+                    originalFormat: 'excel_array',
+                    rowCount: Array.isArray(parsedFile.data) ? parsedFile.data.length : 0,
+                    description: `Parsed data from ${file.name} uploaded for task: ${task.taskName}`,
+                    taskId: task.id,
+                    taskName: task.taskName,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    tags: ['task-upload', parsedFile.type]
+                  });
+                  console.log(`Created new artifact: ${artifactName}`);
+                } else {
+                  // Update existing artifact instead
+                  const existingDoc = existingArtifacts.docs[0];
+                  await updateDoc(doc(db, `companies/${companyId}/artifacts`, existingDoc.id), {
+                    data: firestoreCompatibleData,
+                    rowCount: Array.isArray(parsedFile.data) ? parsedFile.data.length : 0,
+                    updatedAt: serverTimestamp(),
+                    description: `Parsed data from ${file.name} uploaded for task: ${task.taskName} (updated)`
+                  });
+                  console.log(`Updated existing artifact: ${artifactName}`);
+                }
               }
             } catch (parseError) {
               console.error(`Error parsing file ${file.name}:`, parseError);
@@ -283,7 +310,7 @@ How can I assist you with this task today?`;
 
         // If task requires documents and files were uploaded, mark as complete
         if (requiresDocuments && filesUploaded) {
-          await updateDoc(doc(db, `companies/${companyId}/tasks`, task.id), {
+          await updateDoc(doc(db, 'companyTasks', task.id), {
             status: 'completed',
             completedAt: serverTimestamp(),
             completionNote: `Documents uploaded: ${fileList}`
@@ -322,6 +349,24 @@ How can I assist you with this task today?`;
     setInput('');
     setAttachedFiles([]);
     setIsLoading(true);
+
+    // Save user message to Firestore
+    try {
+      const messageData: any = {
+        role: userMessage.role,
+        content: userMessage.content,
+        timestamp: serverTimestamp(),
+      };
+
+      // Only add documents field if it exists and has items
+      if (userMessage.documents && userMessage.documents.length > 0) {
+        messageData.documents = userMessage.documents;
+      }
+
+      await addDoc(collection(db, 'taskChats', task.id, 'messages'), messageData);
+    } catch (error) {
+      console.error('Failed to save user message to Firestore:', error);
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -403,6 +448,19 @@ How can I assist you with this task today?`;
           }
         }
       }
+
+      // Save assistant message to Firestore after streaming completes
+      if (fullContent) {
+        try {
+          await addDoc(collection(db, 'taskChats', task.id, 'messages'), {
+            role: 'assistant',
+            content: fullContent,
+            timestamp: serverTimestamp(),
+          });
+        } catch (error) {
+          console.error('Failed to save assistant message to Firestore:', error);
+        }
+      }
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage: ChatMessage = {
@@ -411,9 +469,20 @@ How can I assist you with this task today?`;
         content: 'Sorry, I encountered an error. Please try again.',
       };
       setMessages(prev => [...prev, errorMessage]);
+
+      // Save error message to Firestore
+      try {
+        await addDoc(collection(db, 'taskChats', task.id, 'messages'), {
+          role: errorMessage.role,
+          content: errorMessage.content,
+          timestamp: serverTimestamp(),
+        });
+      } catch (firestoreError) {
+        console.error('Failed to save error message to Firestore:', firestoreError);
+      }
     } finally {
       setIsLoading(false);
-      
+
       // Trigger task status refresh after AI response completes
       if (onTaskUpdate) {
         // Small delay to ensure any backend processing completes

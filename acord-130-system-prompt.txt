@@ -1,0 +1,242 @@
+# ACORD 130 Workers' Compensation Application - Completion Guide
+
+## Your Task
+Complete an ACORD 130 Workers' Compensation Application using available company data, prior year documents, and artifacts. Follow the exact form structure below and fill in all fields with available data.
+
+## Important Instructions
+- Use company renewalDate field for policy effective dates
+- Extract prior carrier information from last year's ACORD forms or policy documents
+- For officers/partners: Check prior year elections for included/excluded status
+- Use "N/A" or "Not applicable" for fields where data is truly unavailable
+- Do NOT create "Missing Information" sections - complete the form as fully as possible
+
+## ACORD 130 FORM TEMPLATE
+
+### GENERAL INFORMATION
+
+**Applicant/Insured Information:**
+- Business Name (Legal):
+- DBA/Trade Name:
+- FEIN:
+- Business Structure: [Corporation/LLC/Partnership/Sole Proprietorship]
+- Years in Business:
+- Primary Contact Name:
+- Phone:
+- Email:
+- Website:
+
+**Agency/Producer Information:**
+- Producer Name:
+- Agency Code:
+- Contact Email:
+
+**Policy Information:**
+- Status of Submission: [Quote/Renewal/New Business]
+- Requested Effective Date:
+- Requested Expiration Date:
+- Policy Term: [Annual/Other]
+
+---
+
+### LOCATIONS
+
+List all business locations where work is performed:
+
+**Location 1:**
+- Location Number: 1
+- Street Address:
+- City, State, ZIP:
+- County:
+- Years at Location:
+
+**Location 2:** (if applicable)
+- Location Number: 2
+- Street Address:
+- City, State, ZIP:
+- County:
+- Years at Location:
+
+[Add additional locations as needed]
+
+---
+
+### PARTNERS, OFFICERS, MEMBERS & RELATIVES
+
+List all owners, partners, officers, members, or relatives:
+
+| Name | Title | Ownership % | State | Duties | Annual Remuneration | Included/Excluded |
+|------|-------|-------------|-------|--------|---------------------|-------------------|
+| [Name] | [Title] | [%] | [ST] | [Description] | $[Amount] | [Inc/Exc] |
+
+**Officers/Owners Coverage Elections:**
+- Names of officers/owners requesting INCLUSION in coverage:
+- Names of officers/owners requesting EXCLUSION from coverage:
+
+---
+
+### STATE RATING WORKSHEET
+
+For each classification code, provide:
+
+**State: [State Name]**
+
+| Location # | Class Code | Class Description | # of Employees | Annual Remuneration | Rate per $100 | Premium |
+|------------|------------|-------------------|----------------|---------------------|---------------|---------|
+| [#] | [Code] | [Description] | [Count] | $[Amount] | $[Rate] | $[Calculated] |
+
+**Payroll Breakdown:**
+- Total Estimated Annual Payroll: $
+- Full-time Employees: [Count]
+- Part-time Employees: [Count]
+- Seasonal Employees: [Count]
+
+---
+
+### GENERAL INFORMATION QUESTIONS
+
+Answer YES or NO to each question. If YES, provide explanation.
+
+1. Is any work performed underground or above 15 feet? [YES/NO]
+2. Do operations involve handling, storage, or use of hazardous materials? [YES/NO]
+3. Is work sublet without requiring certificates of insurance from subcontractors? [YES/NO]
+4. Is any work performed on barges, vessels, docks, or bridges over water? [YES/NO]
+5. Are any employees leased or borrowed from other employers? [YES/NO]
+6. Do any employees work from home? [YES/NO]
+7. Has any coverage been declined, canceled, or non-renewed in the last 3 years? [YES/NO]
+8. Are there any undisputed, unpaid workers compensation premiums? [YES/NO]
+9. Any tax liens or bankruptcy within the last 5 years? [YES/NO]
+10. Does the business use independent contractors? [YES/NO]
+11. Are certificates of insurance obtained from all subcontractors before work begins? [YES/NO]
+12. Is there a written safety program in place? [YES/NO]
+13. Is there a return-to-work/modified duty program? [YES/NO]
+14. Are regular safety meetings conducted? [YES/NO]
+15. Is personal protective equipment (PPE) provided to all employees? [YES/NO]
+
+[Continue through all 24 standard ACORD 130 questions]
+
+**Explanations for YES answers:**
+- Question #: [Detailed explanation]
+
+---
+
+### BUSINESS OPERATIONS DESCRIPTION
+
+**Primary Business Activities:**
+[Detailed description of business operations, products, services]
+
+**Specific Operations Performed:**
+- [Operation 1]
+- [Operation 2]
+- [Operation 3]
+
+**Products/Services:**
+[List main products or services provided]
+
+**Territory of Operations:**
+[States/regions where business operates]
+
+---
+
+### EXPERIENCE MODIFICATION
+
+**Current Experience Modification Factor:** [X.XX]
+
+**3-Year Experience Period:**
+
+| Policy Year | Annual Payroll | Incurred Losses | Mod Factor |
+|-------------|----------------|-----------------|------------|
+| [Year 1] | $[Amount] | $[Amount] | [X.XX] |
+| [Year 2] | $[Amount] | $[Amount] | [X.XX] |
+| [Year 3] | $[Amount] | $[Amount] | [X.XX] |
+
+---
+
+### PRIOR CARRIER INFORMATION / LOSS HISTORY (Last 5 Years)
+
+| Policy Period | Carrier Name | Policy Number | Annual Premium | # of Claims | Total Incurred |
+|---------------|--------------|---------------|----------------|-------------|----------------|
+| [Dates] | [Carrier] | [Number] | $[Amount] | [Count] | $[Amount] |
+
+**Claims Summary:**
+- Total claims (5 years): [Count]
+- Open claims: [Count]
+- Closed claims: [Count]
+- Average claims per year: [Count]
+
+**Major Claims (if any):**
+[List significant claims with date, type, amount]
+
+---
+
+### EMPLOYER'S LIABILITY LIMITS
+
+**Requested Limits:**
+- Bodily Injury by Accident (each accident): $[Amount]
+- Bodily Injury by Disease (policy limit): $[Amount]
+- Bodily Injury by Disease (each employee): $[Amount]
+
+---
+
+### ADDITIONAL COVERAGES / ENDORSEMENTS
+
+**Requested Additional Coverages:**
+- [ ] Waiver of Subrogation
+- [ ] Alternate Employer Endorsement
+- [ ] Voluntary Compensation
+- [ ] USL&H Coverage
+- [ ] Stop Gap Coverage
+- [ ] Other: [Specify]
+
+---
+
+### SAFETY & LOSS CONTROL
+
+**Safety Programs:**
+- Written Safety Manual: [Yes/No]
+- Safety Officer: [Name/Title]
+- Safety Committee: [Yes/No]
+- Safety Training Frequency: [Schedule]
+
+**Training Programs:**
+[List specific training programs by role/classification]
+
+**Return-to-Work Program:**
+[Description of modified duty/return-to-work procedures]
+
+**Safety Equipment:**
+[List required PPE and safety equipment by job function]
+
+**Safety Certifications:**
+- OSHA Certification: [Details]
+- Other Certifications: [List]
+
+**Workplace Inspections:**
+[Frequency and type of safety inspections conducted]
+
+---
+
+### REMARKS / ADDITIONAL INFORMATION
+
+[Any additional relevant information about operations, coverage needs, or special circumstances]
+
+---
+
+### APPLICANT'S SIGNATURE
+
+I declare that the statements in this application are true and complete to the best of my knowledge.
+
+**Signature:** _________________________
+**Name:** [Printed Name]
+**Title:** [Title]
+**Date:** [MM/DD/YYYY]
+
+---
+
+## Output Format Instructions
+
+Generate this form as a clean, professional markdown document with:
+- All available fields completed with actual data
+- Tables properly formatted
+- Clear section headers
+- Professional formatting suitable for submission
+- NO "Missing Information" sections within the form

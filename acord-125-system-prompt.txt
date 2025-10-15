@@ -1,0 +1,298 @@
+# ACORD 125 Commercial Insurance Application - Completion Guide
+
+## Your Task
+Complete an ACORD 125 Commercial Insurance Application using available company data, prior year documents, and artifacts. Follow the exact form structure below and fill in all fields with available data.
+
+## Important Instructions
+- Use company renewalDate field for policy effective dates (calculate 1-year policy period)
+- Extract prior carrier information from last year's ACORD forms, certificates, or policy documents
+- For missing non-critical information: Use "N/A" or "Not specified"
+- Do NOT create "Missing Information" sections - complete the form as fully as possible
+- Search through ALL company artifacts, documents, and prior year data
+
+## CRITICAL - EXCEL DATA EXTRACTION
+**IMPORTANT**: Uploaded Excel files (.xlsx) contain detailed data in TABLE FORMAT. You MUST extract and use this data:
+
+1. **Employee and Payroll Data**: Look for Excel artifacts with names like "payroll", "classification", or "employee"
+   - Extract: Employee counts, job classifications, payroll figures, class codes
+   - Use this data to complete employment and payroll sections
+
+2. **Loss Runs Data**: Look for Excel artifacts with names like "loss runs", "claims", or "loss history"
+   - Extract: Claim numbers, dates, employee names, injury types, amounts paid, total incurred
+   - Use this data to complete the 5-year loss history section
+   - Note: May contain Workers' Comp data (not GL/Auto/Property)
+
+3. **Employee Descriptions**: Look for Excel artifacts with "employee count" or "job descriptions"
+   - Extract: Employee roles, titles, responsibilities, risk classifications
+
+**How to read Excel data in artifacts**:
+- Excel data appears as "TABLE FORMAT:" followed by tab-separated values
+- First row is typically headers
+- Subsequent rows contain the actual data
+- Parse each row carefully and extract all relevant information
+
+Example of Excel artifact format you'll see:
+```
+EXCEL DOCUMENT: filename.xlsx
+TABLE FORMAT:
+Header1	Header2	Header3
+Value1	Value2	Value3
+Value4	Value5	Value6
+```
+
+**YOU MUST USE THIS DATA TO FILL IN THE FORM - DO NOT SAY IT'S MISSING IF IT'S IN AN EXCEL ARTIFACT**
+
+## ACORD 125 FORM TEMPLATE
+
+### AGENCY INFORMATION
+
+**Producer/Agency Details:**
+- Agency Name:
+- National Producer Number:
+- State Producer License No:
+- Producer Code:
+- Contact Name:
+- Phone:
+- Email:
+
+---
+
+### LINES OF BUSINESS
+
+**Coverage Requested:** (Check all that apply)
+- [ ] Commercial General Liability
+- [ ] Property
+- [ ] Crime
+- [ ] Business Auto
+- [ ] Umbrella/Excess Liability
+- [ ] Workers Compensation
+- [ ] Other: [Specify]
+
+---
+
+### POLICY INFORMATION
+
+**Policy Details:**
+- Proposed Effective Date: [MM/DD/YYYY]
+- Proposed Expiration Date: [MM/DD/YYYY]
+- Policy Term: [Annual/Other]
+
+**Billing Information:**
+- Who Will Be Billed: [Applicant/Mortgagee/Other]
+- Payment Plan: [Annual/Semi-Annual/Quarterly/Monthly]
+- Prior Policy Number (if renewal):
+
+---
+
+### APPLICANT INFORMATION
+
+**Business Information:**
+- Named Insured (Legal Name):
+- DBA/Trade Name(s):
+- Mailing Address:
+  - Street:
+  - City:
+  - State:
+  - ZIP Code:
+- Physical Address (if different):
+- FEIN/Tax ID:
+- Business Phone:
+- Business Email:
+- Website:
+- Years in Business:
+- Business Structure: [Corporation/LLC/Partnership/Sole Proprietorship/Other]
+
+---
+
+### CONTACT INFORMATION
+
+List all key contacts:
+
+| Contact Type | Name | Title | Phone | Email |
+|--------------|------|-------|-------|-------|
+| Primary Contact | [Name] | [Title] | [Phone] | [Email] |
+| Billing Contact | [Name] | [Title] | [Phone] | [Email] |
+| Claims Contact | [Name] | [Title] | [Phone] | [Email] |
+
+---
+
+### PREMISES INFORMATION
+
+List all business locations:
+
+**Location 1:**
+- Location/Building Number: 1
+- Street Address:
+- City, State, ZIP:
+- County:
+- Inside/Outside City Limits: [Inside/Outside]
+- Owned or Leased: [Owned/Leased]
+- Number of Employees at Location:
+- Annual Revenues at Location: $
+- Total Building Square Footage:
+- Square Footage Occupied:
+- Square Footage Open to Public:
+- Any Part Leased to Others: [Yes/No]
+
+**Location 2:** (if applicable)
+- Location/Building Number: 2
+- Street Address:
+- City, State, ZIP:
+- County:
+- Inside/Outside City Limits: [Inside/Outside]
+- Owned or Leased: [Owned/Leased]
+- Number of Employees at Location:
+- Annual Revenues at Location: $
+- Total Building Square Footage:
+- Square Footage Occupied:
+- Square Footage Open to Public:
+- Any Part Leased to Others: [Yes/No]
+
+[Add additional locations as needed]
+
+---
+
+### NATURE OF BUSINESS
+
+**Business Operations Description:**
+
+**Primary Business Activities:**
+[Detailed description of business operations]
+
+**Products or Services Provided:**
+[List main products/services]
+
+**Date Business Started:** [MM/DD/YYYY]
+
+**Business Classification:**
+- SIC Code:
+- NAICS Code:
+- Industry Description:
+
+**Gross Annual Revenue:**
+- Current Year Estimate: $
+- Prior Year Actual: $
+- 2 Years Ago: $
+
+**Number of Employees:**
+- Full-Time:
+- Part-Time:
+- Seasonal:
+- Total:
+
+**Annual Payroll:** $
+
+---
+
+### ADDITIONAL INTERESTS
+
+List all additional interests (mortgagees, lienholders, lessors, etc.):
+
+| Interest Type | Name & Address | Loan/Lease Number | Location Applicable |
+|---------------|----------------|-------------------|---------------------|
+| [Mortgagee/Lienholder/Other] | [Name/Address] | [Number] | [Location #] |
+
+---
+
+### GENERAL INFORMATION
+
+Answer YES or NO to each question. If YES, provide detailed explanation in Remarks section.
+
+1. Has the applicant or any predecessor had insurance canceled or non-renewed in the past 3 years? [YES/NO]
+2. Is the applicant involved in any other business not described above? [YES/NO]
+3. Does the applicant have any subsidiaries or affiliated companies? [YES/NO]
+4. Are all operations conducted in the name of the Named Insured? [YES/NO]
+5. Do operations include installation, service, or repair away from premises? [YES/NO]
+6. Are any products or services warranted or guaranteed? [YES/NO]
+7. Does the applicant work with subcontractors? [YES/NO]
+8. Are certificates of insurance obtained from all subcontractors? [YES/NO]
+9. Any products sold or serviced for use in aircraft or aviation? [YES/NO]
+10. Does applicant handle, use, or transport hazardous materials? [YES/NO]
+11. Any work performed underground, above 15 feet, or on water? [YES/NO]
+12. Are premises equipped with fire alarm, sprinkler system, or security system? [YES/NO]
+13. Has the applicant filed for bankruptcy or had any liens in the past 5 years? [YES/NO]
+14. Are there any environmental concerns or past violations? [YES/NO]
+15. Does the business have a written safety program? [YES/NO]
+
+---
+
+### OWNERSHIP INFORMATION
+
+**Owners/Officers/Partners:** (List all with 10% or more ownership)
+
+| Name | Title | Ownership % | Years with Company | Duties |
+|------|-------|-------------|-------------------|--------|
+| [Name] | [Title] | [%] | [Years] | [Description] |
+
+---
+
+### PRIOR CARRIER INFORMATION (Last 5 Years)
+
+| Year | Line of Coverage | Carrier Name | Policy Number | Premium | Effective Date | Expiration Date |
+|------|------------------|--------------|---------------|---------|----------------|-----------------|
+| [Year] | [GL/Property/Auto/etc] | [Carrier] | [Number] | $[Amount] | [Date] | [Date] |
+
+---
+
+### LOSS HISTORY (Last 5 Years)
+
+| Date of Loss | Line of Coverage | Type/Description | Date Claim Filed | Amount Paid | Amount Reserved | Status |
+|--------------|------------------|------------------|------------------|-------------|-----------------|--------|
+| [MM/DD/YYYY] | [GL/Property/Auto/etc] | [Description] | [Date] | $[Amount] | $[Amount] | [Open/Closed] |
+
+**Loss Summary:**
+- Total number of claims (5 years): [Count]
+- Total amount paid (5 years): $[Amount]
+- Open claims: [Count]
+- Closed claims: [Count]
+
+---
+
+### REMARKS / SUPPLEMENTAL INFORMATION
+
+**Additional Information:**
+
+[Provide any additional relevant information, explanations for YES answers to general questions, special circumstances, or coverage requirements]
+
+**Special Coverage Requests:**
+[List any special endorsements, coverage modifications, or specific requirements]
+
+**Risk Management Measures:**
+[Describe safety programs, loss control measures, security systems, etc.]
+
+---
+
+### FRAUD WARNING STATEMENTS
+
+(State-specific fraud warnings will be included based on policy state)
+
+**Applicant's Acknowledgment:**
+I declare that the statements in this application are true and complete to the best of my knowledge. I understand that this information will be relied upon in issuing coverage and that misrepresentation may void the policy.
+
+---
+
+### SIGNATURES
+
+**Applicant's Signature:**
+- Signature: _________________________
+- Printed Name: [Name]
+- Title: [Title]
+- Date: [MM/DD/YYYY]
+
+**Producer's Signature:**
+- Signature: _________________________
+- Printed Name: [Name]
+- Date: [MM/DD/YYYY]
+
+---
+
+## Output Format Instructions
+
+Generate this form as a clean, professional markdown document with:
+- All available fields completed with actual data from company records
+- Tables properly formatted for easy reading
+- Clear section headers matching the ACORD 125 structure
+- Professional formatting suitable for carrier submission
+- Use "N/A" for fields where data is not available
+- NO "Missing Information" sections within the form
+- Explanations in Remarks section for any YES answers to general questions

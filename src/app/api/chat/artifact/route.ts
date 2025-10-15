@@ -269,6 +269,26 @@ DOCUMENT GENERATION INSTRUCTIONS:
 6. Do not include any explanation outside the artifact tags - ONLY output the artifact tags and content
 7. The document should be immediately usable and data-rich
 
+CRITICAL - COMPLETING FORMS WITH AVAILABLE DATA:
+- Search through ALL available artifacts, documents, and company data to find information
+- For renewal/policy dates: Check company renewalDate field and calculate policy periods from it
+- For prior carrier information: Look in previous year's policy documents, ACORD forms, and certificates
+- For missing non-critical information: Use "Not specified" or "N/A" rather than creating a "Missing Information" section
+- COMPLETE the form to the best of your ability with available data
+- Only mention truly critical missing information in the chat BEFORE the artifact, not inside it
+- The goal is a COMPLETE, USABLE document, not a list of questions
+- Do NOT include "Missing Information" or "Further Questions" sections in the artifact
+
+CRITICAL - DO NOT INCLUDE IN THE ARTIFACT:
+- Do NOT include disclaimers about AI limitations within the artifact document
+- Do NOT mention "As an AI, I cannot..." or similar limitation statements in the artifact
+- Do NOT include notes about inability to access external data or live web searches in the artifact
+- Do NOT include "Missing Information" or "Further Questions" sections
+- Keep all such limitations, disclaimers, or notes in the CHAT CONVERSATION ONLY, never in the artifact itself
+- The artifact should be a clean, professional document without any AI-related meta-commentary
+
+If you need to communicate limitations or clarifications to the user, do so in the chat conversation BEFORE or AFTER the artifact tags, but NEVER inside the <artifact> tags.
+
 REQUIRED FORMAT (you must follow this exactly):
 <artifact>
 # ${task.taskName}
@@ -292,6 +312,15 @@ IMPORTANT INSTRUCTIONS:
 4. You MUST wrap the ENTIRE updated document between <artifact> and </artifact> tags
 5. The updated document should be complete (not just the changes)
 
+CRITICAL - DO NOT INCLUDE IN THE ARTIFACT:
+- Do NOT include disclaimers about AI limitations within the artifact document
+- Do NOT mention "As an AI, I cannot..." or similar limitation statements in the artifact
+- Do NOT include notes about inability to access external data or live web searches in the artifact
+- Keep all such limitations, disclaimers, or notes in the CHAT CONVERSATION ONLY, never in the artifact itself
+- The artifact should be a clean, professional document without any AI-related meta-commentary
+
+If you need to communicate limitations or clarifications to the user, do so in the chat conversation (before the artifact tags), but NEVER inside the <artifact> tags.
+
 REQUIRED FORMAT (you must follow this exactly):
 [Brief explanation of changes]
 
@@ -307,6 +336,23 @@ ${task.systemPrompt || ''}
 
 ${taskContext}
 
+FORMATTING REQUIREMENTS:
+- Use proper markdown formatting for ALL responses
+- When listing questions or items, use numbered lists with proper line breaks
+- Format questions like this:
+
+1. **Section Name:**
+   - Question text here?
+   - Additional details if needed
+
+2. **Next Section:**
+   - Question text here?
+
+- Use bullet points (- or *) with proper spacing
+- Put each question on its own line
+- Use **bold** for section headings and emphasis
+- Ensure readability with proper spacing between sections
+
 IMPORTANT WORKFLOW:
 1. First, always help the user with what they're asking for
 2. Be helpful and follow their requests
@@ -316,7 +362,7 @@ ${task.testCriteria ? `TEST CRITERIA FOR COMPLETION:
 ${task.testCriteria}
 
 The system looks for:
-- Employee data (names, titles, payroll information)  
+- Employee data (names, titles, payroll information)
 - Job descriptions for various roles
 - High-risk role identification and assessment
 - Completion indicators in your responses
@@ -458,6 +504,115 @@ Please provide the missing information by uploading relevant documents or updati
       messages: convertedMessages,
       system: systemPrompt,
       temperature: 0.7,
+      async onFinish({ text }) {
+        // Save the assistant's response to Firebase for persistence
+        try {
+          const { collection: firestoreCollection, addDoc } = await import('firebase/firestore');
+          const { GoogleGenerativeAI } = await import('@google/generative-ai');
+
+          const chatRef = firestoreCollection(db, 'taskChats', taskId, 'messages');
+          await addDoc(chatRef, {
+            role: 'assistant',
+            content: text,
+            timestamp: new Date(),
+            isAIGenerated: true
+          });
+          console.log('✅ Assistant response saved to Firebase');
+
+          // Run test validation if test criteria exists
+          if (task.testCriteria && task.testCriteria.trim()) {
+            console.log('🧪 Running test validation after artifact update...');
+
+            try {
+              const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+
+              const validationPrompt = `You are validating an AI-generated document against test criteria.
+
+CRITICAL INSTRUCTIONS:
+1. You MUST start your response with EXACTLY either "PASS" or "FAIL" on the first line
+2. Evaluate based ONLY on what you can see in the document provided below
+3. If the document contains content addressing the criteria, mark it as PASS
+4. DO NOT ask for confirmation or additional information - evaluate what's actually present
+
+DOCUMENT TO VALIDATE:
+${text}
+
+TEST CRITERIA:
+${task.testCriteria}
+
+VALIDATION RULES:
+- If you can see content in the document that addresses the test criteria → PASS
+- If the document is missing, empty, or clearly incomplete → FAIL
+- DO NOT fail because you "need to verify" or want "confirmation" - check if content is there
+- DO NOT ask the user to "provide" or "confirm" - evaluate the visible content
+- Assume the document shown above IS the complete artifact to be evaluated
+
+RESPONSE FORMAT (REQUIRED):
+Line 1: PASS or FAIL (exactly one of these words, nothing else on this line)
+Line 2+: Your explanation
+
+If PASS:
+- Use first-person: "I've successfully completed..."
+- State which criteria are met based on visible content
+- Be specific: "The narrative explains operations by...", "Risk controls are highlighted through..."
+
+If FAIL:
+- Use first-person: "The document is missing..."
+- State what SPECIFIC content is absent or inadequate
+- Do NOT ask for confirmation - state what's missing
+
+REMEMBER: Start with exactly "PASS" or "FAIL" on line 1. Base your decision on the actual document content above.`;
+
+              const validationModel = genAI.getGenerativeModel({
+                model: 'gemini-2.5-flash',
+                generationConfig: { temperature: 0.1 }
+              });
+
+              const validationAiResult = await validationModel.generateContent(validationPrompt);
+              const validationAiResponse = await validationAiResult.response;
+              const validationText = validationAiResponse.text();
+
+              // Save validation message to chat
+              await addDoc(chatRef, {
+                role: 'assistant',
+                content: validationText,
+                timestamp: new Date(),
+                isAIGenerated: true,
+                isValidation: true
+              });
+
+              const testsPassed = validationText.toUpperCase().startsWith('PASS');
+              console.log(`🧪 Test validation result: ${testsPassed ? 'PASS' : 'FAIL'}`);
+              console.log(`   Validation: ${validationText.substring(0, 200)}...`);
+
+              // If tests pass, mark task as complete
+              if (testsPassed) {
+                const taskDocRef = doc(db, 'companyTasks', taskId);
+                await updateDoc(taskDocRef, {
+                  status: 'completed',
+                  completedAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  completedBy: 'AI System'
+                });
+                console.log('✅ Task marked as completed after validation passed');
+
+                // Add completion summary
+                await addDoc(chatRef, {
+                  role: 'assistant',
+                  content: '✅ **Task Complete!**\n\nThe work has been validated and meets all the required criteria. The completed document is ready for your review!',
+                  timestamp: new Date(),
+                  isAIGenerated: true,
+                  isCompletionSummary: true
+                });
+              }
+            } catch (error) {
+              console.error('❌ Test validation failed:', error);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Failed to save assistant response to Firebase:', error);
+        }
+      },
     });
 
     // Run validation independently in the background for AI and manual tasks with test criteria

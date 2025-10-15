@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
@@ -346,13 +346,24 @@ export async function POST(req: NextRequest) {
     const employees = generateEmployeeData(company);
     const lossRuns = generateLossRuns(employees);
 
-    // Create company in Firestore
+    // Calculate renewal date: 100 days from today
+    const renewalDate = new Date();
+    renewalDate.setDate(renewalDate.getDate() + 100);
+
+    // Create company in Firestore with workers comp renewal
     const companyRef = await addDoc(collection(db, 'companies'), {
       name: company.name,
       description: company.description,
       website: company.website,
       createdAt: new Date().toISOString(),
-      isTestData: true
+      isTestData: true,
+      renewals: [
+        {
+          id: Date.now(),
+          type: 'workers-comp',
+          date: Timestamp.fromDate(renewalDate)
+        }
+      ]
     });
 
     console.log(`Test company created with ID: ${companyRef.id}`);
@@ -362,13 +373,45 @@ export async function POST(req: NextRequest) {
     // Generate "create-company-upload" documents and upload to Firebase Storage
     const oshaDoc = await createWordDocument('OSHA Research Data', `OSHA Database Search Results for ${company.name}\n\nCompany OSHA ID: ${Math.floor(Math.random() * 1000000)}\nIndustry Classification: ${company.industry}\n\nSafety Statistics:\n- DART Rate: ${(Math.random() * 3).toFixed(1)}\n- Total Case Rate: ${(Math.random() * 5).toFixed(1)}`);
     const oshaRef = ref(storage, `companies/${companyRef.id}/osha-research-data-create-company-upload.docx`);
-    await uploadBytes(oshaRef, oshaDoc);
+    const oshaSnapshot = await uploadBytes(oshaRef, oshaDoc);
+    const oshaUrl = await getDownloadURL(oshaSnapshot.ref);
+
+    // Create Firestore document record for OSHA doc
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'osha-research-data-create-company-upload.docx',
+      url: oshaUrl,
+      size: oshaDoc.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
 
     const narrativeDoc = await createWordDocument('Operations Narrative', `OPERATIONS NARRATIVE - ${company.name}\n\nBusiness Overview:\n${company.name} is a ${company.industry.toLowerCase()} company established in ${company.yearFounded}. ${company.description}`);
     const narrativeRef = ref(storage, `companies/${companyRef.id}/operations-narrative-create-company-upload.docx`);
-    await uploadBytes(narrativeRef, narrativeDoc);
+    const narrativeSnapshot = await uploadBytes(narrativeRef, narrativeDoc);
+    const narrativeUrl = await getDownloadURL(narrativeSnapshot.ref);
+
+    // Create Firestore document record for Operations Narrative
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'operations-narrative-create-company-upload.docx',
+      url: narrativeUrl,
+      size: narrativeDoc.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
 
     // Generate ACORD 130 - Workers' Compensation Application
+    // Generate realistic experience modification factors for the past 3-5 years
+    const currentYear = new Date().getFullYear();
+    const experienceMods = [
+      { year: currentYear - 5, mod: 0.92 + Math.random() * 0.15 },  // 5 years ago
+      { year: currentYear - 4, mod: 0.90 + Math.random() * 0.18 },  // 4 years ago
+      { year: currentYear - 3, mod: 0.88 + Math.random() * 0.20 },  // 3 years ago
+      { year: currentYear - 2, mod: 0.85 + Math.random() * 0.22 },  // 2 years ago
+      { year: currentYear - 1, mod: 0.87 + Math.random() * 0.20 }   // Last year
+    ].map(m => ({ ...m, mod: parseFloat(m.mod.toFixed(2)) }));
+
     const acord130Content = `ACORD 130 - WORKERS' COMPENSATION APPLICATION\n\n` +
       `Applicant Information:\n` +
       `Business Name: ${company.name}\n` +
@@ -381,11 +424,31 @@ export async function POST(req: NextRequest) {
       `Location: ${company.location}\n\n` +
       `Classification Information:\n` +
       `See attached payroll by classification document for detailed breakdown of employee classifications, payroll amounts, and premium calculations.\n\n` +
+      `Experience Modification:\n` +
+      `Current Experience Modification Factor (Effective ${currentYear}): ${experienceMods[4].mod}\n` +
+      `Experience Mod State: ${company.location.split(',').pop().trim()}\n\n` +
+      `Historical Experience Modification Factors:\n` +
+      experienceMods.map(m => `  ${m.year}: ${m.mod}`).join('\n') + '\n\n' +
+      `Experience Period Summary (Past 3 Years):\n` +
+      `  Year ${currentYear - 3}: Payroll: $${Math.floor(900000 + Math.random() * 400000).toLocaleString()}, Losses: $${Math.floor(20000 + Math.random() * 30000).toLocaleString()}\n` +
+      `  Year ${currentYear - 2}: Payroll: $${Math.floor(950000 + Math.random() * 400000).toLocaleString()}, Losses: $${Math.floor(15000 + Math.random() * 35000).toLocaleString()}\n` +
+      `  Year ${currentYear - 1}: Payroll: $${Math.floor(1000000 + Math.random() * 400000).toLocaleString()}, Losses: $${Math.floor(25000 + Math.random() * 40000).toLocaleString()}\n\n` +
       `Loss History:\n` +
       `See attached loss runs for 3-5 year claims history including dates, nature of injuries, and amounts paid/reserved.`;
     const acord130Doc = await createWordDocument('ACORD 130 - Workers Compensation Application', acord130Content);
     const acord130Ref = ref(storage, `companies/${companyRef.id}/acord-130-workers-comp-application-create-company-upload.docx`);
-    await uploadBytes(acord130Ref, acord130Doc);
+    const acord130Snapshot = await uploadBytes(acord130Ref, acord130Doc);
+    const acord130Url = await getDownloadURL(acord130Snapshot.ref);
+
+    // Create Firestore document record for ACORD 130
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'acord-130-workers-comp-application-create-company-upload.docx',
+      url: acord130Url,
+      size: acord130Doc.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
 
     // Generate ACORD 125 - Commercial Insurance Application
     const acord125Content = `ACORD 125 - COMMERCIAL INSURANCE APPLICATION\n\n` +
@@ -409,7 +472,18 @@ export async function POST(req: NextRequest) {
       `See attached prior insurance history document for 5-year carrier history.`;
     const acord125Doc = await createWordDocument('ACORD 125 - Commercial Insurance Application', acord125Content);
     const acord125Ref = ref(storage, `companies/${companyRef.id}/acord-125-commercial-insurance-application-create-company-upload.docx`);
-    await uploadBytes(acord125Ref, acord125Doc);
+    const acord125Snapshot = await uploadBytes(acord125Ref, acord125Doc);
+    const acord125Url = await getDownloadURL(acord125Snapshot.ref);
+
+    // Create Firestore document record for ACORD 125
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'acord-125-commercial-insurance-application-create-company-upload.docx',
+      url: acord125Url,
+      size: acord125Doc.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
 
     // Generate Coverage Recommendations
     const coverageRecsContent = `COVERAGE RECOMMENDATIONS - ${company.name}\n\n` +
@@ -436,21 +510,71 @@ export async function POST(req: NextRequest) {
       `These recommendations are based on ${company.industry.toLowerCase()} industry standards, the company's employee count of ${company.employeeCount}, and review of the loss history showing claims patterns that indicate standard risk levels.`;
     const coverageRecsDoc = await createWordDocument('Coverage Recommendations', coverageRecsContent);
     const coverageRecsRef = ref(storage, `companies/${companyRef.id}/coverage-recommendations-create-company-upload.docx`);
-    await uploadBytes(coverageRecsRef, coverageRecsDoc);
+    const coverageRecsSnapshot = await uploadBytes(coverageRecsRef, coverageRecsDoc);
+    const coverageRecsUrl = await getDownloadURL(coverageRecsSnapshot.ref);
 
-    console.log(`Uploaded ${5} create-company documents to Firebase Storage`);
+    // Create Firestore document record for Coverage Recommendations
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'coverage-recommendations-create-company-upload.docx',
+      url: coverageRecsUrl,
+      size: coverageRecsDoc.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
 
-    // Generate "chat-upload" files and return as ZIP
+    // ALSO upload the "chat-upload" Excel files to Firebase Storage
+    // These files are needed for the first 3 tasks in the workflow
+    const employeeExcel = createEmployeeExcel(company, employees);
+    const employeeExcelRef = ref(storage, `companies/${companyRef.id}/employee-count-job-descriptions-chat-upload.xlsx`);
+    const employeeExcelSnapshot = await uploadBytes(employeeExcelRef, employeeExcel);
+    const employeeExcelUrl = await getDownloadURL(employeeExcelSnapshot.ref);
+
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'employee-count-job-descriptions-chat-upload.xlsx',
+      url: employeeExcelUrl,
+      size: employeeExcel.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
+
+    const payrollExcel = createPayrollExcel(company, employees);
+    const payrollExcelRef = ref(storage, `companies/${companyRef.id}/payroll-by-classification-chat-upload.xlsx`);
+    const payrollExcelSnapshot = await uploadBytes(payrollExcelRef, payrollExcel);
+    const payrollExcelUrl = await getDownloadURL(payrollExcelSnapshot.ref);
+
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'payroll-by-classification-chat-upload.xlsx',
+      url: payrollExcelUrl,
+      size: payrollExcel.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
+
+    const lossRunsExcel = createLossRunsExcel(company, lossRuns);
+    const lossRunsExcelRef = ref(storage, `companies/${companyRef.id}/loss-runs-3-5-years-chat-upload.xlsx`);
+    const lossRunsExcelSnapshot = await uploadBytes(lossRunsExcelRef, lossRunsExcel);
+    const lossRunsExcelUrl = await getDownloadURL(lossRunsExcelSnapshot.ref);
+
+    await addDoc(collection(db, `companies/${companyRef.id}/documents`), {
+      name: 'loss-runs-3-5-years-chat-upload.xlsx',
+      url: lossRunsExcelUrl,
+      size: lossRunsExcel.byteLength,
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      uploadedAt: new Date(),
+      category: 'other'
+    });
+
+    console.log(`Uploaded ${8} documents (5 create-company + 3 chat-upload) to Firebase Storage and created Firestore records`);
+
+    // Generate "chat-upload" files and return as ZIP for manual download (optional)
     const JSZip = require('jszip');
     const zip = new JSZip();
 
-    const employeeExcel = createEmployeeExcel(company, employees);
     zip.file('employee-count-job-descriptions-chat-upload.xlsx', employeeExcel);
-
-    const payrollExcel = createPayrollExcel(company, employees);
     zip.file('payroll-by-classification-chat-upload.xlsx', payrollExcel);
-
-    const lossRunsExcel = createLossRunsExcel(company, lossRuns);
     zip.file('loss-runs-3-5-years-chat-upload.xlsx', lossRunsExcel);
 
     const priorInsuranceHistory = `PRIOR INSURANCE HISTORY (5 YEARS)\n${company.name}\n\nGENERAL LIABILITY, COMMERCIAL AUTO, AND PROPERTY\n5-year history with carriers, limits, premiums, and claims...`;

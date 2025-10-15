@@ -216,7 +216,14 @@ Task: ${task.taskName}
 Type: ${task.tag}
 Phase: ${task.phase}
 
-IMPORTANT: Keep responses concise.
+FORMATTING REQUIREMENTS:
+- Use proper markdown formatting for ALL responses
+- When listing questions or items, use proper line breaks between each item
+- Use bullet points (- or *) or numbered lists with spacing
+- Use **bold** for important terms and section headings
+- Ensure readability with proper spacing
+
+IMPORTANT: Keep responses concise but well-formatted.
 
 USER APPROVAL DETECTION:
 If the user says phrases like "pass this task", "approve this", "this is ok", "mark as complete", or similar approval language, respond with:
