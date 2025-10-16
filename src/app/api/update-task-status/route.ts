@@ -200,7 +200,7 @@ async function checkAllDependenciesCompleted(dependencies: string[], companyId: 
 
         if (!matchingTask) {
           console.log(`[${timestamp}]   ❌ Dependency not found: ${depId}`);
-          continue;
+          return false;
         }
 
         depSnapshot = matchingTask;
