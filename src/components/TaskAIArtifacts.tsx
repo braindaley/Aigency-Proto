@@ -142,7 +142,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         markdown: markdownContent
       };
     } catch (e) {
-      // Check if content looks like JSON but has markdown formatting
+      // Check if content looks like JSON but has markdown formatting (```json...```)
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         try {
@@ -157,6 +157,23 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
           // Not valid JSON
         }
       }
+
+      // Check if content starts with just "json" (without code fence) followed by actual JSON
+      const jsonPrefixMatch = content.match(/^json\s*(\{[\s\S]*\})\s*$/);
+      if (jsonPrefixMatch) {
+        try {
+          const parsed = JSON.parse(jsonPrefixMatch[1]);
+          const markdownContent = jsonToMarkdown(parsed);
+          return {
+            isJson: true,
+            formatted: JSON.stringify(parsed, null, 2),
+            markdown: markdownContent
+          };
+        } catch (e3) {
+          // Not valid JSON
+        }
+      }
+
       return { isJson: false, formatted: content };
     }
   };
