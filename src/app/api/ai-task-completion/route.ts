@@ -395,7 +395,14 @@ The completed document is available in the artifact viewer on the right. Feel fr
           },
           body: JSON.stringify({ taskId, status: 'completed' }),
         });
-        console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Dependency update triggered successfully`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Dependency update failed with status ${response.status}: ${errorText}`);
+        } else {
+          const result = await response.json();
+          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Dependency update triggered successfully:`, result);
+        }
       } catch (error) {
         console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to trigger dependency updates:`, error);
       }

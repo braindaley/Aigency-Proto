@@ -236,9 +236,9 @@ export function DependencyArtifactsReview({ task, companyId }: DependencyArtifac
         <div className="space-y-3">
           {artifacts.map((artifact) => (
             <div key={artifact.taskId} className="border border-border rounded-lg">
-              <button
+              <div
                 onClick={() => toggleExpand(artifact.taskId)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-lg"
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors rounded-lg cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   {expandedArtifact === artifact.taskId ? (
@@ -282,7 +282,7 @@ export function DependencyArtifactsReview({ task, companyId }: DependencyArtifac
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
-              </button>
+              </div>
 
               {expandedArtifact === artifact.taskId && (
                 <div className="px-4 pb-4 pt-2 border-t border-border">
