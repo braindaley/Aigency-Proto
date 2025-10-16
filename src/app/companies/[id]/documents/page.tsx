@@ -151,29 +151,45 @@ export default function CompanyDocuments() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const storageRef = ref(storage, `companies/${companyId}/documents/${Date.now()}_${file.name}`);
-        
+
         // Upload file
         const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
-        
+
         // Save metadata to Firestore
-        await addDoc(collection(db, `companies/${companyId}/documents`), {
+        const docRef = await addDoc(collection(db, `companies/${companyId}/documents`), {
           name: file.name,
           url: downloadURL,
           size: file.size,
           type: file.type,
           uploadedAt: new Date(),
-          category: 'other'
+          category: 'other',
+          processingStatus: 'pending'
         });
-        
+
+        // Trigger background document processing (don't await - let it run in background)
+        fetch('/api/process-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyId,
+            documentId: docRef.id,
+            fileUrl: downloadURL,
+            filename: file.name,
+            fileType: file.type
+          })
+        }).catch(err => {
+          console.error('Background document processing failed:', err);
+        });
+
         setUploadProgress(((i + 1) / files.length) * 100);
       }
-      
+
       toast({
         title: 'Success',
-        description: `${files.length} document(s) uploaded successfully`,
+        description: `${files.length} document(s) uploaded successfully. Text extraction is processing in the background.`,
       });
-      
+
       fetchCompanyAndDocuments();
     } catch (error) {
       console.error('Error uploading file:', error);

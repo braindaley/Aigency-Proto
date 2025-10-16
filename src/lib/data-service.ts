@@ -333,102 +333,76 @@ export class DataService {
             isWord
           });
 
-          // If this is an Excel document, try to extract its content
-          if (isExcel && docData.url) {
+          // If this is an Excel document, use pre-processed text or extract on-the-fly as fallback
+          if (isExcel) {
             console.log(`📊 Processing Excel document: ${filename}`);
 
-            try {
-              // Fetch the Excel file from Firebase Storage
-              const excelResponse = await fetch(docData.url);
-              if (excelResponse.ok) {
-                const excelArrayBuffer = await excelResponse.arrayBuffer();
-                const excelBuffer = Buffer.from(excelArrayBuffer);
+            // Check if we have pre-processed text
+            if (docData.extractedText && docData.processingStatus === 'success') {
+              console.log(`✅ Using pre-processed text for Excel: ${filename} (${docData.extractedText.length} characters)`);
 
-                // Use our new Excel extractor
-                const { extractExcelText } = await import('./excelExtractor');
-                const extractedContent = await extractExcelText(excelBuffer, filename);
-
-                console.log(`✅ Excel processing complete for: ${filename} (${extractedContent.length} characters)`);
-
-                // Add the extracted content as an artifact
-                allArtifacts.push({
-                  taskId: 'excel-document-' + docData.id,
-                  taskName: docData.name || 'Excel Document',
-                  content: extractedContent,
-                  timestamp: docData.uploadedAt || new Date(),
-                  filename: docData.name,
-                  type: docData.type,
-                  extractedFromRegularDocs: true,
-                  size: docData.size,
-                  url: docData.url
-                });
-              } else {
-                console.error(`Failed to fetch Excel from URL: ${docData.url}`);
-                // Add placeholder if fetch fails
-                allArtifacts.push({
-                  taskId: 'excel-document-' + docData.id,
-                  taskName: docData.name || 'Excel Document',
-                  content: `EXCEL DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Excel content could not be fetched - file may be inaccessible or URL expired]`,
-                  timestamp: docData.uploadedAt || new Date(),
-                  filename: docData.name,
-                  type: docData.type,
-                  extractedFromRegularDocs: true,
-                  size: docData.size,
-                  url: docData.url
-                });
-              }
-            } catch (error) {
-              console.error(`Error processing Excel ${filename}:`, error);
-              // Add error placeholder
               allArtifacts.push({
                 taskId: 'excel-document-' + docData.id,
                 taskName: docData.name || 'Excel Document',
-                content: `EXCEL DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Excel content extraction error: ${error instanceof Error ? error.message : 'Unknown error'}]`,
+                content: docData.extractedText,
                 timestamp: docData.uploadedAt || new Date(),
                 filename: docData.name,
                 type: docData.type,
                 extractedFromRegularDocs: true,
                 size: docData.size,
-                url: docData.url
+                url: docData.url,
+                preProcessed: true
               });
-            }
-          }
-          // If this is a PDF document, try to extract its content
-          else if (isPDF && docData.url) {
-            console.log(`📄 Processing PDF document: ${filename}`);
-            
-            try {
-              // Fetch the PDF file from Firebase Storage
-              const pdfResponse = await fetch(docData.url);
-              if (pdfResponse.ok) {
-                const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-                const pdfBuffer = Buffer.from(pdfArrayBuffer);
-                
-                // Use our new PDF extractor
-                const { extractPdfText } = await import('./pdfExtractor');
-                const extractedContent = await extractPdfText(pdfBuffer, filename);
-                
-                console.log(`✅ PDF processing complete for: ${filename} (${extractedContent.length} characters)`);
-                
-                // Add the extracted content as an artifact
+            } else if (docData.url) {
+              console.log(`⚠️ No pre-processed text for Excel: ${filename}, extracting on-the-fly (slower)`);
+
+              try {
+                // Fetch the Excel file from Firebase Storage
+                const excelResponse = await fetch(docData.url);
+                if (excelResponse.ok) {
+                  const excelArrayBuffer = await excelResponse.arrayBuffer();
+                  const excelBuffer = Buffer.from(excelArrayBuffer);
+
+                  // Use our new Excel extractor
+                  const { extractExcelText } = await import('./excelExtractor');
+                  const extractedContent = await extractExcelText(excelBuffer, filename);
+
+                  console.log(`✅ Excel processing complete for: ${filename} (${extractedContent.length} characters)`);
+
+                  // Add the extracted content as an artifact
+                  allArtifacts.push({
+                    taskId: 'excel-document-' + docData.id,
+                    taskName: docData.name || 'Excel Document',
+                    content: extractedContent,
+                    timestamp: docData.uploadedAt || new Date(),
+                    filename: docData.name,
+                    type: docData.type,
+                    extractedFromRegularDocs: true,
+                    size: docData.size,
+                    url: docData.url
+                  });
+                } else {
+                  console.error(`Failed to fetch Excel from URL: ${docData.url}`);
+                  // Add placeholder if fetch fails
+                  allArtifacts.push({
+                    taskId: 'excel-document-' + docData.id,
+                    taskName: docData.name || 'Excel Document',
+                    content: `EXCEL DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Excel content could not be fetched - file may be inaccessible or URL expired]`,
+                    timestamp: docData.uploadedAt || new Date(),
+                    filename: docData.name,
+                    type: docData.type,
+                    extractedFromRegularDocs: true,
+                    size: docData.size,
+                    url: docData.url
+                  });
+                }
+              } catch (error) {
+                console.error(`Error processing Excel ${filename}:`, error);
+                // Add error placeholder
                 allArtifacts.push({
-                  taskId: 'pdf-document-' + docData.id,
-                  taskName: docData.name || 'PDF Document',
-                  content: extractedContent,
-                  timestamp: docData.uploadedAt || new Date(),
-                  filename: docData.name,
-                  type: docData.type,
-                  extractedFromRegularDocs: true,
-                  size: docData.size,
-                  url: docData.url
-                });
-              } else {
-                console.error(`Failed to fetch PDF from URL: ${docData.url}`);
-                // Add placeholder if fetch fails
-                allArtifacts.push({
-                  taskId: 'pdf-document-' + docData.id,
-                  taskName: docData.name || 'PDF Document',
-                  content: `PDF DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[PDF content could not be fetched - file may be inaccessible or URL expired]`,
+                  taskId: 'excel-document-' + docData.id,
+                  taskName: docData.name || 'Excel Document',
+                  content: `EXCEL DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Excel content extraction error: ${error instanceof Error ? error.message : 'Unknown error'}]`,
                   timestamp: docData.uploadedAt || new Date(),
                   filename: docData.name,
                   type: docData.type,
@@ -437,67 +411,78 @@ export class DataService {
                   url: docData.url
                 });
               }
-            } catch (error) {
-              console.error(`Error processing PDF ${filename}:`, error);
-              // Add error placeholder
+            }
+          }
+          // If this is a PDF document, use pre-processed text or extract on-the-fly as fallback
+          else if (isPDF) {
+            console.log(`📄 Processing PDF document: ${filename}`);
+
+            // Check if we have pre-processed text
+            if (docData.extractedText && docData.processingStatus === 'success') {
+              console.log(`✅ Using pre-processed text for PDF: ${filename} (${docData.extractedText.length} characters)`);
+
               allArtifacts.push({
                 taskId: 'pdf-document-' + docData.id,
                 taskName: docData.name || 'PDF Document',
-                content: `PDF DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[PDF content extraction error: ${error instanceof Error ? error.message : 'Unknown error'}]`,
+                content: docData.extractedText,
                 timestamp: docData.uploadedAt || new Date(),
                 filename: docData.name,
                 type: docData.type,
                 extractedFromRegularDocs: true,
                 size: docData.size,
-                url: docData.url
+                url: docData.url,
+                preProcessed: true
               });
-            }
-          }
-          // If this is a Word document, try to extract its content
-          else if (isWord && docData.url) {
-            console.log(`📝 Processing Word document: ${filename}`);
+            } else if (docData.url) {
+              console.log(`⚠️ No pre-processed text for PDF: ${filename}, extracting on-the-fly (slower)`);
 
-            try {
-              // Fetch the Word file from Firebase Storage
-              const wordResponse = await fetch(docData.url);
-              if (wordResponse.ok) {
-                const wordArrayBuffer = await wordResponse.arrayBuffer();
-                const wordBuffer = Buffer.from(wordArrayBuffer);
+              try {
+                // Fetch the PDF file from Firebase Storage
+                const pdfResponse = await fetch(docData.url);
+                if (pdfResponse.ok) {
+                  const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+                  const pdfBuffer = Buffer.from(pdfArrayBuffer);
 
-                // Use mammoth to extract text from Word documents
-                const mammoth = await import('mammoth');
-                const result = await mammoth.extractRawText({ buffer: wordBuffer });
+                  // Use our new PDF extractor
+                  const { extractPdfText } = await import('./pdfExtractor');
+                  const extractedContent = await extractPdfText(pdfBuffer, filename);
 
-                let extractedContent = '';
-                if (result.value && result.value.trim()) {
-                  extractedContent = `WORD DOCUMENT: ${filename}\n\n` +
-                                   `File Size: ${docData.size} bytes\n` +
-                                   `=`.repeat(60) + '\n\n' +
-                                   result.value.trim();
-                  console.log(`✅ Word processing complete for: ${filename} (${result.value.length} characters)`);
+                  console.log(`✅ PDF processing complete for: ${filename} (${extractedContent.length} characters)`);
+
+                  // Add the extracted content as an artifact
+                  allArtifacts.push({
+                    taskId: 'pdf-document-' + docData.id,
+                    taskName: docData.name || 'PDF Document',
+                    content: extractedContent,
+                    timestamp: docData.uploadedAt || new Date(),
+                    filename: docData.name,
+                    type: docData.type,
+                    extractedFromRegularDocs: true,
+                    size: docData.size,
+                    url: docData.url
+                  });
                 } else {
-                  extractedContent = `WORD DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\n${'='.repeat(60)}\n\n[No readable text content found in document]`;
+                  console.error(`Failed to fetch PDF from URL: ${docData.url}`);
+                  // Add placeholder if fetch fails
+                  allArtifacts.push({
+                    taskId: 'pdf-document-' + docData.id,
+                    taskName: docData.name || 'PDF Document',
+                    content: `PDF DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[PDF content could not be fetched - file may be inaccessible or URL expired]`,
+                    timestamp: docData.uploadedAt || new Date(),
+                    filename: docData.name,
+                    type: docData.type,
+                    extractedFromRegularDocs: true,
+                    size: docData.size,
+                    url: docData.url
+                  });
                 }
-
-                // Add the extracted content as an artifact
+              } catch (error) {
+                console.error(`Error processing PDF ${filename}:`, error);
+                // Add error placeholder
                 allArtifacts.push({
-                  taskId: 'word-document-' + docData.id,
-                  taskName: docData.name || 'Word Document',
-                  content: extractedContent,
-                  timestamp: docData.uploadedAt || new Date(),
-                  filename: docData.name,
-                  type: docData.type,
-                  extractedFromRegularDocs: true,
-                  size: docData.size,
-                  url: docData.url
-                });
-              } else {
-                console.error(`Failed to fetch Word doc from URL: ${docData.url}`);
-                // Add placeholder if fetch fails
-                allArtifacts.push({
-                  taskId: 'word-document-' + docData.id,
-                  taskName: docData.name || 'Word Document',
-                  content: `WORD DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Word document content could not be fetched - file may be inaccessible or URL expired]`,
+                  taskId: 'pdf-document-' + docData.id,
+                  taskName: docData.name || 'PDF Document',
+                  content: `PDF DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[PDF content extraction error: ${error instanceof Error ? error.message : 'Unknown error'}]`,
                   timestamp: docData.uploadedAt || new Date(),
                   filename: docData.name,
                   type: docData.type,
@@ -506,20 +491,95 @@ export class DataService {
                   url: docData.url
                 });
               }
-            } catch (error) {
-              console.error(`Error processing Word doc ${filename}:`, error);
-              // Add error placeholder
+            }
+          }
+          // If this is a Word document, use pre-processed text or extract on-the-fly as fallback
+          else if (isWord) {
+            console.log(`📝 Processing Word document: ${filename}`);
+
+            // Check if we have pre-processed text
+            if (docData.extractedText && docData.processingStatus === 'success') {
+              console.log(`✅ Using pre-processed text for Word: ${filename} (${docData.extractedText.length} characters)`);
+
               allArtifacts.push({
                 taskId: 'word-document-' + docData.id,
                 taskName: docData.name || 'Word Document',
-                content: `WORD DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Word document content extraction error: ${error instanceof Error ? error.message : 'Unknown error'}]`,
+                content: docData.extractedText,
                 timestamp: docData.uploadedAt || new Date(),
                 filename: docData.name,
                 type: docData.type,
                 extractedFromRegularDocs: true,
                 size: docData.size,
-                url: docData.url
+                url: docData.url,
+                preProcessed: true
               });
+            } else if (docData.url) {
+              console.log(`⚠️ No pre-processed text for Word: ${filename}, extracting on-the-fly (slower)`);
+
+              try {
+                // Fetch the Word file from Firebase Storage
+                const wordResponse = await fetch(docData.url);
+                if (wordResponse.ok) {
+                  const wordArrayBuffer = await wordResponse.arrayBuffer();
+                  const wordBuffer = Buffer.from(wordArrayBuffer);
+
+                  // Use mammoth to extract text from Word documents
+                  const mammoth = await import('mammoth');
+                  const result = await mammoth.extractRawText({ buffer: wordBuffer });
+
+                  let extractedContent = '';
+                  if (result.value && result.value.trim()) {
+                    extractedContent = `WORD DOCUMENT: ${filename}\n\n` +
+                                     `File Size: ${docData.size} bytes\n` +
+                                     `=`.repeat(60) + '\n\n' +
+                                     result.value.trim();
+                    console.log(`✅ Word processing complete for: ${filename} (${result.value.length} characters)`);
+                  } else {
+                    extractedContent = `WORD DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\n${'='.repeat(60)}\n\n[No readable text content found in document]`;
+                  }
+
+                  // Add the extracted content as an artifact
+                  allArtifacts.push({
+                    taskId: 'word-document-' + docData.id,
+                    taskName: docData.name || 'Word Document',
+                    content: extractedContent,
+                    timestamp: docData.uploadedAt || new Date(),
+                    filename: docData.name,
+                    type: docData.type,
+                    extractedFromRegularDocs: true,
+                    size: docData.size,
+                    url: docData.url
+                  });
+                } else {
+                  console.error(`Failed to fetch Word doc from URL: ${docData.url}`);
+                  // Add placeholder if fetch fails
+                  allArtifacts.push({
+                    taskId: 'word-document-' + docData.id,
+                    taskName: docData.name || 'Word Document',
+                    content: `WORD DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Word document content could not be fetched - file may be inaccessible or URL expired]`,
+                    timestamp: docData.uploadedAt || new Date(),
+                    filename: docData.name,
+                    type: docData.type,
+                    extractedFromRegularDocs: true,
+                    size: docData.size,
+                    url: docData.url
+                  });
+                }
+              } catch (error) {
+                console.error(`Error processing Word doc ${filename}:`, error);
+                // Add error placeholder
+                allArtifacts.push({
+                  taskId: 'word-document-' + docData.id,
+                  taskName: docData.name || 'Word Document',
+                  content: `WORD DOCUMENT: ${filename}\n\nFile Size: ${docData.size} bytes\nType: ${docData.type}\n\n[Word document content extraction error: ${error instanceof Error ? error.message : 'Unknown error'}]`,
+                  timestamp: docData.uploadedAt || new Date(),
+                  filename: docData.name,
+                  type: docData.type,
+                  extractedFromRegularDocs: true,
+                  size: docData.size,
+                  url: docData.url
+                });
+              }
             }
           }
         }
