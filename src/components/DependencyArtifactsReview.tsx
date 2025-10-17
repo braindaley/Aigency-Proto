@@ -63,29 +63,51 @@ export function DependencyArtifactsReview({ task, companyId }: DependencyArtifac
           if (matchingTask) {
             const depTask = { id: matchingTask.id, ...matchingTask.data() } as CompanyTask;
 
-            // Get chat messages for this task to extract artifacts
-            const chatRef = collection(db, 'taskChats', matchingTask.id, 'messages');
-            const chatQuery = query(chatRef, orderBy('timestamp', 'asc'));
-            const chatSnapshot = await getDocs(chatQuery);
+            let artifactContent = '';
+            let artifactTimestamp: Date | undefined;
 
-            if (!chatSnapshot.empty) {
-              // Extract artifacts from chat messages
-              const messages = chatSnapshot.docs.map(doc => doc.data());
-              const fullContent = messages.map(m => m.content).join('\n');
-              const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+            // First, try to get artifact from the artifacts collection
+            const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+            const artifactsSnapshot = await getDocs(artifactsRef);
 
-              if (artifactMatch && artifactMatch[1]) {
-                const artifactContent = artifactMatch[1].trim();
+            const taskArtifacts = artifactsSnapshot.docs.filter(doc => {
+              const data = doc.data();
+              return data.taskId === matchingTask.id;
+            });
 
-                loadedArtifacts.push({
-                  taskId: matchingTask.id,
-                  taskName: depTask.taskName,
-                  taskPhase: depTask.phase,
-                  taskStatus: depTask.status,
-                  content: artifactContent,
-                  timestamp: messages[messages.length - 1]?.timestamp?.toDate()
-                });
+            if (taskArtifacts.length > 0) {
+              // Use the first artifact found
+              const artifactData = taskArtifacts[0].data();
+              artifactContent = artifactData.data || '';
+              artifactTimestamp = artifactData.updatedAt?.toDate?.() || artifactData.createdAt?.toDate?.();
+            } else {
+              // Fallback: try to extract from chat messages (for legacy artifacts)
+              const chatRef = collection(db, 'taskChats', matchingTask.id, 'messages');
+              const chatQuery = query(chatRef, orderBy('timestamp', 'asc'));
+              const chatSnapshot = await getDocs(chatQuery);
+
+              if (!chatSnapshot.empty) {
+                const messages = chatSnapshot.docs.map(doc => doc.data());
+                const fullContent = messages.map(m => m.content).join('\n');
+                const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+                if (artifactMatch && artifactMatch[1]) {
+                  artifactContent = artifactMatch[1].trim();
+                  artifactTimestamp = messages[messages.length - 1]?.timestamp?.toDate();
+                }
               }
+            }
+
+            // Add to loaded artifacts if content was found
+            if (artifactContent) {
+              loadedArtifacts.push({
+                taskId: matchingTask.id,
+                taskName: depTask.taskName,
+                taskPhase: depTask.phase,
+                taskStatus: depTask.status,
+                content: artifactContent,
+                timestamp: artifactTimestamp
+              });
             }
           }
         } catch (error) {

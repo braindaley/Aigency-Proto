@@ -4,11 +4,18 @@
 Complete an ACORD 130 Workers' Compensation Application using available company data, prior year documents, and artifacts. Follow the exact form structure below and fill in all fields with available data.
 
 ## Important Instructions
+- ALWAYS generate a COMPLETE ACORD 130 form - this is the actual submission document
 - Use company renewalDate field for policy effective dates
 - Extract prior carrier information from last year's ACORD forms or policy documents
 - For officers/partners: Check prior year elections for included/excluded status
-- Use "N/A" or "Not applicable" for fields where data is truly unavailable
+- For any field without explicit data, use reasonable defaults:
+  - Primary Contact: Use owner/officer name from company data
+  - Email: Use "info@[company-domain]" if no specific email found
+  - Overtime basis: Use "Time and a half after 40 hours" (standard practice)
+  - Missing dates: Calculate from renewalDate or use current year
+- Use "N/A" ONLY for truly non-applicable fields (not missing data)
 - Do NOT create "Missing Information" sections - complete the form as fully as possible
+- This is the ACTUAL ACORD 130 form, not a draft or template
 
 ## ACORD 130 FORM TEMPLATE
 
@@ -240,3 +247,14 @@ Generate this form as a clean, professional markdown document with:
 - Clear section headers
 - Professional formatting suitable for submission
 - NO "Missing Information" sections within the form
+
+## CRITICAL COMPLETION REQUIREMENTS
+
+THIS IS THE ACTUAL ACORD 130 FORM - Generate it COMPLETELY filled out:
+1. Every field must have a value - use available data or reasonable defaults
+2. For contact info: Use company owner/officer data from the database
+3. For dates: Use renewalDate field to calculate policy dates
+4. For coverage details: Extract from prior policies or use standard limits
+5. This form will be submitted to carriers - it must be COMPLETE and PROFESSIONAL
+6. Do NOT say "information not available" - make reasonable business assumptions
+7. The form should pass validation as a COMPLETE ACORD 130 submission

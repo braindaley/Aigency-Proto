@@ -8,13 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles, User, Send, Download, Copy, FileText, Code, Eye, Loader2, Database, Check, RefreshCw } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
-import { saveArtifactToDatabase } from '@/lib/artifact-utils';
+import { saveArtifactToDatabase, saveMultipleArtifacts } from '@/lib/artifact-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
 import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
+import { parseMultipleArtifacts } from '@/lib/artifact-parser';
+import { MultipleArtifactsViewer } from '@/components/MultipleArtifactsViewer';
 // Removed CSS import - using Tailwind classes instead
 
 interface ChatMessage {
@@ -47,6 +49,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [artifact, setArtifact] = useState<Artifact | null>(null);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [isSavingToDatabase, setIsSavingToDatabase] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState<string>('');
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
@@ -245,30 +248,56 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
 
             setMessages(firebaseMessages);
 
-            // Extract artifact from messages if present
+            // Extract artifacts from messages if present
             const fullContent = firebaseMessages.map(m => m.content).join('\n');
-            const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
 
-            if (artifactMatch && artifactMatch[1]) {
-              const artifactContent = artifactMatch[1].trim();
+            // Try to parse multiple artifacts first
+            const parsedArtifacts = parseMultipleArtifacts(fullContent);
 
-              setArtifact(prev => {
-                // Only update if content changed to avoid unnecessary re-renders
-                if (prev?.content !== artifactContent) {
-                  console.log('📝 Artifact updated from real-time listener');
-                  return {
-                    id: prev?.id || Date.now().toString(),
-                    title: task.taskName,
-                    content: artifactContent,
-                    type: 'document',
-                    createdAt: prev?.createdAt || new Date(),
-                    updatedAt: new Date(),
-                    savedToDatabase: prev?.savedToDatabase || false,
-                    databaseId: prev?.databaseId
-                  };
-                }
-                return prev;
-              });
+            if (parsedArtifacts.length > 0) {
+              console.log(`📝 Found ${parsedArtifacts.length} artifacts from real-time listener`);
+
+              const artifactObjects: Artifact[] = parsedArtifacts.map((parsed, index) => ({
+                id: parsed.id,
+                title: parsed.title,
+                content: parsed.content,
+                type: 'document' as const,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                savedToDatabase: false
+              }));
+
+              setArtifacts(artifactObjects);
+
+              // Also set the first artifact as the primary artifact for backward compatibility
+              if (artifactObjects.length > 0) {
+                setArtifact(artifactObjects[0]);
+              }
+            } else {
+              // Fallback to single artifact without attributes
+              const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+              if (artifactMatch && artifactMatch[1]) {
+                const artifactContent = artifactMatch[1].trim();
+
+                setArtifact(prev => {
+                  // Only update if content changed to avoid unnecessary re-renders
+                  if (prev?.content !== artifactContent) {
+                    console.log('📝 Artifact updated from real-time listener');
+                    return {
+                      id: prev?.id || Date.now().toString(),
+                      title: task.taskName,
+                      content: artifactContent,
+                      type: 'document',
+                      createdAt: prev?.createdAt || new Date(),
+                      updatedAt: new Date(),
+                      savedToDatabase: prev?.savedToDatabase || false,
+                      databaseId: prev?.databaseId
+                    };
+                  }
+                  return prev;
+                });
+              }
             }
           }
         });
@@ -290,8 +319,36 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
   const loadFromFirebase = async () => {
     try {
       // Import Firebase functions
-      const { collection: firestoreCollection, getDocs, query: firestoreQuery, orderBy } = await import('firebase/firestore');
+      const { collection: firestoreCollection, getDocs, query: firestoreQuery, orderBy, where } = await import('firebase/firestore');
       const { db } = await import('@/lib/firebase');
+
+      // First, check if there's an artifact in the artifacts collection
+      console.log('Checking artifacts collection for taskId:', task.id);
+      const artifactsRef = firestoreCollection(db, `companies/${companyId}/artifacts`);
+      const artifactsSnapshot = await getDocs(artifactsRef);
+
+      const taskArtifact = artifactsSnapshot.docs.find(doc => {
+        const data = doc.data();
+        return data.taskId === task.id;
+      });
+
+      if (taskArtifact) {
+        const artifactData = taskArtifact.data();
+        console.log('Found artifact in database:', artifactData.name);
+
+        setArtifact({
+          id: taskArtifact.id,
+          title: artifactData.name || task.taskName,
+          content: artifactData.data || '',
+          type: 'document',
+          createdAt: artifactData.createdAt?.toDate?.() || new Date(),
+          updatedAt: artifactData.updatedAt?.toDate?.() || new Date(),
+          savedToDatabase: true,
+          databaseId: taskArtifact.id
+        });
+
+        setLastSavedContent(artifactData.data || '');
+      }
 
       // Check if there are messages in Firebase from automatic execution
       const messagesRef = firestoreCollection(db, 'taskChats', task.id, 'messages');
@@ -313,23 +370,51 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
 
         setMessages(firebaseMessages);
 
-        // Extract artifact from messages if present
-        const fullContent = firebaseMessages.map(m => m.content).join('\n');
-        const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+        // Only extract artifact from messages if we didn't find one in the artifacts collection
+        if (!taskArtifact) {
+          const fullContent = firebaseMessages.map(m => m.content).join('\n');
 
-        if (artifactMatch && artifactMatch[1]) {
-          const artifactContent = artifactMatch[1].trim();
-          console.log('Extracted artifact from automatic execution:', artifactContent.substring(0, 200));
+          // Try to parse multiple artifacts first
+          const parsedArtifacts = parseMultipleArtifacts(fullContent);
 
-          setArtifact({
-            id: Date.now().toString(),
-            title: task.taskName,
-            content: artifactContent,
-            type: 'document',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            savedToDatabase: false
-          });
+          if (parsedArtifacts.length > 0) {
+            console.log(`📝 Found ${parsedArtifacts.length} artifacts from loadFromFirebase`);
+
+            const artifactObjects: Artifact[] = parsedArtifacts.map((parsed, index) => ({
+              id: parsed.id,
+              title: parsed.title,
+              content: parsed.content,
+              type: 'document' as const,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              savedToDatabase: false
+            }));
+
+            setArtifacts(artifactObjects);
+
+            // Also set the first artifact as the primary artifact for backward compatibility
+            if (artifactObjects.length > 0) {
+              setArtifact(artifactObjects[0]);
+            }
+          } else {
+            // Fallback to single artifact without attributes
+            const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
+
+            if (artifactMatch && artifactMatch[1]) {
+              const artifactContent = artifactMatch[1].trim();
+              console.log('Extracted artifact from chat messages:', artifactContent.substring(0, 200));
+
+              setArtifact({
+                id: Date.now().toString(),
+                title: task.taskName,
+                content: artifactContent,
+                type: 'document',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                savedToDatabase: false
+              });
+            }
+          }
         }
 
         // Don't generate initial artifact if we loaded from Firebase
@@ -390,9 +475,21 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Auto-save multiple artifacts when they're first loaded
+  useEffect(() => {
+    if (artifacts.length > 1 && !isSavingToDatabase) {
+      // Check if any artifact needs to be saved
+      const needsSaving = artifacts.some(a => !a.savedToDatabase);
+      if (needsSaving) {
+        console.log(`📝 Auto-saving ${artifacts.length} multiple artifacts to database`);
+        saveMultipleArtifactsToDb();
+      }
+    }
+  }, [artifacts.length]);
+
   const saveArtifactToDb = async (artifactToSave: Artifact) => {
     if (isSavingToDatabase) return; // Only prevent if currently saving
-    
+
     console.log('🔧 Saving artifact with databaseId:', artifactToSave.databaseId);
     setIsSavingToDatabase(true);
     try {
@@ -407,27 +504,55 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         tags: ['ai-canvas', task.phase, task.tag],
         databaseId: artifactToSave.databaseId // Pass existing ID for updates
       });
-      
+
       // Update the artifact to mark it as saved
       const updatedArtifact = {
         ...artifactToSave,
         savedToDatabase: true,
         databaseId
       };
-      
+
       setArtifact(updatedArtifact);
       localStorage.setItem(storageKey, JSON.stringify(updatedArtifact));
       setLastSavedContent(artifactToSave.content);
-      
+
       const action = artifactToSave.databaseId ? 'updated' : 'created';
       console.log(`✅ Artifact automatically ${action} in database:`, databaseId);
-      
+
       // If we got a different databaseId back, it means the original was deleted and recreated
       if (artifactToSave.databaseId && databaseId !== artifactToSave.databaseId) {
         console.log('🔄 Artifact was recreated with new ID, updating references');
       }
     } catch (error) {
       console.error('❌ Failed to save artifact to database:', error);
+    } finally {
+      setIsSavingToDatabase(false);
+    }
+  };
+
+  const saveMultipleArtifactsToDb = async () => {
+    if (isSavingToDatabase || artifacts.length === 0) return;
+
+    console.log(`🔧 Saving ${artifacts.length} artifacts to database`);
+    setIsSavingToDatabase(true);
+    try {
+      await saveMultipleArtifacts({
+        companyId,
+        taskId: task.id,
+        taskName: task.taskName,
+        artifacts: artifacts.map(a => ({
+          id: a.id,
+          title: a.title,
+          content: a.content
+        })),
+        type: 'document',
+        description: `Multiple carrier submission emails for ${task.taskName}`,
+        tags: ['ai-canvas', task.phase, task.tag]
+      });
+
+      console.log(`✅ Successfully saved ${artifacts.length} artifacts to database`);
+    } catch (error) {
+      console.error('❌ Failed to save multiple artifacts:', error);
     } finally {
       setIsSavingToDatabase(false);
     }
@@ -1001,7 +1126,31 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
           <CardContent className="flex-1 overflow-hidden p-0 bg-background">
             <ScrollArea className="h-full bg-background">
               <div className="p-6 bg-background" style={{ backgroundColor: 'var(--background)' }}>
-                {artifact ? (
+                {artifacts.length > 1 ? (
+                  <MultipleArtifactsViewer
+                    artifacts={artifacts.map(a => ({
+                      id: a.id,
+                      title: a.title,
+                      content: a.content
+                    }))}
+                    theme={theme}
+                    isSavingToDatabase={isSavingToDatabase}
+                    onDownload={(artifact) => {
+                      const blob = new Blob([artifact.content], { type: 'text/markdown' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${artifact.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    onCopy={(artifact) => {
+                      navigator.clipboard.writeText(artifact.content);
+                    }}
+                  />
+                ) : artifact ? (
                   (() => {
                     const { isJson, formatted, markdown } = formatJsonIfNeeded(artifact.content);
 

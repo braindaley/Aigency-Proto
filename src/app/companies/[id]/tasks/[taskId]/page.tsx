@@ -15,6 +15,7 @@ import { TaskChat } from '@/components/TaskChat';
 import { TaskAIArtifacts } from '@/components/TaskAIArtifacts';
 import { AITaskCompletion } from '@/components/AITaskCompletion';
 import { DependencyArtifactsReview } from '@/components/DependencyArtifactsReview';
+import { TaskSubmissionsPanel } from '@/components/TaskSubmissionsPanel';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -200,7 +201,21 @@ export default function TaskDetailPage() {
             )}
           </div>
 
-          <TaskAIArtifacts task={task} companyId={companyId || ''} />
+          <div className="space-y-8">
+            {/* Show submissions panel for Task Template 12 (Send submission packets)
+                Task 11 creates the emails, Task 12 sends them with attachments
+                Hide artifacts panel for Task 12 since it doesn't create new artifacts */}
+            {(task.sortOrder === 12 || task.taskName?.toLowerCase().includes('send submission')) ? (
+              <TaskSubmissionsPanel
+                companyId={companyId || ''}
+                taskId={taskId || ''}
+                taskName={task.taskName}
+                dependencyTaskIds={task.dependencies || []}
+              />
+            ) : (
+              <TaskAIArtifacts task={task} companyId={companyId || ''} />
+            )}
+          </div>
         </div>
       </div>
     );

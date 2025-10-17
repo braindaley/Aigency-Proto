@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Settings, Sparkles, User, FileText, Database } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Settings, Sparkles, User, FileText, Database, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
@@ -290,6 +290,12 @@ export default function CompanyDetailPage() {
         )}
 
         <div className="flex gap-2 mb-8">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/companies/${company.id}/emails`}>
+              <Mail className="h-4 w-4 mr-2" />
+              Emails
+            </Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link href={`/companies/${company.id}/artifacts`}>
               <Database className="h-4 w-4 mr-2" />

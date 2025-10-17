@@ -654,12 +654,51 @@ DETAILED DATA FOR SEARCH:
     }
   }
 
-  // Get enhanced AI context using vector search
+  // Get marketing files for a specific insurance type
+  static async getMarketingFiles(insuranceType?: string): Promise<any[]> {
+    try {
+      const marketingFilesRef = collection(db, 'marketingFiles');
+      let q;
+
+      if (insuranceType) {
+        q = query(marketingFilesRef, where('insuranceType', '==', insuranceType));
+      } else {
+        q = query(marketingFilesRef);
+      }
+
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Error fetching marketing files:', error);
+      return [];
+    }
+  }
+
+  // Get agency information
+  static async getAgencyInfo(): Promise<any> {
+    try {
+      const agencyInfoRef = doc(db, 'settings', 'agencyInfo');
+      const agencyInfoSnap = await getDoc(agencyInfoRef);
+
+      if (agencyInfoSnap.exists()) {
+        return agencyInfoSnap.data();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching agency info:', error);
+      return null;
+    }
+  }
+
   static async getEnhancedAITaskContext(companyId: string, taskId?: string): Promise<{
     company: any;
     completedTasks: any[];
     allDocuments: any[];
     allArtifacts: any[];
+    marketingFiles: any[];
     relevantContent: string;
     vectorSearchContent: string;
   }> {
@@ -669,9 +708,32 @@ DETAILED DATA FOR SEARCH:
 
       // Get basic context first (existing functionality)
       const basicContext = await this.getAITaskContext(companyId, taskId);
-      
+
       // Get company contact data override if available
       const contactData = getCompanyContact(companyId);
+
+      // Get agency information
+      const agencyInfo = await this.getAgencyInfo();
+
+      // Get task-specific marketing files
+      let marketingFiles: any[] = [];
+      let taskInsuranceType = '';
+      if (taskId) {
+        try {
+          const taskDocRef = doc(db, 'companyTasks', taskId);
+          const taskDoc = await getDoc(taskDocRef);
+          if (taskDoc.exists()) {
+            const task = taskDoc.data();
+            taskInsuranceType = task.renewalType || task.policyType || '';
+            if (taskInsuranceType) {
+              marketingFiles = await this.getMarketingFiles(taskInsuranceType);
+              console.log(`📁 Found ${marketingFiles.length} marketing files for ${taskInsuranceType}`);
+            }
+          }
+        } catch (error) {
+          console.log('Could not fetch task-specific marketing files');
+        }
+      }
       
       // Get the current task details for better vector search
       let taskDescription = 'insurance document analysis';
@@ -700,7 +762,20 @@ DETAILED DATA FOR SEARCH:
         vectorSearchContent = 'Vector search not available - using traditional document retrieval.';
       }
 
-      // Combine traditional context with vector search results and contact data
+      // Combine traditional context with vector search results, contact data, agency info, and marketing files
+      const agencyInfoText = agencyInfo ? `
+=== YOUR AGENCY INFORMATION ===
+Agency Name: ${agencyInfo.agencyName || 'Not provided'}
+Contact Name: ${agencyInfo.contactName || 'Not provided'}
+Email: ${agencyInfo.email || 'Not provided'}
+Phone: ${agencyInfo.phone || 'Not provided'}
+Address: ${agencyInfo.address || 'Not provided'}${agencyInfo.city ? ', ' + agencyInfo.city : ''}${agencyInfo.state ? ', ' + agencyInfo.state : ''}${agencyInfo.zip ? ' ' + agencyInfo.zip : ''}
+Website: ${agencyInfo.website || 'Not provided'}
+License Number: ${agencyInfo.licenseNumber || 'Not provided'}
+
+Use this information when signing emails, creating proposals, or any client-facing communications.
+` : '';
+
       const contactInfo = contactData ? `
 === COMPANY CONTACT INFORMATION ===
 Primary Contact: ${contactData.primaryContact}
@@ -711,10 +786,20 @@ FEIN: ${contactData.fein}
 Website: ${contactData.website}
 ` : '';
 
+      const marketingInfo = marketingFiles.length > 0 ? `
+=== MARKETING MATERIALS (${taskInsuranceType.toUpperCase()}) ===
+You have access to ${marketingFiles.length} marketing file(s) for ${taskInsuranceType}:
+${marketingFiles.map(f => `- ${f.name}${f.description ? ': ' + f.description : ''}`).join('\n')}
+
+These files contain carrier-specific information, guidelines, underwriting requirements, and marketing materials for ${taskInsuranceType} insurance. Reference these when needed for carrier-specific questions or submission requirements.
+` : '';
+
       const enhancedContent = `
 ENHANCED AI CONTEXT WITH VECTOR SEARCH:
 
+${agencyInfoText}
 ${contactInfo}
+${marketingInfo}
 
 === VECTOR SEARCH RESULTS ===
 ${vectorSearchContent}
@@ -730,13 +815,15 @@ ${basicContext.relevantContent}
 - Traditional documents found: ${basicContext.allDocuments.length}
 - Traditional artifacts found: ${basicContext.allArtifacts.length}
 - Completed tasks: ${basicContext.completedTasks.length}
+- Marketing files: ${marketingFiles.length} ${taskInsuranceType ? `for ${taskInsuranceType}` : ''}
 - Vector search: ${vectorSearchContent.length > 100 ? 'Available with semantic matching' : 'Limited or unavailable'}
 
-This enhanced context combines traditional document retrieval with semantic vector search for better AI understanding of relevant company information.
+This enhanced context combines traditional document retrieval with semantic vector search and insurance-type-specific marketing materials for better AI understanding of relevant company information.
       `;
 
       return {
         ...basicContext,
+        marketingFiles,
         relevantContent: enhancedContent,
         vectorSearchContent
       };
@@ -746,6 +833,7 @@ This enhanced context combines traditional document retrieval with semantic vect
       const basicContext = await this.getAITaskContext(companyId, taskId);
       return {
         ...basicContext,
+        marketingFiles: [],
         vectorSearchContent: 'Error accessing vector search'
       };
     }

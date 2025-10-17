@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Plus,
   Edit2,
-  Trash2, 
+  Trash2,
   Search,
   Database,
   Calendar,
@@ -27,6 +27,7 @@ import {
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { db } from '@/lib/firebase';
+import ReactMarkdown from 'react-markdown';
 import { 
   collection, 
   addDoc, 
@@ -72,12 +73,23 @@ interface Artifact {
   updatedAt: Date;
   tags?: string[];
   description?: string;
+  carrierName?: string;
+  artifactIndex?: number;
+  totalArtifacts?: number;
 }
 
 interface Company {
   id: string;
   name: string;
   description: string;
+}
+
+interface ArtifactGroup {
+  taskId: string;
+  taskName: string;
+  artifacts: Artifact[];
+  isMulti: boolean;
+  createdAt: Date;
 }
 
 export default function CompanyArtifacts() {
@@ -93,6 +105,7 @@ export default function CompanyArtifacts() {
   const [selectedType, setSelectedType] = useState<string>('ai-canvas');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
+  const [artifactGroupToDelete, setArtifactGroupToDelete] = useState<ArtifactGroup | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -164,7 +177,10 @@ export default function CompanyArtifacts() {
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           tags: data.tags || [],
-          description: data.description
+          description: data.description,
+          carrierName: data.carrierName,
+          artifactIndex: data.artifactIndex,
+          totalArtifacts: data.totalArtifacts
         });
       });
       
@@ -244,16 +260,31 @@ export default function CompanyArtifacts() {
   };
 
   const handleDelete = async () => {
-    if (!artifactToDelete) return;
+    if (!artifactToDelete && !artifactGroupToDelete) return;
 
     try {
-      await deleteDoc(doc(db, `companies/${companyId}/artifacts`, artifactToDelete.id));
-      
-      toast({
-        title: 'Success',
-        description: 'Artifact deleted successfully',
-      });
-      
+      if (artifactGroupToDelete) {
+        // Delete all artifacts in the group
+        await Promise.all(
+          artifactGroupToDelete.artifacts.map(artifact =>
+            deleteDoc(doc(db, `companies/${companyId}/artifacts`, artifact.id))
+          )
+        );
+
+        toast({
+          title: 'Success',
+          description: `Deleted ${artifactGroupToDelete.artifacts.length} artifacts successfully`,
+        });
+      } else if (artifactToDelete) {
+        // Delete single artifact
+        await deleteDoc(doc(db, `companies/${companyId}/artifacts`, artifactToDelete.id));
+
+        toast({
+          title: 'Success',
+          description: 'Artifact deleted successfully',
+        });
+      }
+
       fetchCompanyAndArtifacts();
     } catch (error) {
       console.error('Error deleting artifact:', error);
@@ -265,6 +296,7 @@ export default function CompanyArtifacts() {
     } finally {
       setDeleteDialogOpen(false);
       setArtifactToDelete(null);
+      setArtifactGroupToDelete(null);
     }
   };
 
@@ -307,18 +339,66 @@ export default function CompanyArtifacts() {
   };
 
   const filteredArtifacts = artifacts.filter(artifact => {
-    const matchesSearch = 
+    const matchesSearch =
       artifact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artifact.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artifact.taskName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      artifact.carrierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artifact.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     // Check type match - special handling for ai-canvas tag
-    const matchesType = selectedType === 'all' || 
-      artifact.type === selectedType || 
+    const matchesType = selectedType === 'all' ||
+      artifact.type === selectedType ||
       (selectedType === 'ai-canvas' && artifact.tags?.includes('ai-canvas'));
-    
+
     return matchesSearch && matchesType;
+  });
+
+  // Group artifacts by taskId for multi-artifact sets
+  const groupedArtifacts: ArtifactGroup[] = [];
+  const processedTaskIds = new Set<string>();
+
+  filteredArtifacts.forEach(artifact => {
+    if (!artifact.taskId) {
+      // Standalone artifact without taskId
+      groupedArtifacts.push({
+        taskId: artifact.id,
+        taskName: artifact.name,
+        artifacts: [artifact],
+        isMulti: false,
+        createdAt: artifact.createdAt
+      });
+      return;
+    }
+
+    if (processedTaskIds.has(artifact.taskId)) {
+      return; // Already grouped
+    }
+
+    // Find all artifacts with the same taskId
+    const taskArtifacts = filteredArtifacts.filter(a => a.taskId === artifact.taskId);
+
+    if (taskArtifacts.length > 1) {
+      // Multiple artifacts - group them
+      groupedArtifacts.push({
+        taskId: artifact.taskId,
+        taskName: artifact.taskName || artifact.name,
+        artifacts: taskArtifacts.sort((a, b) => (a.artifactIndex || 0) - (b.artifactIndex || 0)),
+        isMulti: true,
+        createdAt: artifact.createdAt
+      });
+      processedTaskIds.add(artifact.taskId);
+    } else {
+      // Single artifact
+      groupedArtifacts.push({
+        taskId: artifact.taskId,
+        taskName: artifact.taskName || artifact.name,
+        artifacts: [artifact],
+        isMulti: false,
+        createdAt: artifact.createdAt
+      });
+      processedTaskIds.add(artifact.taskId);
+    }
   });
 
   const getTypeIcon = (artifact: Artifact) => {
@@ -413,7 +493,7 @@ export default function CompanyArtifacts() {
           <CardTitle>Artifacts ({filteredArtifacts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredArtifacts.length === 0 ? (
+          {groupedArtifacts.length === 0 ? (
             <div className="text-center py-12">
               <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No artifacts found</p>
@@ -421,90 +501,160 @@ export default function CompanyArtifacts() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredArtifacts.map((artifact) => (
-                <div
-                  key={artifact.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3 flex-1">
-                      {getTypeIcon(artifact)}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{artifact.name}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {artifact.type}
-                          </Badge>
-                          {artifact.renewalType && (
+              {groupedArtifacts.map((group) => {
+                const artifact = group.artifacts[0]; // Use first for display
+                return group.isMulti ? (
+                  // Multi-artifact group
+                  <div
+                    key={group.taskId}
+                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3 flex-1">
+                        <Sparkles className="h-5 w-5 text-purple-600" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{group.taskName}</p>
                             <Badge variant="secondary" className="text-xs">
-                              {renewalTypes.find(r => r.value === artifact.renewalType)?.label}
+                              {group.artifacts.length} documents
                             </Badge>
-                          )}
-                        </div>
-                        {artifact.description && (
-                          <p className="text-sm text-gray-600 mt-1">{artifact.description}</p>
-                        )}
-                        {artifact.taskName && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            Task: {artifact.taskName}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Multiple carrier-specific submissions
                           </p>
-                        )}
-                        {artifact.tags && artifact.tags.length > 0 && (
                           <div className="flex gap-1 mt-2 flex-wrap">
-                            {artifact.tags.map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                <Tag className="h-3 w-3 mr-1" />
-                                {tag}
-                              </Badge>
+                            {group.artifacts.map((art, idx) => (
+                              art.carrierName && (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {art.carrierName}
+                                </Badge>
+                              )
                             ))}
                           </div>
-                        )}
-                        <p className="text-xs text-gray-400 mt-2">
-                          Created {format(artifact.createdAt, 'MMM dd, yyyy HH:mm')}
-                        </p>
+                          {artifact.taskName && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              Task: {artifact.taskName}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-2">
+                            Created {format(group.createdAt, 'MMM dd, yyyy HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-1 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedArtifact(artifact);
+                            setShowRawData(false);
+                            setViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setArtifactGroupToDelete(group);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-1 ml-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedArtifact(artifact);
-                          setViewDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(artifact.data)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(artifact)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setArtifactToDelete(artifact);
-                          setDeleteDialogOpen(true);
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  </div>
+                ) : (
+                  // Single artifact
+                  <div
+                    key={artifact.id}
+                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3 flex-1">
+                        {getTypeIcon(artifact)}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{artifact.name}</p>
+                            <Badge variant="outline" className="text-xs">
+                              {artifact.type}
+                            </Badge>
+                            {artifact.renewalType && (
+                              <Badge variant="secondary" className="text-xs">
+                                {renewalTypes.find(r => r.value === artifact.renewalType)?.label}
+                              </Badge>
+                            )}
+                          </div>
+                          {artifact.description && (
+                            <p className="text-sm text-gray-600 mt-1">{artifact.description}</p>
+                          )}
+                          {artifact.taskName && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              Task: {artifact.taskName}
+                            </p>
+                          )}
+                          {artifact.tags && artifact.tags.length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {artifact.tags.map((tag, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  <Tag className="h-3 w-3 mr-1" />
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-400 mt-2">
+                            Created {format(artifact.createdAt, 'MMM dd, yyyy HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-1 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedArtifact(artifact);
+                            setShowRawData(false);
+                            setViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(artifact.data)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(artifact)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setArtifactToDelete(artifact);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -625,16 +775,8 @@ export default function CompanyArtifacts() {
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{selectedArtifact?.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowRawData(!showRawData)}
-              >
-                {showRawData ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {showRawData ? 'Hide Raw' : 'Show Raw'}
-              </Button>
+            <DialogTitle>
+              {selectedArtifact?.name}
             </DialogTitle>
             <DialogDescription>
               {selectedArtifact?.description}
@@ -667,19 +809,41 @@ export default function CompanyArtifacts() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-medium">Data</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => selectedArtifact && copyToClipboard(selectedArtifact.data)}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowRawData(!showRawData)}
+                  >
+                    {showRawData ? <Eye className="h-4 w-4 mr-2" /> : <Code className="h-4 w-4 mr-2" />}
+                    {showRawData ? 'Formatted' : 'Raw'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => selectedArtifact && copyToClipboard(selectedArtifact.data)}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </Button>
+                </div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-sm font-mono whitespace-pre-wrap">
-                  {selectedArtifact && formatData(selectedArtifact.data)}
-                </pre>
+              <div className="bg-white border rounded-lg p-6 overflow-auto max-h-96">
+                {showRawData ? (
+                  <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
+                    {selectedArtifact && formatData(selectedArtifact.data)}
+                  </pre>
+                ) : (
+                  <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
+                    {selectedArtifact && typeof selectedArtifact.data === 'string' ? (
+                      <ReactMarkdown>{selectedArtifact.data}</ReactMarkdown>
+                    ) : (
+                      <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
+                        {selectedArtifact && formatData(selectedArtifact.data)}
+                      </pre>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -701,9 +865,19 @@ export default function CompanyArtifacts() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Artifact</AlertDialogTitle>
+            <AlertDialogTitle>
+              {artifactGroupToDelete ? 'Delete Artifact Group' : 'Delete Artifact'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{artifactToDelete?.name}"? This action cannot be undone.
+              {artifactGroupToDelete ? (
+                <>
+                  Are you sure you want to delete "{artifactGroupToDelete.taskName}" and all {artifactGroupToDelete.artifacts.length} associated documents? This action cannot be undone.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete "{artifactToDelete?.name}"? This action cannot be undone.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

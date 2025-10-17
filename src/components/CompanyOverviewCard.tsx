@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format, addMonths, differenceInCalendarMonths } from 'date-fns';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
 import type { CompanyTask } from '@/lib/types';
+import { Mail } from 'lucide-react';
 import Link from 'next/link';
 
 interface Renewal {
@@ -112,9 +114,10 @@ interface CompanyCardProps {
   company: Company;
   taskCounts: TaskCounts;
   activeTasks: CompanyTask[];
+  unreadEmails: number;
 }
 
-const CompanyCard = ({ company, taskCounts, activeTasks }: CompanyCardProps) => {
+const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: CompanyCardProps) => {
   const policyTypeLabels: { [key: string]: string } = {
     'workers-comp': 'Workers Comp',
     'automotive': 'Auto',
@@ -213,6 +216,25 @@ const CompanyCard = ({ company, taskCounts, activeTasks }: CompanyCardProps) => 
               </div>
             )}
           </div>
+
+          {/* Unread Emails Section */}
+          {unreadEmails > 0 && (
+            <div className="pt-4 border-t">
+              <Link
+                href={`/companies/${company.id}/emails`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Unread Emails</span>
+                </div>
+                <Badge variant="default" className="rounded-full">
+                  {unreadEmails}
+                </Badge>
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
     </Link>
@@ -222,6 +244,7 @@ const CompanyCard = ({ company, taskCounts, activeTasks }: CompanyCardProps) => 
 export default function CompanyOverviewCards() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [tasksByCompany, setTasksByCompany] = useState<{ [key: string]: CompanyTask[] }>({});
+  const [unreadEmailsByCompany, setUnreadEmailsByCompany] = useState<{ [key: string]: number }>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -285,6 +308,27 @@ export default function CompanyOverviewCards() {
 
         setCompanies(companiesWithLastUpdated);
         setTasksByCompany(tasksGrouped);
+
+        // Fetch unread emails for each company
+        const unreadEmailCounts: { [key: string]: number } = {};
+        for (const company of companiesList) {
+          try {
+            const submissionsRef = collection(db, `companies/${company.id}/submissions`);
+            const submissionsSnapshot = await getDocs(submissionsRef);
+
+            // Count submissions with replies (unread)
+            const unreadCount = submissionsSnapshot.docs.filter(doc => {
+              const data = doc.data();
+              return data.replies && data.replies.length > 0;
+            }).length;
+
+            unreadEmailCounts[company.id] = unreadCount;
+          } catch (error) {
+            console.error(`Error fetching emails for company ${company.id}:`, error);
+            unreadEmailCounts[company.id] = 0;
+          }
+        }
+        setUnreadEmailsByCompany(unreadEmailCounts);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -327,6 +371,7 @@ export default function CompanyOverviewCards() {
             company={company}
             taskCounts={taskCounts}
             activeTasks={companyTasks}
+            unreadEmails={unreadEmailsByCompany[company.id] || 0}
           />
         );
       })}

@@ -47,6 +47,40 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Agency Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Configure your agency name, contact information, and branding details used in documents and emails.</p>
+              <Button asChild>
+                <Link href="/settings/agency-info">
+                  Go to Agency Info
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Marketing Files</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">Upload and manage marketing materials by insurance type for AI assistant reference.</p>
+              <Button asChild>
+                <Link href="/settings/marketing-files">
+                  Go to Marketing Files
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Testing Data</CardTitle>
           </CardHeader>
           <CardContent>
