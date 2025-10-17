@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
 
@@ -222,25 +222,84 @@ Your response should demonstrate deep utilization of the artifact data to comple
 
     const result = { text: fullText };
 
-    // Create a chat message with the AI completion
+    // Check if the AI response contains a valid artifact
+    const artifactMatch = result.text.match(/<artifact>([\s\S]*?)<\/artifact>/);
+    const artifactContent = artifactMatch ? artifactMatch[1].trim() : '';
+    const hasArtifact = artifactMatch !== null && artifactContent.length > 100;
+
+    // Extract any text before/after the artifact tags for the chat message
+    let chatContent = result.text;
+    if (hasArtifact) {
+      // Remove the artifact tags and content from the chat message
+      chatContent = result.text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '').trim();
+
+      // If there's no other content, provide a summary message
+      if (!chatContent || chatContent.length < 20) {
+        chatContent = `I've generated the ${task.taskName} document. You can view it in the artifact viewer on the right or download it from the artifacts section.`;
+      }
+    }
+
+    // Create a chat message with the AI completion (without the full artifact)
     const chatMessage = {
       role: 'assistant',
-      content: result.text,
+      content: chatContent,
       timestamp: new Date(),
       isAIGenerated: true,
       usedDocuments: context.allDocuments.length,
       usedArtifacts: context.allArtifacts.length,
-      completedAutomatically: true
+      completedAutomatically: true,
+      hasArtifact: hasArtifact
     };
 
     // Save the AI completion to the task chat
     const chatRef = collection(db, 'taskChats', taskId, 'messages');
     await addDoc(chatRef, chatMessage);
 
-    // Check if the AI response contains a valid artifact
-    const artifactMatch = result.text.match(/<artifact>([\s\S]*?)<\/artifact>/);
-    const artifactContent = artifactMatch ? artifactMatch[1].trim() : '';
-    const hasArtifact = artifactMatch !== null && artifactContent.length > 100;
+    // Save artifact to the artifacts collection if one was generated
+    if (hasArtifact && artifactContent) {
+      try {
+        console.log(`[${timestamp}] 💾 AI-TASK-COMPLETION: Saving artifact to database...`);
+
+        const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+
+        // Check if artifact already exists for this task
+        const existingQuery = query(
+          artifactsRef,
+          where('taskId', '==', taskId),
+          where('tags', 'array-contains', 'ai-canvas')
+        );
+        const existingArtifacts = await getDocs(existingQuery);
+
+        const artifactData = {
+          name: task.taskName,
+          type: 'text',
+          data: artifactContent,
+          description: `AI-generated artifact for task: ${task.taskName}`,
+          taskId,
+          taskName: task.taskName,
+          tags: [task.phase, task.tag, 'ai-canvas', 'ai-generated', 'auto-saved'],
+          renewalType: null,
+          updatedAt: serverTimestamp()
+        };
+
+        if (!existingArtifacts.empty) {
+          // Update existing artifact
+          const existingDoc = existingArtifacts.docs[0];
+          await updateDoc(doc(db, `companies/${companyId}/artifacts`, existingDoc.id), artifactData);
+          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact updated in database: ${existingDoc.id}`);
+        } else {
+          // Create new artifact
+          const docRef = await addDoc(artifactsRef, {
+            ...artifactData,
+            createdAt: serverTimestamp()
+          });
+          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact saved to database: ${docRef.id}`);
+        }
+      } catch (error) {
+        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to save artifact to database:`, error);
+        // Don't fail the whole process if artifact saving fails
+      }
+    }
 
     // CRITICAL: Do NOT mark complete yet - must wait for test validation
     // Only mark complete if BOTH artifact exists AND tests pass
