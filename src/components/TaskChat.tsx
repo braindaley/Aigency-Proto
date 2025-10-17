@@ -100,13 +100,19 @@ export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
             } as ChatMessage;
           });
 
-          // Filter out auto-completed messages for tasks that are still in progress
+          // Filter out auto-completed messages and raw artifacts
           // Only show the final completion summary if task is completed
           const filteredMessages = task.status === 'completed'
             ? firestoreMessages.filter(msg =>
-                !msg.completedAutomatically || msg.isCompletionSummary
+                // For completed tasks, show completion summary but hide other auto messages and raw artifacts
+                (!msg.completedAutomatically || msg.isCompletionSummary) &&
+                !msg.content.trim().startsWith('<artifact>')
               )
-            : firestoreMessages.filter(msg => !msg.completedAutomatically);
+            : firestoreMessages.filter(msg =>
+                // For in-progress tasks, hide all auto messages and raw artifacts
+                !msg.completedAutomatically &&
+                !msg.content.trim().startsWith('<artifact>')
+              );
 
           setMessages(filteredMessages);
           console.log('TaskChat: Loaded', firestoreMessages.length, 'messages from Firestore,', filteredMessages.length, 'displayed');

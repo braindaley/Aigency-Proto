@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight, Eye, Code, Copy, Download, Database, Check, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Code, Copy, Download, Database, Check, Loader2, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -27,16 +27,20 @@ interface MultipleArtifactsViewerProps {
   artifacts: Artifact[];
   theme?: 'light' | 'dark';
   isSavingToDatabase?: boolean;
+  isRegenerating?: boolean;
   onDownload?: (artifact: Artifact) => void;
   onCopy?: (artifact: Artifact) => void;
+  onRegenerate?: () => void;
 }
 
 export function MultipleArtifactsViewer({
   artifacts,
   theme = 'light',
   isSavingToDatabase = false,
+  isRegenerating = false,
   onDownload,
-  onCopy
+  onCopy,
+  onRegenerate
 }: MultipleArtifactsViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
@@ -140,6 +144,18 @@ export function MultipleArtifactsViewer({
                 </TabsTrigger>
               </TabsList>
             </Tabs>
+            {onRegenerate && (
+              <Button
+                onClick={onRegenerate}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="Regenerate document from template"
+                disabled={isRegenerating}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
             <Button
               onClick={handleCopy}
               variant="ghost"

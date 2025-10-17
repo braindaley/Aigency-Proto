@@ -248,56 +248,36 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
 
             setMessages(firebaseMessages);
 
-            // Extract artifacts from messages if present
-            const fullContent = firebaseMessages.map(m => m.content).join('\n');
+            // For auto-completed tasks, artifacts are loaded from database - don't extract from messages
+            const wasAutoCompleted = task.status === 'completed' && (task as any).completedBy === 'AI System';
 
-            // Try to parse multiple artifacts first
-            const parsedArtifacts = parseMultipleArtifacts(fullContent);
+            if (!wasAutoCompleted) {
+              // Extract artifacts from messages if present (only for manual/chat-based tasks)
+              const fullContent = firebaseMessages.map(m => m.content).join('\n');
 
-            if (parsedArtifacts.length > 0) {
-              console.log(`📝 Found ${parsedArtifacts.length} artifacts from real-time listener`);
+              // Try to parse multiple artifacts first
+              const parsedArtifacts = parseMultipleArtifacts(fullContent);
 
-              const artifactObjects: Artifact[] = parsedArtifacts.map((parsed, index) => ({
-                id: parsed.id,
-                title: parsed.title,
-                content: parsed.content,
-                type: 'document' as const,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                savedToDatabase: false
-              }));
+              if (parsedArtifacts.length > 0) {
+                console.log(`📝 Found ${parsedArtifacts.length} artifacts from real-time listener, keeping only latest`);
 
-              setArtifacts(artifactObjects);
+                // Only keep the LAST artifact (most recent)
+                const latestArtifact = parsedArtifacts[parsedArtifacts.length - 1];
+                const artifactObject: Artifact = {
+                  id: latestArtifact.id,
+                  title: latestArtifact.title,
+                  content: latestArtifact.content,
+                  type: 'document' as const,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  savedToDatabase: false
+                };
 
-              // Also set the first artifact as the primary artifact for backward compatibility
-              if (artifactObjects.length > 0) {
-                setArtifact(artifactObjects[0]);
+                setArtifacts([artifactObject]);
+                setArtifact(artifactObject);
               }
             } else {
-              // Fallback to single artifact without attributes
-              const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
-
-              if (artifactMatch && artifactMatch[1]) {
-                const artifactContent = artifactMatch[1].trim();
-
-                setArtifact(prev => {
-                  // Only update if content changed to avoid unnecessary re-renders
-                  if (prev?.content !== artifactContent) {
-                    console.log('📝 Artifact updated from real-time listener');
-                    return {
-                      id: prev?.id || Date.now().toString(),
-                      title: task.taskName,
-                      content: artifactContent,
-                      type: 'document',
-                      createdAt: prev?.createdAt || new Date(),
-                      updatedAt: new Date(),
-                      savedToDatabase: prev?.savedToDatabase || false,
-                      databaseId: prev?.databaseId
-                    };
-                  }
-                  return prev;
-                });
-              }
+              console.log(`⏭️ Auto-completed task - skipping artifact extraction from messages (using database artifacts only)`);
             }
           }
         });
@@ -327,27 +307,46 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       const artifactsRef = firestoreCollection(db, `companies/${companyId}/artifacts`);
       const artifactsSnapshot = await getDocs(artifactsRef);
 
-      const taskArtifact = artifactsSnapshot.docs.find(doc => {
+      // Find ALL artifacts for this task (support multi-artifact tasks)
+      const taskArtifactDocs = artifactsSnapshot.docs.filter(doc => {
         const data = doc.data();
         return data.taskId === task.id;
       });
 
-      if (taskArtifact) {
-        const artifactData = taskArtifact.data();
-        console.log('Found artifact in database:', artifactData.name);
+      if (taskArtifactDocs.length > 0) {
+        console.log(`Found ${taskArtifactDocs.length} artifact(s) in database for task ${task.id}`);
 
-        setArtifact({
-          id: taskArtifact.id,
-          title: artifactData.name || task.taskName,
-          content: artifactData.data || '',
-          type: 'document',
-          createdAt: artifactData.createdAt?.toDate?.() || new Date(),
-          updatedAt: artifactData.updatedAt?.toDate?.() || new Date(),
-          savedToDatabase: true,
-          databaseId: taskArtifact.id
+        // Convert all task artifacts to Artifact objects
+        const artifactObjects: Artifact[] = taskArtifactDocs.map(taskArtifact => {
+          const artifactData = taskArtifact.data();
+          return {
+            id: taskArtifact.id,
+            title: artifactData.name || task.taskName,
+            content: artifactData.data || '',
+            type: 'document' as const,
+            createdAt: artifactData.createdAt?.toDate?.() || new Date(),
+            updatedAt: artifactData.updatedAt?.toDate?.() || new Date(),
+            savedToDatabase: true,
+            databaseId: taskArtifact.id
+          };
         });
 
-        setLastSavedContent(artifactData.data || '');
+        // Sort by artifactIndex if available (for multi-artifact tasks)
+        artifactObjects.sort((a, b) => {
+          const aData = taskArtifactDocs.find(doc => doc.id === a.id)?.data();
+          const bData = taskArtifactDocs.find(doc => doc.id === b.id)?.data();
+          const aIndex = aData?.artifactIndex ?? 0;
+          const bIndex = bData?.artifactIndex ?? 0;
+          return aIndex - bIndex;
+        });
+
+        // Set the artifacts array for display
+        setArtifacts(artifactObjects);
+
+        // Set the first artifact as the current one
+        setArtifact(artifactObjects[0]);
+
+        setLastSavedContent(artifactObjects[0].content || '');
       }
 
       // Check if there are messages in Firebase from automatic execution
@@ -371,7 +370,10 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         setMessages(firebaseMessages);
 
         // Only extract artifact from messages if we didn't find one in the artifacts collection
-        if (!taskArtifact) {
+        // For auto-executed tasks, we should always use the database artifact, not chat artifacts
+        const wasAutoCompleted = task.status === 'completed' && (task as any).completedBy === 'AI System';
+
+        if (taskArtifactDocs.length === 0 && !wasAutoCompleted) {
           const fullContent = firebaseMessages.map(m => m.content).join('\n');
 
           // Try to parse multiple artifacts first
@@ -380,22 +382,20 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
           if (parsedArtifacts.length > 0) {
             console.log(`📝 Found ${parsedArtifacts.length} artifacts from loadFromFirebase`);
 
-            const artifactObjects: Artifact[] = parsedArtifacts.map((parsed, index) => ({
-              id: parsed.id,
-              title: parsed.title,
-              content: parsed.content,
+            // For manual tasks, only keep the LAST artifact (most recent)
+            const latestArtifact = parsedArtifacts[parsedArtifacts.length - 1];
+            const artifactObject: Artifact = {
+              id: latestArtifact.id,
+              title: latestArtifact.title,
+              content: latestArtifact.content,
               type: 'document' as const,
               createdAt: new Date(),
               updatedAt: new Date(),
               savedToDatabase: false
-            }));
+            };
 
-            setArtifacts(artifactObjects);
-
-            // Also set the first artifact as the primary artifact for backward compatibility
-            if (artifactObjects.length > 0) {
-              setArtifact(artifactObjects[0]);
-            }
+            setArtifacts([artifactObject]);
+            setArtifact(artifactObject);
           } else {
             // Fallback to single artifact without attributes
             const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);
@@ -1070,6 +1070,8 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
             }))}
             theme={theme}
             isSavingToDatabase={isSavingToDatabase}
+            isRegenerating={isGenerating || isLoading}
+            onRegenerate={regenerateDocument}
             onDownload={(artifact) => {
               const blob = new Blob([artifact.content], { type: 'text/markdown' });
               const url = URL.createObjectURL(blob);

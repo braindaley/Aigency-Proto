@@ -32,11 +32,21 @@ export async function POST(request: NextRequest) {
     const artifacts = snapshot.docs
       .map(doc => {
         const data = doc.data();
+
+        // Extract carrier name from artifact ID or name (e.g., "starr-email" -> "Starr")
+        let carrierName = data.carrierName || data.name || '';
+
+        // If it's an email artifact, extract carrier name from the ID
+        if (!data.carrierName && data.artifactId && data.artifactId.includes('-email')) {
+          const parts = data.artifactId.replace('-email', '').split('-');
+          carrierName = parts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        }
+
         return {
           id: doc.id,
           title: data.name || '',
           content: data.data || '',
-          carrierName: data.carrierName || data.name
+          carrierName
         };
       })
       .filter(a => a.carrierName && a.content); // Only include artifacts with carrier names

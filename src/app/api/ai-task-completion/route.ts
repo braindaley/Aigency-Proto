@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
 
@@ -99,6 +99,16 @@ CRITICAL REQUIREMENT - YOU MUST GENERATE AN ARTIFACT:
 For this task to be considered complete, you MUST create a document wrapped in <artifact> tags.
 The artifact should be a complete, professional document that fulfills the task requirements.
 
+MULTIPLE ARTIFACTS SUPPORT:
+- If the task requires creating MULTIPLE separate documents (e.g., personalized emails to different carriers),
+  you can generate multiple artifacts by wrapping each one in separate <artifact> tags with an id attribute
+- Format: <artifact id="unique-identifier">content</artifact>
+- Example for carrier emails:
+  <artifact id="starr-email">Email content for Starr...</artifact>
+  <artifact id="arch-email">Email content for Arch...</artifact>
+- The id should be descriptive and unique for each artifact
+- Each artifact should be complete and standalone
+
 CRITICAL - DO NOT INCLUDE IN THE ARTIFACT:
 - Do NOT include disclaimers about AI limitations within the artifact document
 - Do NOT mention "As an AI, I cannot..." or similar limitation statements in the artifact
@@ -106,11 +116,22 @@ CRITICAL - DO NOT INCLUDE IN THE ARTIFACT:
 - The artifact should be a clean, professional document without any AI-related meta-commentary
 - If you need to note limitations, mention them BEFORE the artifact tags, never inside them
 
-Example format:
+Example format (single artifact):
 <artifact>
 # Document Title
 
 [Complete document content here with all necessary sections, data, and professional formatting]
+</artifact>
+
+Example format (multiple artifacts):
+<artifact id="document-1">
+# First Document Title
+[Complete document content...]
+</artifact>
+
+<artifact id="document-2">
+# Second Document Title
+[Complete document content...]
 </artifact>
 
 ${task.systemPrompt || ''}
@@ -233,20 +254,33 @@ Your response should demonstrate deep utilization of the artifact data to comple
 
     const result = { text: fullText };
 
-    // Check if the AI response contains a valid artifact
-    const artifactMatch = result.text.match(/<artifact>([\s\S]*?)<\/artifact>/);
-    const artifactContent = artifactMatch ? artifactMatch[1].trim() : '';
-    const hasArtifact = artifactMatch !== null && artifactContent.length > 100;
+    // Check if the AI response contains valid artifact(s) - support multiple artifacts
+    const artifactMatches = result.text.matchAll(/<artifact(?:\s+id="([^"]+)")?>([\s\S]*?)<\/artifact>/g);
+    const artifacts: Array<{ id?: string; content: string }> = [];
+
+    for (const match of artifactMatches) {
+      const artifactId = match[1]; // Optional ID from <artifact id="name">
+      const artifactContent = match[2].trim();
+      if (artifactContent.length > 100) {
+        artifacts.push({ id: artifactId, content: artifactContent });
+      }
+    }
+
+    const hasArtifact = artifacts.length > 0;
 
     // Extract any text before/after the artifact tags for the chat message
     let chatContent = result.text;
     if (hasArtifact) {
-      // Remove the artifact tags and content from the chat message
-      chatContent = result.text.replace(/<artifact>[\s\S]*?<\/artifact>/g, '').trim();
+      // Remove ALL artifact tags and content from the chat message (supports multiple artifacts with IDs)
+      chatContent = result.text.replace(/<artifact(?:\s+id="[^"]+")?>[\s\S]*?<\/artifact>/g, '').trim();
 
       // If there's no other content, provide a summary message
       if (!chatContent || chatContent.length < 20) {
-        chatContent = `I've generated the ${task.taskName} document. You can view it in the artifact viewer on the right or download it from the artifacts section.`;
+        if (artifacts.length > 1) {
+          chatContent = `I've generated ${artifacts.length} documents for ${task.taskName}. You can view them in the artifact viewer on the right using the navigation arrows, or download them individually.`;
+        } else {
+          chatContent = `I've generated the ${task.taskName} document. You can view it in the artifact viewer on the right or download it from the artifacts section.`;
+        }
       }
     }
 
@@ -266,45 +300,89 @@ Your response should demonstrate deep utilization of the artifact data to comple
     const chatRef = collection(db, 'taskChats', taskId, 'messages');
     await addDoc(chatRef, chatMessage);
 
-    // Save artifact to the artifacts collection if one was generated
-    if (hasArtifact && artifactContent) {
+    // Save artifact(s) to the artifacts collection if any were generated
+    if (hasArtifact && artifacts.length > 0) {
       try {
-        console.log(`[${timestamp}] 💾 AI-TASK-COMPLETION: Saving artifact to database...`);
+        console.log(`[${timestamp}] 💾 AI-TASK-COMPLETION: Saving ${artifacts.length} artifact(s) to database...`);
 
         const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
 
-        // Check if artifact already exists for this task
+        // Check if artifacts already exist for this task
         const existingQuery = query(
           artifactsRef,
-          where('taskId', '==', taskId),
-          where('tags', 'array-contains', 'ai-canvas')
+          where('taskId', '==', taskId)
         );
         const existingArtifacts = await getDocs(existingQuery);
 
-        const artifactData = {
-          name: task.taskName,
-          type: 'text',
-          data: artifactContent,
-          description: `AI-generated artifact for task: ${task.taskName}`,
-          taskId,
-          taskName: task.taskName,
-          tags: [task.phase, task.tag, 'ai-canvas', 'ai-generated', 'auto-saved'],
-          renewalType: null,
-          updatedAt: serverTimestamp()
-        };
+        // If we're generating a single artifact, update or create one document
+        if (artifacts.length === 1) {
+          // If multiple artifacts exist (shouldn't happen, but clean up if it does)
+          if (existingArtifacts.size > 1) {
+            console.log(`[${timestamp}] ⚠️ AI-TASK-COMPLETION: Found ${existingArtifacts.size} artifacts for task ${taskId}, will update first and delete others`);
+            // Delete all but the first one
+            for (let i = 1; i < existingArtifacts.docs.length; i++) {
+              await deleteDoc(existingArtifacts.docs[i].ref);
+              console.log(`[${timestamp}] 🗑️ AI-TASK-COMPLETION: Deleted duplicate artifact ${existingArtifacts.docs[i].id}`);
+            }
+          }
 
-        if (!existingArtifacts.empty) {
-          // Update existing artifact
-          const existingDoc = existingArtifacts.docs[0];
-          await updateDoc(doc(db, `companies/${companyId}/artifacts`, existingDoc.id), artifactData);
-          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact updated in database: ${existingDoc.id}`);
+          const artifactData = {
+            name: artifacts[0].id || task.taskName,
+            type: 'text',
+            data: artifacts[0].content,
+            description: `AI-generated artifact for task: ${task.taskName}`,
+            taskId,
+            taskName: task.taskName,
+            tags: [task.phase, task.tag, 'ai-canvas', 'ai-generated', 'auto-saved'],
+            renewalType: null,
+            updatedAt: serverTimestamp()
+          };
+
+          if (!existingArtifacts.empty) {
+            // Update existing artifact
+            const existingDoc = existingArtifacts.docs[0];
+            await updateDoc(doc(db, `companies/${companyId}/artifacts`, existingDoc.id), artifactData);
+            console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact updated in database: ${existingDoc.id}`);
+          } else {
+            // Create new artifact
+            const docRef = await addDoc(artifactsRef, {
+              ...artifactData,
+              createdAt: serverTimestamp()
+            });
+            console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact saved to database: ${docRef.id}`);
+          }
         } else {
-          // Create new artifact
-          const docRef = await addDoc(artifactsRef, {
-            ...artifactData,
-            createdAt: serverTimestamp()
-          });
-          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact saved to database: ${docRef.id}`);
+          // Multiple artifacts - delete all existing and create new ones
+          console.log(`[${timestamp}] 📝 AI-TASK-COMPLETION: Task generated ${artifacts.length} artifacts`);
+
+          // Delete all existing artifacts for this task
+          for (const existingDoc of existingArtifacts.docs) {
+            await deleteDoc(existingDoc.ref);
+            console.log(`[${timestamp}] 🗑️ AI-TASK-COMPLETION: Deleted old artifact ${existingDoc.id}`);
+          }
+
+          // Create new artifacts
+          for (let i = 0; i < artifacts.length; i++) {
+            const artifact = artifacts[i];
+            const artifactData = {
+              name: artifact.id || `${task.taskName} (${i + 1} of ${artifacts.length})`,
+              type: 'text',
+              data: artifact.content,
+              description: `AI-generated artifact for task: ${task.taskName}${artifact.id ? ` - ${artifact.id}` : ` (${i + 1}/${artifacts.length})`}`,
+              taskId,
+              taskName: task.taskName,
+              artifactIndex: i,
+              totalArtifacts: artifacts.length,
+              artifactId: artifact.id,
+              tags: [task.phase, task.tag, 'ai-canvas', 'ai-generated', 'auto-saved', 'multi-artifact'],
+              renewalType: null,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            };
+
+            const docRef = await addDoc(artifactsRef, artifactData);
+            console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Artifact ${i + 1}/${artifacts.length} saved: ${docRef.id} (${artifact.id || 'unnamed'})`);
+          }
         }
       } catch (error) {
         console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to save artifact to database:`, error);
@@ -317,8 +395,8 @@ Your response should demonstrate deep utilization of the artifact data to comple
     let indicatesCompletion = false;
 
     console.log(`[${timestamp}] 🔍 AI-TASK-COMPLETION: Artifact validation:`, {
-      hasArtifactTags: artifactMatch !== null,
-      artifactLength: artifactContent.length,
+      artifactCount: artifacts.length,
+      hasArtifacts: hasArtifact,
       hasTestCriteria: !!(task.testCriteria && task.testCriteria.trim()),
       responsePreview: result.text.substring(0, 300)
     });
