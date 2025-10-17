@@ -1061,96 +1061,97 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       </div>
 
       <div className="w-1/2 flex flex-col">
-        <Card className="flex flex-col h-full bg-background">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {isSavingToDatabase && (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    {artifact?.databaseId ? 'Updating...' : 'Saving to database...'}
-                  </>
-                )}
-                {artifact?.savedToDatabase && !isSavingToDatabase && (
-                  <>
-                    <Check className="h-3 w-3 text-green-600" />
-                    <Database className="h-3 w-3 text-green-600" />
-                    {artifact?.databaseId ? 'Synced' : 'Saved to database'}
-                  </>
-                )}
+        {artifacts.length > 1 ? (
+          <MultipleArtifactsViewer
+            artifacts={artifacts.map(a => ({
+              id: a.id,
+              title: a.title,
+              content: a.content
+            }))}
+            theme={theme}
+            isSavingToDatabase={isSavingToDatabase}
+            onDownload={(artifact) => {
+              const blob = new Blob([artifact.content], { type: 'text/markdown' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${artifact.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+            onCopy={(artifact) => {
+              navigator.clipboard.writeText(artifact.content);
+            }}
+          />
+        ) : (
+          <Card className="flex flex-col h-full bg-background">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {isSavingToDatabase && (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      {artifact?.databaseId ? 'Updating...' : 'Saving to database...'}
+                    </>
+                  )}
+                  {artifact?.savedToDatabase && !isSavingToDatabase && (
+                    <>
+                      <Check className="h-3 w-3 text-green-600" />
+                      <Database className="h-3 w-3 text-green-600" />
+                      {artifact?.databaseId ? 'Synced' : 'Saved to database'}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'source')}>
+                    <TabsList className="h-8">
+                      <TabsTrigger value="preview" className="text-xs">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Preview
+                      </TabsTrigger>
+                      <TabsTrigger value="source" className="text-xs">
+                        <Code className="h-3 w-3 mr-1" />
+                        Source
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  <Button
+                    onClick={regenerateDocument}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Regenerate document from template"
+                    disabled={isGenerating || isLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${(isGenerating || isLoading) ? 'animate-spin' : ''}`} />
+                  </Button>
+                  <Button
+                    onClick={copyToClipboard}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={downloadArtifact}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Download document"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'source')}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="preview" className="text-xs">
-                      <Eye className="h-3 w-3 mr-1" />
-                      Preview
-                    </TabsTrigger>
-                    <TabsTrigger value="source" className="text-xs">
-                      <Code className="h-3 w-3 mr-1" />
-                      Source
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <Button
-                  onClick={regenerateDocument}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Regenerate document from template"
-                  disabled={isGenerating || isLoading}
-                >
-                  <RefreshCw className={`h-4 w-4 ${(isGenerating || isLoading) ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button
-                  onClick={copyToClipboard}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Copy to clipboard"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={downloadArtifact}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Download document"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0 bg-background">
-            <ScrollArea className="h-full bg-background">
-              <div className="p-6 bg-background" style={{ backgroundColor: 'var(--background)' }}>
-                {artifacts.length > 1 ? (
-                  <MultipleArtifactsViewer
-                    artifacts={artifacts.map(a => ({
-                      id: a.id,
-                      title: a.title,
-                      content: a.content
-                    }))}
-                    theme={theme}
-                    isSavingToDatabase={isSavingToDatabase}
-                    onDownload={(artifact) => {
-                      const blob = new Blob([artifact.content], { type: 'text/markdown' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `${artifact.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    }}
-                    onCopy={(artifact) => {
-                      navigator.clipboard.writeText(artifact.content);
-                    }}
-                  />
-                ) : artifact ? (
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden p-0 bg-background">
+              <ScrollArea className="h-full bg-background">
+                <div className="p-6 bg-background" style={{ backgroundColor: 'var(--background)' }}>
+                  {artifact ? (
                   (() => {
                     const { isJson, formatted, markdown } = formatJsonIfNeeded(artifact.content);
 
@@ -1271,6 +1272,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
             </ScrollArea>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

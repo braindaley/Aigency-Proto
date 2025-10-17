@@ -21,6 +21,9 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   documents?: ProcessedDocument[];
+  completedAutomatically?: boolean;
+  isValidation?: boolean;
+  isCompletionSummary?: boolean;
 }
 
 interface TaskChatProps {
@@ -91,10 +94,22 @@ export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
               id: doc.id,
               role: data.role,
               content: data.content,
+              completedAutomatically: data.completedAutomatically,
+              isValidation: data.isValidation,
+              isCompletionSummary: data.isCompletionSummary,
             } as ChatMessage;
           });
-          setMessages(firestoreMessages);
-          console.log('TaskChat: Loaded', firestoreMessages.length, 'messages from Firestore');
+
+          // Filter out auto-completed messages for tasks that are still in progress
+          // Only show the final completion summary if task is completed
+          const filteredMessages = task.status === 'completed'
+            ? firestoreMessages.filter(msg =>
+                !msg.completedAutomatically || msg.isCompletionSummary
+              )
+            : firestoreMessages.filter(msg => !msg.completedAutomatically);
+
+          setMessages(filteredMessages);
+          console.log('TaskChat: Loaded', firestoreMessages.length, 'messages from Firestore,', filteredMessages.length, 'displayed');
         } else {
           // No messages in Firestore, create initial message
           const initialMessage = task.tag === 'manual'

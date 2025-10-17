@@ -54,6 +54,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prevent duplicate execution on already completed tasks
+    if (task.status === 'completed') {
+      console.log(`[${timestamp}] ⏭️ AI-TASK-COMPLETION: Task already completed, skipping execution`);
+      return NextResponse.json({
+        success: true,
+        taskCompleted: true,
+        message: 'Task was already completed',
+        skipped: true
+      });
+    }
+
     // Get enhanced context with vector search
     const context = await DataService.getEnhancedAITaskContext(companyId, taskId);
     
@@ -398,7 +409,8 @@ REMEMBER: Start with exactly "PASS" or "FAIL" on line 1. Base your decision on t
           content: validationResult.text,
           timestamp: new Date(),
           isAIGenerated: true,
-          isValidation: true
+          isValidation: true,
+          completedAutomatically: true
         };
 
         const chatRef = collection(db, 'taskChats', taskId, 'messages');
@@ -419,13 +431,11 @@ REMEMBER: Start with exactly "PASS" or "FAIL" on line 1. Base your decision on t
     // Auto-complete the task if it seems finished and passes tests
     if (indicatesCompletion) {
       console.log(`[${timestamp}] 🎉 AI-TASK-COMPLETION: Marking task as completed`);
+
+      // Update completedBy field first, then call status update endpoint
       await updateDoc(taskDocRef, {
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
         completedBy: 'AI System'
       });
-      console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task marked as completed in database`);
 
       // Add a friendly completion summary message
       const completionSummary = {
@@ -439,13 +449,14 @@ ${task.testCriteria ? 'The work has been validated and meets all the required cr
 The completed document is available in the artifact viewer on the right. Feel free to review it and let me know if you need any adjustments!`,
         timestamp: new Date(),
         isAIGenerated: true,
-        isCompletionSummary: true
+        isCompletionSummary: true,
+        completedAutomatically: true
       };
 
       await addDoc(chatRef, completionSummary);
 
-      // Trigger dependency updates
-      console.log(`[${timestamp}] 🔗 AI-TASK-COMPLETION: Triggering dependent task checks...`);
+      // Mark as completed and trigger dependency updates via the endpoint
+      console.log(`[${timestamp}] 🔗 AI-TASK-COMPLETION: Marking task complete and triggering dependent task checks...`);
       try {
         const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:9002'}/api/update-task-status`, {
           method: 'POST',
@@ -457,13 +468,13 @@ The completed document is available in the artifact viewer on the right. Feel fr
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Dependency update failed with status ${response.status}: ${errorText}`);
+          console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Status update and dependency check failed with status ${response.status}: ${errorText}`);
         } else {
           const result = await response.json();
-          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Dependency update triggered successfully:`, result);
+          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task completed and dependency updates triggered successfully:`, result);
         }
       } catch (error) {
-        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to trigger dependency updates:`, error);
+        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to update task status and trigger dependencies:`, error);
       }
     } else {
       console.log(`[${timestamp}] ⏸️ AI-TASK-COMPLETION: Task not marked as completed`);

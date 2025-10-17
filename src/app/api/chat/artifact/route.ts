@@ -587,14 +587,9 @@ REMEMBER: Start with exactly "PASS" or "FAIL" on line 1. Base your decision on t
 
               // If tests pass, mark task as complete
               if (testsPassed) {
-                const taskDocRef = doc(db, 'companyTasks', taskId);
-                await updateDoc(taskDocRef, {
-                  status: 'completed',
-                  completedAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  completedBy: 'AI System'
-                });
-                console.log('✅ Task marked as completed after validation passed');
+                console.log('✅ Task passed validation, calling updateTaskStatus to trigger dependency updates...');
+                await updateTaskStatus(taskId, 'completed');
+                console.log('✅ Task marked as completed after validation passed and dependencies updated');
 
                 // Add completion summary
                 await addDoc(chatRef, {

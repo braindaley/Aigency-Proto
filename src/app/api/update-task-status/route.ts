@@ -104,20 +104,29 @@ async function updateDependentTasks(completedTaskId: string) {
       console.log(`[${timestamp}]   - All dependencies met: ${allDependenciesCompleted}`);
 
       if (allDependenciesCompleted && taskData.status !== 'completed') {
-        await updateDoc(doc(db, 'companyTasks', taskDoc.id), {
-          status: 'Needs attention',
-          updatedAt: new Date().toISOString()
-        });
-        console.log(`[${timestamp}] ✅ DEPENDENT-TASKS: Updated task ${taskDoc.id} to 'Needs attention'`);
+        // Check if task is already 'Needs attention' to avoid duplicate AI triggers
+        const isAlreadyNeedsAttention = taskData.status === 'Needs attention';
 
-        // If this is an AI task, automatically trigger execution
-        if (taskData.tag === 'ai') {
+        if (!isAlreadyNeedsAttention) {
+          await updateDoc(doc(db, 'companyTasks', taskDoc.id), {
+            status: 'Needs attention',
+            updatedAt: new Date().toISOString()
+          });
+          console.log(`[${timestamp}] ✅ DEPENDENT-TASKS: Updated task ${taskDoc.id} to 'Needs attention'`);
+        } else {
+          console.log(`[${timestamp}] ⏭️ DEPENDENT-TASKS: Task ${taskDoc.id} already 'Needs attention', skipping status update`);
+        }
+
+        // If this is an AI task, automatically trigger execution (only if not already needs attention)
+        if (taskData.tag === 'ai' && !isAlreadyNeedsAttention) {
           console.log(`[${timestamp}] 🤖 DEPENDENT-TASKS: Task is AI-enabled, triggering auto-execution...`);
 
           // Trigger AI task execution in the background
           triggerAIExecution(taskDoc.id, taskData.companyId).catch(err => {
             console.error(`[${timestamp}] ❌ DEPENDENT-TASKS: Failed to trigger AI execution for task ${taskDoc.id}:`, err);
           });
+        } else if (taskData.tag === 'ai' && isAlreadyNeedsAttention) {
+          console.log(`[${timestamp}] ⏭️ DEPENDENT-TASKS: Task is AI-enabled but already 'Needs attention', skipping AI trigger to avoid duplicates`);
         } else {
           console.log(`[${timestamp}] 👤 DEPENDENT-TASKS: Task is manual (tag: ${taskData.tag}), no auto-execution`);
         }
