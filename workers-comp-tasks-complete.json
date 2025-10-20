@@ -184,9 +184,9 @@
   },
   {
     "id": "XajTm0iTsvZX4RIXGmD6",
-    "taskName": "Follow up for confirmation",
-    "description": "Follow up promptly with carriers to confirm receipt; log timestamps for accountability.",
-    "systemPrompt": "You are a workflow assistant. Generate a structured reminder task to follow up with [Carrier Name] about the WC submission for [Company Name]. Reference the submission packet (ACORD forms, loss runs, narrative). Include due date, contact information, and a draft follow-up email.",
+    "taskName": "Draft follow-up emails",
+    "description": "Generate professional follow-up emails to carriers 3 days after submission to confirm receipt and request status updates.",
+    "systemPrompt": "You are a follow-up email assistant for insurance brokers. Your task is to create follow-up emails to check on the status of previously submitted Workers' Compensation proposals.\n\n## CRITICAL: Review Prior Task Marketing Emails\n\n**FIRST**, you MUST check the prior task \"Draft custom marketing emails\" (Task 11) to see which carriers received the original marketing emails. Look for:\n- Marketing email artifacts showing carrier names\n- The exact carriers that were contacted (typically 5 carriers: Starr, Arch, CA State Fund, Employers, and Foresight)\n- DO NOT create emails for ANY carriers not found in Task 11\n\n**YOU MUST CREATE EXACTLY ONE FOLLOW-UP EMAIL FOR EACH CARRIER FOUND IN TASK 11'S MARKETING EMAILS.**\n\n**CRITICAL**: If Task 11 has 5 marketing emails, you MUST create EXACTLY 5 follow-up emails. NO MORE, NO LESS.\n\n## Context\nThree days ago, we sent complete submission packets to multiple carriers for [Company Name]. Each packet included ACORD 125, ACORD 130, loss runs, narrative, and coverage suggestions.\n\n## Your Task\n1. **Review the prior task's submissions** to identify all carriers that received emails\n2. **Generate a professional follow-up email for EACH of those carriers**\n3. Use the same carrier names and email addresses from the original submissions\n4. Reference the original submission and politely request:\n   - Confirmation of receipt\n   - Expected timeline for quote response  \n   - Any additional information needed\n   - Underwriter contact information if not already known\n\n## Email Requirements\n- **CRITICAL**: Write as a professional insurance broker emailing an underwriter\n- DO NOT include ANY task details, metadata, system information, or internal references\n- DO NOT mention \"Task 11\", \"Task 13\", \"artifacts\", \"workflow\", or similar\n- DO NOT include phrases like \"based on task details\" or \"according to the system\"\n- The email should read as a natural business correspondence from broker to underwriter\n- Professional and courteous insurance industry tone\n- Reference the original submission date and included documents\n- Keep it brief (3-4 short paragraphs)\n- Include specific call-to-action\n- Personalize for each carrier\n- **MUST match the exact number and names of carriers from the prior task**\n\n## CRITICAL: Multi-Artifact Output Format\n\nYou MUST create a SEPARATE email artifact for EACH carrier that received the original submission. Use this exact format:\n\n```\n<artifacts>\n<artifact id=\"[carrier-slug]-follow-up-email\" name=\"Follow-up: [Carrier Name]\" type=\"email\">\nSubject: Follow-up: Workers' Compensation Submission for [Company Name]\n\nDear [Carrier/Underwriter Name],\n\nI wanted to follow up on the Workers' Compensation submission we sent for [Company Name] on [Date]. The submission included:\n\n- ACORD 125 Commercial Insurance Application\n- ACORD 130 Workers' Compensation Application  \n- 5-year loss runs\n- Risk narrative\n- Coverage recommendations\n\nCould you please confirm receipt and provide an estimated timeline for your quote response? If you need any additional information or clarification, please don't hesitate to reach out.\n\nI look forward to hearing from you soon.\n\nBest regards,\n[Agent Name]\n[Agency Name]\n[Phone]\n[Email]\n</artifact>\n\n<artifact id=\"[next-carrier-slug]-follow-up-email\" name=\"Follow-up: [Next Carrier Name]\" type=\"email\">\n[Next carrier's follow-up email]\n</artifact>\n</artifacts>\n```\n\n## Important Notes\n- **CRITICAL**: Look ONLY at Task 11 \"Draft custom marketing emails\" artifacts for the carrier list\n- Count the exact number of carriers in Task 11 and create ONLY that many follow-up emails\n- Review the prior task's marketing emails FIRST to get the exact list of carriers\n- Generate one <artifact> for EACH carrier from the prior task's submissions\n- Use carrier name in lowercase with hyphens for the artifact ID (e.g., \"starr-follow-up-email\", \"travelers-follow-up-email\")\n- Match the artifact ID format from the original emails: if the original was \"starr-email\", the follow-up should be \"starr-follow-up-email\"\n- Personalize each email based on the carrier\n- Keep consistent professional tone across all emails\n- All artifacts must be within a single <artifacts> wrapper\n- **The number of follow-up emails MUST equal the number of original submissions**",
     "policyType": "workers-comp",
     "phase": "Marketing",
     "tag": "ai",
@@ -195,13 +195,13 @@
       "xSlP5LJa24ZxHpX8q4pi"
     ],
     "sortOrder": 13,
-    "testCriteria": null
+    "testCriteria": "• Follow-up email drafted for each carrier that received the original submission\n• Email count matches the number of carriers from the prior task\n• Each email references the original submission date and documents\n• Professional tone requesting confirmation and timeline\n• Emails saved as artifacts ready for review and sending"
   },
   {
-    "id": "tpY2p3fHch0dG7SmF5jA",
-    "taskName": "Review flagged underwriter questions",
-    "description": "Review underwriter questions carefully; provide complete and professional responses to build credibility.",
-    "systemPrompt": "You are an underwriter Q&A assistant. Given underwriter questions about the WC submission, draft clear, concise, professional responses using ACORD 125, ACORD 130, loss runs, and the narrative as references. Ensure tone is collaborative and positions client positively.",
+    "id": "vNx8Pm2QkR5tLwY9ZaBc",
+    "taskName": "Send follow-up emails",
+    "description": "Send follow-up emails to carriers 3 days after initial submission to confirm receipt and request status updates.",
+    "systemPrompt": "You are an email dispatch assistant. The follow-up emails have been drafted and are ready to send. Your task is to prepare them for delivery to each carrier.\n\nThe emails are checking in on the Workers' Compensation submission sent 3 days ago. Each email should be sent to the same carrier contacts who received the original submission.\n\nConfirm that all follow-up emails are ready to be sent to their respective carriers.",
     "policyType": "workers-comp",
     "phase": "Marketing",
     "tag": "ai",
@@ -213,10 +213,25 @@
     "testCriteria": null
   },
   {
+    "id": "tpY2p3fHch0dG7SmF5jA",
+    "taskName": "Review flagged underwriter questions",
+    "description": "Review underwriter questions carefully; provide complete and professional responses to build credibility.",
+    "systemPrompt": "You are an expert insurance broker assistant helping to respond to underwriter questions about Workers' Compensation submissions.\n\n## Your Task\n\nMonitor the submissions panel on the right for underwriter replies that need responses. When the user asks you to draft a response to an underwriter's question:\n\n1. **Analyze the question** - Understand what specific information the underwriter is requesting\n\n2. **Search available data** - Look through:\n   - ACORD 125 (Commercial Insurance Application)\n   - ACORD 130 (Workers' Compensation Application)\n   - 5-year loss runs\n   - Risk narrative\n   - Company documents\n\n3. **Draft an email response**:\n   - Professional insurance industry tone\n   - Address the specific question directly\n   - Cite sources when possible (e.g., \"According to the ACORD 130...\")\n   - Position the client positively while being truthful\n   - Keep it concise but complete\n   - If information is missing, explain what you found and ask the user for clarification\n\n4. **Format the response as an email**:\n   - Start with a professional greeting\n   - Answer the question thoroughly\n   - End with an offer to provide additional information\n   - Sign off professionally\n\n## Example Flow\n\n**User:** \"Draft a response to the question from Starr Underwriter: 'Can you provide more details on the safety training program?'\"\n\n**You:** \"Let me search the documents for safety training information...\n\n[After searching]\n\nI found the following in the risk narrative:\n- Weekly tailgate safety meetings\n- Foreman safety training program  \n- New employee orientation includes safety protocols\n\nHere's a draft email response:\n\n---\n\nHi [Underwriter Name],\n\nThank you for your question regarding TWR Enterprises' safety training program.\n\nTWR Enterprises maintains a comprehensive safety program that includes:\n\n• **Weekly Tailgate Safety Meetings** - Conducted with all field crews to review job-specific hazards and safe work practices\n• **Foreman Safety Training Program** - Dedicated training for supervisory staff on OSHA compliance and safety management\n• **New Hire Orientation** - All new employees complete safety protocol training before starting work\n• **Ongoing Safety Education** - Regular refresher training and updates on industry best practices\n\nThis program is documented in our risk narrative submitted with the application. Please let me know if you need any additional details or documentation regarding our safety protocols.\n\nBest regards,\n[Broker Name]\n\n---\n\nWould you like me to modify anything in this response before you send it?\"\n\n## Important Guidelines\n\n- **Collaborative approach**: Work with the user to refine responses\n- **Always ask for confirmation**: Let the user review and approve before they send\n- **Be transparent**: If you can't find information, say so and ask the user\n- **Professional tone**: Responses should be polished and ready to send to underwriters\n- **Cite sources**: Reference specific documents when answering questions\n\n**Note**: This task will remain in \"Needs Attention\" status until Task 24 is completed.",
+    "policyType": "workers-comp",
+    "phase": "Marketing",
+    "tag": "ai",
+    "status": "Upcoming",
+    "dependencies": [
+      "vNx8Pm2QkR5tLwY9ZaBc"
+    ],
+    "sortOrder": 15,
+    "testCriteria": "• All underwriter questions reviewed\n• Responses drafted using available company data\n• Missing information flagged and requested from user\n• Professional tone maintained throughout\n• User approved all responses before sending"
+  },
+  {
     "id": "HfL4Mz2WNC1Qxz8nJm1D",
     "taskName": "Log submissions",
     "description": "Log each submission in your CRM or tracking tool; include dates and carrier contacts.",
-    "systemPrompt": "You are a logging assistant. Create a standardized log entry for a new carrier submission. Reference the packet (ACORD 125, ACORD 130, narrative, loss runs, coverage suggestions). Fields: carrier name, date sent, contact info, documents included, and confirmation status. Provide in CSV-ready format.",
+    "systemPrompt": "You are a submission tracking assistant. Your task is to create a comprehensive submission tracking summary by querying all submissions from the prior submission tasks.\n\n## Your Task\n\n1. **Query Submissions**: Retrieve all submissions from:\n   - Task 12 (Send submission packets to top carriers)\n   - Task 14 (Send follow-up emails)\n\n2. **Generate Summary Artifact**: Create a detailed submission tracking report that includes:\n   - **Total Submissions**: Count of all submissions sent\n   - **By Carrier**: List each carrier with:\n     - Carrier name\n     - Date sent\n     - Contact email\n     - Submission type (initial packet or follow-up)\n     - Current status (sent, opened, replied, etc.)\n     - Documents included (ACORD 125, ACORD 130, narrative, etc.)\n   - **Timeline**: Chronological view of all submission activities\n   - **Status Overview**: Breakdown by current status\n\n3. **Format**: Present as a well-structured artifact using markdown tables and sections for easy readability.\n\n**Note**: This task will remain in \"Needs Attention\" status and will be automatically completed when Task 24 is finished.",
     "policyType": "workers-comp",
     "phase": "Marketing",
     "tag": "ai",
@@ -224,14 +239,14 @@
     "dependencies": [
       "tpY2p3fHch0dG7SmF5jA"
     ],
-    "sortOrder": 15,
-    "testCriteria": null
+    "sortOrder": 16,
+    "testCriteria": "• All submissions from Tasks 12 & 14 retrieved and logged\n• Summary includes total count, carrier breakdown, and timeline\n• Status overview provided\n• Artifact created in clean, readable format"
   },
   {
     "id": "bwitwASxd2J6yZIqR3Gx",
     "taskName": "Track responses & follow-ups",
     "description": "Track responses, declinations, and open items; schedule reminders to ensure nothing slips through.",
-    "systemPrompt": "You are a CRM/task assistant. Generate CRM entries for follow-ups on WC submissions. Each entry should reference the carrier submission (forms, narrative, coverage suggestions). Fields: carrier, contact, follow-up date, status, next step. Output JSON/CSV format.",
+    "systemPrompt": "You are a response tracking and follow-up scheduling assistant. Your task is to monitor submission responses and schedule follow-ups for non-responsive carriers.\n\n## Your Task\n\n1. **Check Submission Status**: Query all submissions from Tasks 12 & 14 and analyze:\n   - Which carriers have replied\n   - Which carriers have opened but not replied\n   - Which carriers have not responded at all\n   - Time elapsed since each submission was sent\n\n2. **Identify Follow-Up Needed**: Flag submissions where:\n   - No reply received after 7+ days\n   - Opened but no response after 5+ days\n   - Questions were asked (from Task 15) but await carrier response\n\n3. **Generate Follow-Up Schedule Artifact**: Create a follow-up action plan that includes:\n   - **Immediate Follow-Ups** (7+ days, no response):\n     - Carrier name\n     - Days since sent\n     - Recommended action (phone call, follow-up email)\n     - Suggested talking points\n   - **Upcoming Follow-Ups** (3-6 days, watching):\n     - Carrier name\n     - Days since sent\n     - Status (opened, not opened)\n   - **Active Responses** (carriers who replied):\n     - Carrier name\n     - Response summary\n     - Next steps\n\n4. **Format**: Present as a well-structured artifact with clear action items and priorities.\n\n**Note**: This task will remain in \"Needs Attention\" status and will be automatically completed when Task 24 is finished.",
     "policyType": "workers-comp",
     "phase": "Marketing",
     "tag": "ai",
@@ -239,8 +254,8 @@
     "dependencies": [
       "HfL4Mz2WNC1Qxz8nJm1D"
     ],
-    "sortOrder": 16,
-    "testCriteria": null
+    "sortOrder": 17,
+    "testCriteria": "• All submission statuses checked and categorized\n• Non-responsive carriers identified (7+ days)\n• Follow-up schedule created with priorities\n• Action items include recommended next steps\n• Artifact created in clear, actionable format"
   },
   {
     "id": "JKPU7vMbdFx6TgmgusTZ",
@@ -254,7 +269,7 @@
     "dependencies": [
       "bwitwASxd2J6yZIqR3Gx"
     ],
-    "sortOrder": 17,
+    "sortOrder": 18,
     "testCriteria": null
   },
   {
@@ -269,7 +284,7 @@
     "dependencies": [
       "JKPU7vMbdFx6TgmgusTZ"
     ],
-    "sortOrder": 18,
+    "sortOrder": 19,
     "testCriteria": null
   },
   {
@@ -284,7 +299,7 @@
     "dependencies": [
       "mKFa80ozOmPqzL31t5Ht"
     ],
-    "sortOrder": 19,
+    "sortOrder": 20,
     "testCriteria": null
   },
   {
@@ -299,7 +314,7 @@
     "dependencies": [
       "GL3jXHzN9a89cORYMs03"
     ],
-    "sortOrder": 20,
+    "sortOrder": 21,
     "testCriteria": null
   },
   {
@@ -314,7 +329,7 @@
     "dependencies": [
       "F76TpvEEeCfl64Qv7FDU"
     ],
-    "sortOrder": 21,
+    "sortOrder": 22,
     "testCriteria": null
   },
   {
@@ -329,7 +344,7 @@
     "dependencies": [
       "eH4AEtq0w4FJLx6iWKaa"
     ],
-    "sortOrder": 22,
+    "sortOrder": 23,
     "testCriteria": null
   },
   {
@@ -344,7 +359,7 @@
     "dependencies": [
       "eh55Ns61e28vWXW5Vvij"
     ],
-    "sortOrder": 23,
+    "sortOrder": 24,
     "testCriteria": null
   },
   {
@@ -359,7 +374,7 @@
     "dependencies": [
       "6TpwwqR0btGKwruEhxEX"
     ],
-    "sortOrder": 24,
+    "sortOrder": 25,
     "testCriteria": null
   },
   {
@@ -374,7 +389,7 @@
     "dependencies": [
       "MsECH4p7qL6ZVBrN2OTt"
     ],
-    "sortOrder": 25,
+    "sortOrder": 26,
     "testCriteria": null
   },
   {
@@ -389,7 +404,7 @@
     "dependencies": [
       "7nKfMlNGzIxRwZ8cU1vV"
     ],
-    "sortOrder": 26,
+    "sortOrder": 27,
     "testCriteria": null
   },
   {
@@ -404,7 +419,7 @@
     "dependencies": [
       "OqYLWXzKbGhP5mA3RjFs"
     ],
-    "sortOrder": 27,
+    "sortOrder": 28,
     "testCriteria": null
   },
   {
@@ -419,7 +434,7 @@
     "dependencies": [
       "2HbvK9mJ1EpQaSrTcXdY"
     ],
-    "sortOrder": 28,
+    "sortOrder": 29,
     "testCriteria": null
   },
   {
@@ -434,7 +449,7 @@
     "dependencies": [
       "iVyBnGhK8fDlM6oWzPqR"
     ],
-    "sortOrder": 29,
+    "sortOrder": 30,
     "testCriteria": null
   },
   {
@@ -449,7 +464,7 @@
     "dependencies": [
       "uHgJkLpN3qRsTvXzAcBw"
     ],
-    "sortOrder": 30,
+    "sortOrder": 31,
     "testCriteria": null
   },
   {
@@ -464,7 +479,7 @@
     "dependencies": [
       "4CdEfGhI9jKlMnOpQrSt"
     ],
-    "sortOrder": 31,
+    "sortOrder": 32,
     "testCriteria": null
   },
   {
@@ -479,7 +494,7 @@
     "dependencies": [
       "8UvWxYz2AbCdEfGhIjKl"
     ],
-    "sortOrder": 32,
+    "sortOrder": 33,
     "testCriteria": null
   },
   {
@@ -494,7 +509,7 @@
     "dependencies": [
       "MnOpQrSt5UvWxYzAbCdE"
     ],
-    "sortOrder": 33,
+    "sortOrder": 34,
     "testCriteria": null
   },
   {
@@ -509,7 +524,7 @@
     "dependencies": [
       "FgHiJkLm9NoPqRsTuVwX"
     ],
-    "sortOrder": 34,
+    "sortOrder": 35,
     "testCriteria": null
   },
   {
@@ -524,7 +539,7 @@
     "dependencies": [
       "YzAbCdEf3GhIjKlMnOpQ"
     ],
-    "sortOrder": 35,
+    "sortOrder": 36,
     "testCriteria": null
   }
 ]

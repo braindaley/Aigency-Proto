@@ -16,6 +16,7 @@ import { TaskAIArtifacts } from '@/components/TaskAIArtifacts';
 import { AITaskCompletion } from '@/components/AITaskCompletion';
 import { DependencyArtifactsReview } from '@/components/DependencyArtifactsReview';
 import { TaskSubmissionsPanel } from '@/components/TaskSubmissionsPanel';
+import { UnderwriterRepliesPanel } from '@/components/UnderwriterRepliesPanel';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -152,10 +153,12 @@ export default function TaskDetailPage() {
 
   if (task.tag === 'ai') {
     const wasAutoCompleted = task.status === 'completed' && (task as any).completedBy === 'AI System';
+    const isSubmissionTask = task.sortOrder === 12 || task.sortOrder === 14 || task.taskName?.toLowerCase().includes('send submission') || task.taskName?.toLowerCase().includes('send follow-up');
+    const isQuestionTask = task.sortOrder === 15 || task.taskName?.toLowerCase().includes('review flagged') || task.taskName?.toLowerCase().includes('underwriter questions');
 
     return (
       <div className="px-4 py-8 md:py-12">
-        <div className="mx-auto max-w-[1400px]">
+        <div className={`mx-auto ${isSubmissionTask ? 'max-w-[1400px]' : 'max-w-[1400px]'}`}>
           <div className="max-w-[672px] mb-8">
             <Button asChild variant="ghost" className="mb-4 -ml-4">
               <Link href={`/companies/${companyId}`}>
@@ -202,16 +205,23 @@ export default function TaskDetailPage() {
           </div>
 
           <div className="space-y-8">
-            {/* Show submissions panel for Task Template 12 (Send submission packets)
-                Task 11 creates the emails, Task 12 sends them with attachments
-                Hide artifacts panel for Task 12 since it doesn't create new artifacts */}
-            {(task.sortOrder === 12 || task.taskName?.toLowerCase().includes('send submission')) ? (
+            {/* Show submissions panel for Task 12 & 14 (Send submission packets & follow-ups) */}
+            {isSubmissionTask ? (
               <TaskSubmissionsPanel
                 companyId={companyId || ''}
                 taskId={taskId || ''}
                 taskName={task.taskName}
                 dependencyTaskIds={task.dependencies || []}
               />
+            ) : isQuestionTask ? (
+              /* Show chat + replies panel for Task 15 (Review underwriter questions) */
+              <>
+                <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
+                <UnderwriterRepliesPanel
+                  companyId={companyId || ''}
+                  taskId={taskId || ''}
+                />
+              </>
             ) : (
               <TaskAIArtifacts task={task} companyId={companyId || ''} />
             )}

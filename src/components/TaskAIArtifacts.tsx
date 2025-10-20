@@ -15,7 +15,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
 import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
-import { parseMultipleArtifacts } from '@/lib/artifact-parser';
+import { parseMultipleArtifacts, extractContentWithoutArtifacts } from '@/lib/artifact-parser';
 import { MultipleArtifactsViewer } from '@/components/MultipleArtifactsViewer';
 // Removed CSS import - using Tailwind classes instead
 
@@ -186,22 +186,15 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
 
   // Process message content to replace artifact tags with brief summaries
   const processMessageForDisplay = (content: string, taskName: string): string => {
-    // Check if message contains artifact tags
-    const artifactMatch = content.match(/<artifact>([\s\S]*?)<\/artifact>/);
+    // Use the extractContentWithoutArtifacts function to remove all artifact tags
+    const contentWithoutArtifacts = extractContentWithoutArtifacts(content);
 
-    if (artifactMatch) {
-      // Extract content before and after artifact
-      const beforeArtifact = content.substring(0, content.indexOf('<artifact>'));
-      const afterArtifact = content.substring(content.indexOf('</artifact>') + 11);
-
-      // Create a brief summary message
-      const summary = `Based on the information provided and data in the database, I have created the ${taskName}.`;
-
-      // Return message without artifact, just the summary
-      return `${beforeArtifact.trim()}\n\n${summary}\n\n${afterArtifact.trim()}`.trim();
+    // If content was changed (had artifacts), and there's not much left, add a summary
+    if (contentWithoutArtifacts !== content && contentWithoutArtifacts.trim().length < 50) {
+      return `Based on the information provided and data in the database, I have created the ${taskName}.`;
     }
 
-    return content;
+    return contentWithoutArtifacts;
   };
 
   useEffect(() => {
@@ -259,22 +252,21 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
               const parsedArtifacts = parseMultipleArtifacts(fullContent);
 
               if (parsedArtifacts.length > 0) {
-                console.log(`📝 Found ${parsedArtifacts.length} artifacts from real-time listener, keeping only latest`);
+                console.log(`📝 Found ${parsedArtifacts.length} artifacts from real-time listener`);
 
-                // Only keep the LAST artifact (most recent)
-                const latestArtifact = parsedArtifacts[parsedArtifacts.length - 1];
-                const artifactObject: Artifact = {
-                  id: latestArtifact.id,
-                  title: latestArtifact.title,
-                  content: latestArtifact.content,
+                // Keep ALL artifacts for multi-artifact tasks
+                const artifactObjects: Artifact[] = parsedArtifacts.map(parsed => ({
+                  id: parsed.id,
+                  title: parsed.title,
+                  content: parsed.content,
                   type: 'document' as const,
                   createdAt: new Date(),
                   updatedAt: new Date(),
                   savedToDatabase: false
-                };
+                }));
 
-                setArtifacts([artifactObject]);
-                setArtifact(artifactObject);
+                setArtifacts(artifactObjects);
+                setArtifact(artifactObjects[0]); // Set first as current
               }
             } else {
               console.log(`⏭️ Auto-completed task - skipping artifact extraction from messages (using database artifacts only)`);
@@ -382,20 +374,19 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
           if (parsedArtifacts.length > 0) {
             console.log(`📝 Found ${parsedArtifacts.length} artifacts from loadFromFirebase`);
 
-            // For manual tasks, only keep the LAST artifact (most recent)
-            const latestArtifact = parsedArtifacts[parsedArtifacts.length - 1];
-            const artifactObject: Artifact = {
-              id: latestArtifact.id,
-              title: latestArtifact.title,
-              content: latestArtifact.content,
+            // Keep ALL artifacts for multi-artifact tasks
+            const artifactObjects: Artifact[] = parsedArtifacts.map(parsed => ({
+              id: parsed.id,
+              title: parsed.title,
+              content: parsed.content,
               type: 'document' as const,
               createdAt: new Date(),
               updatedAt: new Date(),
               savedToDatabase: false
-            };
+            }));
 
-            setArtifacts([artifactObject]);
-            setArtifact(artifactObject);
+            setArtifacts(artifactObjects);
+            setArtifact(artifactObjects[0]); // Set first as current
           } else {
             // Fallback to single artifact without attributes
             const artifactMatch = fullContent.match(/<artifact>([\s\S]*?)<\/artifact>/);

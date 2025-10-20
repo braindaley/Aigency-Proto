@@ -1,0 +1,34 @@
+[debug] [2025-10-20T15:28:19.492Z] [Firebase Plugin] Activating Firebase extension.
+[debug] [2025-10-20T15:28:22.549Z] [Firebase Plugin] requireAuthWrapper
+[debug] [2025-10-20T15:28:22.552Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-20T15:28:22.553Z] > authorizing via signed-in user (bdaley@goldencomm.com)
+[debug] [2025-10-20T15:28:22.554Z] Checked if tokens are valid: true, expires at: 1760977701445
+[debug] [2025-10-20T15:28:22.554Z] Checked if tokens are valid: true, expires at: 1760977701445
+[debug] [2025-10-20T15:28:22.554Z] [Firebase Plugin] User found:  bdaley@goldencomm.com
+[info] [Firebase Plugin] (Core:Project) New user detected, fetching projects
+[debug] [2025-10-20T15:28:22.555Z] Checked if tokens are valid: true, expires at: 1760977701445
+[debug] [2025-10-20T15:28:22.556Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[info] [Firebase Plugin] Starting Data Connect toolkit (version 2.14.0) on port 50001
+[info] i  dataconnect: downloading dataconnect-emulator-2.14.0... {"metadata":{"emulator":{"name":"dataconnect"},"message":"downloading dataconnect-emulator-2.14.0..."}}
+[debug] [2025-10-20T15:28:22.682Z] >>> [apiv2][query] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-macos-v2.14.0 
+[debug] [2025-10-20T15:28:22.773Z] <<< [apiv2][status] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-macos-v2.14.0 200
+[debug] [2025-10-20T15:28:22.773Z] <<< [apiv2][body] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-macos-v2.14.0 [stream]
+[debug] [2025-10-20T15:28:22.866Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2025-10-20T15:28:22.866Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[debug] [2025-10-20T15:28:28.466Z] 'fdc build' failed with error: Unable to build your Data Connect schema and connectors (exit code 1): E1020 08:28:28.456479   20714 cmd.go:43] Error loading data connect config: could not find dataconnect.yaml in `/Users/briandaley/Documents/Aigency-Proto/dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"'fdc build' failed with error: Unable to build your Data Connect schema and connectors (exit code 1): E1020 08:28:28.456479   20714 cmd.go:43] Error loading data connect config: could not find dataconnect.yaml in `/Users/briandaley/Documents/Aigency-Proto/dataconnect`\n"}}
+[debug] [2025-10-20T15:28:28.466Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-10-20T15:28:28.466Z] Ignoring unsupported arg: port {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: port"}}
+[debug] [2025-10-20T15:28:28.467Z] Starting Data Connect Emulator with command {"binary":"/Users/briandaley/.cache/firebase/emulators/dataconnect-emulator-2.14.0","args":["--logtostderr","-v=2","dev","--listen=localhost:50001","--config_dir=/Users/briandaley/Documents/Aigency-Proto/dataconnect","--enable_output_schema_extensions=true","--enable_output_generated_sdk=true"],"optionalArgs":["listen","config_dir","enable_output_schema_extensions","enable_output_generated_sdk"],"joinArgs":true,"shell":false,"port":9399} {"metadata":{"emulator":{"name":"dataconnect"},"message":"Starting Data Connect Emulator with command {\"binary\":\"/Users/briandaley/.cache/firebase/emulators/dataconnect-emulator-2.14.0\",\"args\":[\"--logtostderr\",\"-v=2\",\"dev\",\"--listen=localhost:50001\",\"--config_dir=/Users/briandaley/Documents/Aigency-Proto/dataconnect\",\"--enable_output_schema_extensions=true\",\"--enable_output_generated_sdk=true\"],\"optionalArgs\":[\"listen\",\"config_dir\",\"enable_output_schema_extensions\",\"enable_output_generated_sdk\"],\"joinArgs\":true,\"shell\":false,\"port\":9399}"}}
+[info] i  dataconnect: Data Connect Emulator logging to dataconnect-debug.log {"metadata":{"emulator":{"name":"dataconnect"},"message":"Data Connect Emulator logging to dataconnect-debug.log"}}
+[debug] [2025-10-20T15:28:28.596Z] E1020 08:28:28.594615   20717 dev.go:79] Failed to load initial config from "/Users/briandaley/Documents/Aigency-Proto/dataconnect": could not find dataconnect.yaml in `/Users/briandaley/Documents/Aigency-Proto/dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1020 08:28:28.594615   20717 dev.go:79] Failed to load initial config from \"/Users/briandaley/Documents/Aigency-Proto/dataconnect\": could not find dataconnect.yaml in `/Users/briandaley/Documents/Aigency-Proto/dataconnect`\n"}}
+[debug] [2025-10-20T15:28:28.598Z] E1020 08:28:28.598686   20717 watch.go:102] watchAllDir unable to walk dir `/Users/briandaley/Documents/Aigency-Proto/dataconnect`: lstat /Users/briandaley/Documents/Aigency-Proto/dataconnect: no such file or directory
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1020 08:28:28.598686   20717 watch.go:102] watchAllDir unable to walk dir `/Users/briandaley/Documents/Aigency-Proto/dataconnect`: lstat /Users/briandaley/Documents/Aigency-Proto/dataconnect: no such file or directory\n"}}
+[debug] [2025-10-20T15:28:28.601Z] F1020 08:28:28.600734   20717 dev.go:100] Could not listen on address localhost:50001: listen tcp 127.0.0.1:50001: bind: address already in use
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"F1020 08:28:28.600734   20717 dev.go:100] Could not listen on address localhost:50001: listen tcp 127.0.0.1:50001: bind: address already in use\n"}}
+[error] ⬢  dataconnect: Data Connect Emulator has exited because its configured port 9399 is already in use. Are you running another copy of the emulator suite? {"metadata":{"emulator":{"name":"dataconnect"},"message":"Data Connect Emulator has exited because its configured port 9399 is already in use. Are you running another copy of the emulator suite?"}}
+[warn] ⚠  dataconnect: Fatal error occurred: 
+   Data Connect Emulator has exited with code: 1, 
+   stopping all running emulators {"metadata":{"emulator":{"name":"dataconnect"},"message":"Fatal error occurred: \n   Data Connect Emulator has exited with code: 1, \n   stopping all running emulators"}}
+[error] [Firebase Plugin] error:  {}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug Tasks</title>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, query, where, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPbristGE8ytc59RD-KL0JMJL-EuVW23R8",
+      authDomain: "aigency-mvp.firebaseapp.com",
+      projectId: "aigency-mvp",
+      storageBucket: "aigency-mvp.firebasestorage.app",
+      messagingSenderId: "326368003305",
+      appId: "1:326368003305:web:0c95f9e94ed99f4ac27bd2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.checkTask = async function(taskId, taskName) {
+      const companyId = 'qsu1QXPB8TUK2P4QyDiy';
+      console.log(`\n=== Checking ${taskName} (${taskId}) ===`);
+
+      // Check artifacts
+      const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+      const q = query(artifactsRef, where('taskId', '==', taskId));
+      const snapshot = await getDocs(q);
+
+      console.log(`Found ${snapshot.size} artifacts in database`);
+      const artifacts = [];
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        artifacts.push({
+          id: doc.id,
+          name: data.name,
+          artifactId: data.artifactId,
+          artifactIndex: data.artifactIndex,
+          totalArtifacts: data.totalArtifacts
+        });
+      });
+
+      artifacts.sort((a, b) => (a.artifactIndex || 0) - (b.artifactIndex || 0));
+      console.table(artifacts);
+
+      // Check chat messages
+      const chatRef = collection(db, 'taskChats', taskId, 'messages');
+      const chatSnapshot = await getDocs(chatRef);
+
+      console.log(`Found ${chatSnapshot.size} chat messages`);
+      chatSnapshot.docs.forEach((doc, idx) => {
+        const data = doc.data();
+        const content = data.content || '';
+        const artifactCount = (content.match(/<artifact/g) || []).length;
+        console.log(`  Message ${idx + 1}: ${data.role}, ${content.length} chars, ${artifactCount} <artifact> tags`);
+      });
+
+      document.getElementById('output').innerHTML += `
+        <div style="margin: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px;">
+          <h3>${taskName}</h3>
+          <p><strong>Database Artifacts:</strong> ${snapshot.size}</p>
+          <p><strong>Chat Messages:</strong> ${chatSnapshot.size}</p>
+          <pre>${JSON.stringify(artifacts, null, 2)}</pre>
+        </div>
+      `;
+    };
+
+    window.onload = function() {
+      document.getElementById('check-task11').onclick = () => {
+        checkTask('fJoluhxjOBMTMl6uERew', 'Task 11 - Draft custom marketing emails');
+      };
+      document.getElementById('check-task13').onclick = () => {
+        checkTask('B10M67bZTVuuI5TFDjRz', 'Task 13 - Draft follow-up emails');
+      };
+    };
+  </script>
+</head>
+<body>
+  <h1>Debug Tasks - Artifact Viewer</h1>
+  <button id="check-task11">Check Task 11 (Working)</button>
+  <button id="check-task13">Check Task 13 (Not Working)</button>
+  <div id="output"></div>
+</body>
+</html>

@@ -14,12 +14,14 @@ interface ParsedArtifact {
  * Supports formats:
  * - <artifact>content</artifact>
  * - <artifact id="x" title="y">content</artifact>
+ * - <artifact id="x" name="y" type="z">content</artifact>
  */
 export function parseMultipleArtifacts(content: string): ParsedArtifact[] {
   const artifacts: ParsedArtifact[] = [];
 
-  // Match all artifact tags with optional id and title attributes
-  const artifactRegex = /<artifact(?:\s+id="([^"]*)")?(?:\s+title="([^"]*)")?>([.\s\S]*?)<\/artifact>/g;
+  // Match all artifact tags with optional id, title/name, and type attributes
+  // Support both title= and name= for compatibility
+  const artifactRegex = /<artifact(?:\s+id="([^"]*)")?(?:\s+(?:title|name)="([^"]*)")?(?:\s+type="([^"]*)")?(?:\s+[^>]*)?>([.\s\S]*?)<\/artifact>/g;
 
   let match;
   let index = 1;
@@ -27,7 +29,8 @@ export function parseMultipleArtifacts(content: string): ParsedArtifact[] {
   while ((match = artifactRegex.exec(content)) !== null) {
     const id = match[1] || `artifact-${index}`;
     const title = match[2] || `Document ${index}`;
-    const artifactContent = match[3].trim();
+    // match[3] is type (email, document, etc) - we can ignore for now
+    const artifactContent = match[4].trim();
 
     artifacts.push({
       id,
@@ -57,9 +60,10 @@ export function parseMultipleArtifacts(content: string): ParsedArtifact[] {
  * Extract content without artifact tags (for display in chat)
  */
 export function extractContentWithoutArtifacts(content: string): string {
-  // Remove all artifact tags and their content
+  // Remove all artifact tags and their content, including wrapper <artifacts> tags
   return content
-    .replace(/<artifact(?:\s+[^>]*)?>[\s\S]*?<\/artifact>/g, '')
+    .replace(/<artifacts>[\s\S]*?<\/artifacts>/g, '')  // Remove wrapper tags
+    .replace(/<artifact(?:\s+[^>]*)?>[\s\S]*?<\/artifact>/g, '')  // Remove individual artifact tags
     .trim();
 }
 

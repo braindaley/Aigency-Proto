@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Eye, Clock, CheckCircle2, RefreshCw, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Mail, Eye, Clock, CheckCircle2, RefreshCw, Filter, Paperclip, Edit2, Save, X } from 'lucide-react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Submission, SubmissionStatus } from '@/lib/types';
 import { SubmissionStatusBadge } from '@/components/SubmissionStatusBadge';
 import { format } from 'date-fns';
@@ -19,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from '@/hooks/use-toast';
 
 export default function CompanyEmailsPage() {
   const params = useParams();
@@ -27,10 +30,21 @@ export default function CompanyEmailsPage() {
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<SubmissionStatus | 'all'>('all');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedContent, setEditedContent] = useState<{ subject: string; body: string }>({ subject: '', body: '' });
+  const { toast } = useToast();
 
   useEffect(() => {
     loadData();
   }, [companyId]);
+
+  // Auto-select first submission when loaded
+  useEffect(() => {
+    if (filteredSubmissions.length > 0 && !selectedId) {
+      setSelectedId(filteredSubmissions[0].id);
+    }
+  }, [submissions, filterStatus]);
 
   const loadData = async () => {
     setLoading(true);
@@ -66,19 +80,47 @@ export default function CompanyEmailsPage() {
     }
   };
 
+  const startEditing = (submission: Submission) => {
+    setEditingId(submission.id);
+    setEditedContent({
+      subject: submission.subject,
+      body: submission.body
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditedContent({ subject: '', body: '' });
+  };
+
+  const saveEdits = async (submissionId: string) => {
+    try {
+      const submissionRef = doc(db, `companies/${companyId}/submissions`, submissionId);
+      await updateDoc(submissionRef, {
+        subject: editedContent.subject,
+        body: editedContent.body,
+        updatedAt: new Date()
+      });
+
+      toast({
+        title: 'Saved',
+        description: 'Email content updated successfully'
+      });
+
+      setEditingId(null);
+      await loadData();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save changes',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const filteredSubmissions = filterStatus === 'all'
     ? submissions
     : submissions.filter(s => s.status === filterStatus);
-
-  // Group submissions by task
-  const submissionsByTask = filteredSubmissions.reduce((acc, submission) => {
-    const taskId = submission.taskId;
-    if (!acc[taskId]) {
-      acc[taskId] = [];
-    }
-    acc[taskId].push(submission);
-    return acc;
-  }, {} as Record<string, Submission[]>);
 
   // Calculate stats
   const stats = {
@@ -88,9 +130,11 @@ export default function CompanyEmailsPage() {
     replied: submissions.filter(s => s.status === 'replied').length,
   };
 
+  const selectedSubmission = submissions.find(s => s.id === selectedId);
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-screen-lg px-4 py-8 md:py-12">
+      <div className="mx-auto max-w-[1400px] px-4 py-8 md:py-12">
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -99,8 +143,8 @@ export default function CompanyEmailsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-screen-lg px-4 py-8 md:py-12">
-      <div className="mb-8">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 md:py-12">
+      <div className="max-w-[672px] mb-8">
         <Button asChild variant="ghost" className="mb-4 -ml-4">
           <Link href={`/companies/${companyId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -176,7 +220,7 @@ export default function CompanyEmailsPage() {
         )}
       </div>
 
-      {/* Submissions by Task */}
+      {/* Split View */}
       {submissions.length === 0 ? (
         <Card>
           <CardContent className="py-12">
@@ -198,74 +242,197 @@ export default function CompanyEmailsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {Object.entries(submissionsByTask).map(([taskId, taskSubmissions]) => (
-            <Card key={taskId}>
+        <div className="flex gap-6 h-[calc(100vh-400px)] bg-background">
+          {/* Left Panel - Emails List */}
+          <div className="w-1/2 flex flex-col">
+            <Card className="flex-1 flex flex-col">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{taskSubmissions[0].taskName}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {taskSubmissions.length} carrier{taskSubmissions.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/companies/${companyId}/tasks/${taskId}`}>
-                      View Task
-                    </Link>
-                  </Button>
-                </div>
+                <CardTitle>All Emails</CardTitle>
+                <CardDescription>
+                  {filteredSubmissions.length} email{filteredSubmissions.length !== 1 ? 's' : ''}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {taskSubmissions.map(submission => (
+              <CardContent className="flex-1 overflow-y-auto">
+                <div className="space-y-2">
+                  {filteredSubmissions.map(submission => (
                     <div
                       key={submission.id}
-                      className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                      onClick={() => setSelectedId(submission.id)}
+                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                        selectedId === submission.id
+                          ? 'bg-accent border-primary shadow-sm'
+                          : 'hover:bg-accent/50'
+                      }`}
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-medium truncate">{submission.carrierName}</h4>
                             <SubmissionStatusBadge status={submission.status} size="sm" />
                           </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p className="truncate">{submission.carrierEmail}</p>
-                            <p className="truncate font-medium text-foreground">{submission.subject}</p>
-                          </div>
-                          {submission.sentAt && (
-                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Sent {format(submission.sentAt.toDate(), 'MMM d, yyyy h:mm a')}
-                              </span>
-                              {submission.tracking && submission.tracking.opens > 0 && (
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3" />
-                                  {submission.tracking.opens} open{submission.tracking.opens !== 1 ? 's' : ''}
-                                </span>
-                              )}
-                              {submission.replies.length > 0 && (
-                                <span className="flex items-center gap-1 text-teal-600">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  {submission.replies.length} repl{submission.replies.length !== 1 ? 'ies' : 'y'}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {!submission.sentAt && submission.createdAt && (
-                            <div className="text-xs text-muted-foreground mt-2">
-                              Created {format(submission.createdAt.toDate(), 'MMM d, yyyy h:mm a')}
+                          <p className="text-sm text-muted-foreground truncate">{submission.carrierEmail}</p>
+                          <p className="text-sm text-muted-foreground truncate mt-1">{submission.subject}</p>
+                          {submission.attachments && submission.attachments.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs mt-2 text-muted-foreground">
+                              <Paperclip className="h-3 w-3" />
+                              <span>{submission.attachments.length} attachment{submission.attachments.length !== 1 ? 's' : ''}</span>
                             </div>
                           )}
                         </div>
                       </div>
+                      {submission.sentAt && (
+                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {format(submission.sentAt.toDate(), 'MMM d, h:mm a')}
+                          </span>
+                          {submission.tracking && submission.tracking.opens > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              {submission.tracking.opens}
+                            </span>
+                          )}
+                          {submission.replies.length > 0 && (
+                            <span className="flex items-center gap-1 text-teal-600">
+                              <CheckCircle2 className="h-3 w-3" />
+                              {submission.replies.length}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          ))}
+          </div>
+
+          {/* Right Panel - Email Preview/Edit */}
+          <div className="w-1/2 flex flex-col">
+            {selectedSubmission ? (
+              <Card className="flex-1 flex flex-col">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="truncate">{selectedSubmission.carrierName}</CardTitle>
+                      <CardDescription className="truncate">{selectedSubmission.carrierEmail}</CardDescription>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      {editingId !== selectedSubmission.id ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => startEditing(selectedSubmission)}
+                        >
+                          <Edit2 className="mr-2 h-3 w-3" />
+                          Edit
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={cancelEditing}
+                          >
+                            <X className="mr-2 h-3 w-3" />
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => saveEdits(selectedSubmission.id)}
+                          >
+                            <Save className="mr-2 h-3 w-3" />
+                            Save
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto">
+                  {editingId === selectedSubmission.id ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Subject</label>
+                        <Input
+                          value={editedContent.subject}
+                          onChange={(e) => setEditedContent(prev => ({ ...prev, subject: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Body</label>
+                        <Textarea
+                          value={editedContent.body}
+                          onChange={(e) => setEditedContent(prev => ({ ...prev, body: e.target.value }))}
+                          className="mt-1 min-h-[400px] font-mono text-sm"
+                        />
+                      </div>
+                      {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                        <div>
+                          <label className="text-sm font-medium">Attachments</label>
+                          <div className="mt-2 space-y-1">
+                            {selectedSubmission.attachments.map((attachment, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Paperclip className="h-3 w-3" />
+                                <span>{attachment.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Task</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm">{selectedSubmission.taskName}</div>
+                          <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
+                            <Link href={`/companies/${companyId}/tasks/${selectedSubmission.taskId}`}>
+                              View Task
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Subject</div>
+                        <div className="text-sm">{selectedSubmission.subject}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Body</div>
+                        <div className="text-sm whitespace-pre-wrap bg-muted/30 p-4 rounded border">
+                          {selectedSubmission.body}
+                        </div>
+                      </div>
+                      {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground mb-2">Attachments</div>
+                          <div className="space-y-1">
+                            {selectedSubmission.attachments.map((attachment, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Paperclip className="h-3 w-3" />
+                                <span>{attachment.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="flex-1 flex items-center justify-center">
+                <CardContent>
+                  <div className="text-center text-muted-foreground">
+                    <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Select an email to preview</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -58,13 +58,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create submissions
+    // Gather submission documents to attach
+    // These are the key documents that should be included with every submission
+    const submissionDocTaskIds = {
+      'ACORD 130': /acord.*130|workers.*comp.*app/i,
+      'ACORD 125': /acord.*125|commercial.*insurance.*app/i,
+      'Narrative': /narrative|write.*narrative/i,
+      'Coverage Suggestions': /coverage.*suggest/i
+    };
+
+    const allArtifactsSnapshot = await getDocs(collection(db, `companies/${companyId}/artifacts`));
+    const attachments: Array<{ name: string; type: string; url: string; artifactId: string }> = [];
+
+    // For each document type, find the most recent artifact
+    for (const [docName, namePattern] of Object.entries(submissionDocTaskIds)) {
+      const matchingArtifacts = allArtifactsSnapshot.docs.filter(doc => {
+        const data = doc.data();
+        const name = (data.name || data.taskName || '').toLowerCase();
+        return namePattern.test(name);
+      });
+
+      if (matchingArtifacts.length > 0) {
+        // Sort by updatedAt and get the most recent
+        matchingArtifacts.sort((a, b) => {
+          const aTime = a.data().updatedAt?.toMillis?.() || 0;
+          const bTime = b.data().updatedAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
+
+        const latestDoc = matchingArtifacts[0];
+        const data = latestDoc.data();
+
+        attachments.push({
+          name: data.name || docName,
+          type: 'document',
+          url: `/artifacts/${latestDoc.id}`, // URL to access the artifact
+          artifactId: latestDoc.id
+        });
+
+        console.log(`📎 Attached: ${data.name || docName} (${latestDoc.id})`);
+      } else {
+        console.log(`⚠️ No artifact found for: ${docName}`);
+      }
+    }
+
+    console.log(`📎 Total attachments: ${attachments.length}`);
+
+    // Create submissions with attachments
     const submissionIds = await createSubmissionsFromArtifacts({
       companyId,
       taskId,
       taskName,
       artifacts,
-      attachments: [] // Can be enhanced to include actual attachments
+      attachments
     });
 
     console.log(`✅ Created ${submissionIds.length} submissions from artifacts`);

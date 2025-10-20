@@ -90,11 +90,28 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Sent ${successCount} submissions, ${failureCount} failed`);
 
+    // If all submissions were sent successfully, mark the task as completed
+    if (successCount === submissions.length && failureCount === 0) {
+      console.log(`🎉 All submissions sent successfully, marking task as completed`);
+      try {
+        const taskRef = doc(db, 'companyTasks', taskId);
+        await updateDoc(taskRef, {
+          status: 'completed',
+          updatedAt: serverTimestamp()
+        });
+        console.log(`✅ Task ${taskId} marked as completed`);
+      } catch (error) {
+        console.error('Failed to mark task as completed:', error);
+        // Don't fail the whole request if task update fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       total: submissions.length,
       sent: successCount,
       failed: failureCount,
+      taskCompleted: successCount === submissions.length && failureCount === 0,
       results: emailResults.map((result, index) => ({
         carrierName: submissions[index].carrierName,
         ...result
