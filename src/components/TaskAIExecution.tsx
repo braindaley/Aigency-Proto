@@ -40,47 +40,22 @@ export function TaskAIExecution({ task, companyId, onTaskComplete }: TaskAIExecu
   // Generate storage key based on task and company IDs
   const storageKey = `task-chat-${companyId}-${task.id}`;
 
-  // Initialize messages with default or saved messages
+  // Initialize messages with default message only
   useEffect(() => {
-    const savedMessages = localStorage.getItem(storageKey);
-    
-    if (savedMessages) {
-      try {
-        const parsedMessages = JSON.parse(savedMessages);
-        setMessages(parsedMessages);
-      } catch (error) {
-        console.error('Failed to load task chat history:', error);
-        // Fall back to initial message
-        setMessages([{
-          id: 'initial',
-          role: 'assistant',
-          content: `Hello! I'm here to help you complete the task: "${task.taskName}". 
+    // No localStorage - always start fresh or load from Firebase
+    // Set initial message
+    setMessages([{
+      id: 'initial',
+      role: 'assistant',
+      content: `Hello! I'm here to help you complete the task: "${task.taskName}".
 
 ${task.description}
 
 How can I assist you with this task today?`,
-        }]);
-      }
-    } else {
-      // Set initial message if no saved messages
-      setMessages([{
-        id: 'initial',
-        role: 'assistant',
-        content: `Hello! I'm here to help you complete the task: "${task.taskName}". 
-
-${task.description}
-
-How can I assist you with this task today?`,
-      }]);
-    }
+    }]);
   }, [task.id, task.taskName, task.description, companyId, storageKey]);
 
-  // Save messages to localStorage whenever messages change
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    }
-  }, [messages, storageKey]);
+  // Removed localStorage - messages should be persisted to Firebase if needed
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {

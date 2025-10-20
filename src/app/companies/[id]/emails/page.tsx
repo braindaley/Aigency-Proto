@@ -253,55 +253,69 @@ export default function CompanyEmailsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto">
-                <div className="space-y-2">
-                  {filteredSubmissions.map(submission => (
-                    <div
-                      key={submission.id}
-                      onClick={() => setSelectedId(submission.id)}
-                      className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                        selectedId === submission.id
-                          ? 'bg-accent border-primary shadow-sm'
-                          : 'hover:bg-accent/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium truncate">{submission.carrierName}</h4>
-                            <SubmissionStatusBadge status={submission.status} size="sm" />
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{submission.carrierEmail}</p>
-                          <p className="text-sm text-muted-foreground truncate mt-1">{submission.subject}</p>
-                          {submission.attachments && submission.attachments.length > 0 && (
-                            <div className="flex items-center gap-1 text-xs mt-2 text-muted-foreground">
-                              <Paperclip className="h-3 w-3" />
-                              <span>{submission.attachments.length} attachment{submission.attachments.length !== 1 ? 's' : ''}</span>
+                <div className="space-y-1">
+                  {(() => {
+                    // Group submissions by carrier name (normalize by removing "Follow Up" suffix)
+                    const groupedByCarrier = filteredSubmissions.reduce((acc, submission) => {
+                      let carrierName = submission.carrierName || 'Unknown Carrier';
+                      // Normalize carrier name by removing common suffixes
+                      carrierName = carrierName
+                        .replace(/\s+Follow\s+Up$/i, '')
+                        .replace(/\s+Insurance\s+Group$/i, '')
+                        .trim();
+
+                      if (!acc[carrierName]) {
+                        acc[carrierName] = [];
+                      }
+                      acc[carrierName].push(submission);
+                      return acc;
+                    }, {} as Record<string, Submission[]>);
+
+                    return Object.entries(groupedByCarrier).map(([carrierName, carrierSubmissions]) => (
+                      <div key={carrierName} className="border-b last:border-b-0">
+                        {/* Carrier Header */}
+                        <div className="font-bold text-sm px-3 py-2 bg-muted/30">
+                          {carrierName}
+                        </div>
+
+                        {/* Email Thread */}
+                        <div className="divide-y">
+                          {carrierSubmissions.map((submission) => (
+                            <div
+                              key={submission.id}
+                              onClick={() => setSelectedId(submission.id)}
+                              className={`px-3 py-2 text-sm hover:bg-muted/50 cursor-pointer ${
+                                selectedId === submission.id ? 'bg-primary/5' : ''
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <span className="text-muted-foreground">
+                                    {submission.replies && submission.replies.length > 0 ? 'Re:' : 'To:'}
+                                  </span>
+                                  <span className="truncate">{submission.subject || 'Workers\' Compensation Submission'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 ml-2">
+                                  <SubmissionStatusBadge status={submission.status} size="sm" />
+                                  {submission.sentAt && (
+                                    <span className="text-muted-foreground text-xs whitespace-nowrap">
+                                      {format(submission.sentAt.toDate(), 'MMM d')}
+                                    </span>
+                                  )}
+                                  {submission.replies && submission.replies.length > 0 && (
+                                    <span className="flex items-center gap-1 text-teal-600 text-xs">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      {submission.replies.length}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          )}
+                          ))}
                         </div>
                       </div>
-                      {submission.sentAt && (
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {format(submission.sentAt.toDate(), 'MMM d, h:mm a')}
-                          </span>
-                          {submission.tracking && submission.tracking.opens > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Eye className="h-3 w-3" />
-                              {submission.tracking.opens}
-                            </span>
-                          )}
-                          {submission.replies.length > 0 && (
-                            <span className="flex items-center gap-1 text-teal-600">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {submission.replies.length}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </CardContent>
             </Card>

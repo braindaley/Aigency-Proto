@@ -83,12 +83,7 @@ export function ChatInterface() {
     loadMessages();
   }, []);
 
-  // Keep localStorage as backup (secondary to Firestore)
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
-    }
-  }, [messages]);
+  // Removed localStorage - rely solely on Firestore for persistence
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {

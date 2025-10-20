@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Mail, Clock, CheckCircle2, Send, RefreshCw } from 'lucide-react';
+import { Mail, Clock, CheckCircle2, Send, RefreshCw, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Submission, SubmissionReply } from '@/lib/types';
 import { format } from 'date-fns';
@@ -201,10 +201,33 @@ export function UnderwriterRepliesPanel({ companyId, taskId }: UnderwriterReplie
         </CardContent>
       </Card>
 
-      {/* Submissions List */}
+      {/* Email Threads List - Grouped by Recipient */}
       <Card>
         <CardHeader>
-          <CardTitle>Submissions with Replies</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Email Threads</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const firstSubmission = submissions[0];
+                if (firstSubmission) simulateUnderwriterReply(firstSubmission.id);
+              }}
+              disabled={simulatingReply !== null || submissions.length === 0}
+            >
+              {simulatingReply ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  Simulating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3 w-3 mr-1" />
+                  Simulate Reply
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {submissions.length === 0 ? (
@@ -214,63 +237,63 @@ export function UnderwriterRepliesPanel({ companyId, taskId }: UnderwriterReplie
               <p className="text-sm">Simulate a reply to test the workflow</p>
             </div>
           ) : (
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2">
+            <ScrollArea className="h-[500px]">
+              <div className="space-y-1">
                 {submissions.map((submission) => (
-                  <div
-                    key={submission.id}
-                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                      selectedSubmission?.id === submission.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => setSelectedSubmission(submission)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="font-medium">{submission.carrierName}</div>
-                        <div className="text-sm text-muted-foreground">{submission.contactEmail}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {submission.hasUnrespondedReply ? (
-                          <Badge variant="destructive">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Needs Response
-                          </Badge>
-                        ) : (
-                          <Badge variant="default" className="bg-green-600">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Responded
-                          </Badge>
-                        )}
-                      </div>
+                  <div key={submission.id} className="border-b last:border-b-0">
+                    {/* Recipient Header */}
+                    <div className="font-bold text-sm px-3 py-2 bg-muted/30">
+                      {submission.carrierName}
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {submission.replies.length} {submission.replies.length === 1 ? 'reply' : 'replies'}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          simulateUnderwriterReply(submission.id);
-                        }}
-                        disabled={simulatingReply === submission.id}
-                      >
-                        {simulatingReply === submission.id ? (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                            Simulating...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-3 w-3 mr-1" />
-                            Simulate Reply
-                          </>
-                        )}
-                      </Button>
+                    {/* Email Thread */}
+                    <div className="divide-y">
+                      {/* Original Submission */}
+                      <div className="px-3 py-2 text-sm hover:bg-muted/50 cursor-pointer flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-muted-foreground">To:</span>
+                          <span className="font-medium truncate">{submission.contactEmail}</span>
+                          <Separator orientation="vertical" className="h-4" />
+                          <span className="truncate">Workers' Compensation Submission</span>
+                        </div>
+                        <span className="text-muted-foreground text-xs ml-2 whitespace-nowrap">
+                          {submission.sentAt && format(new Date(submission.sentAt.seconds * 1000), 'MMM d')}
+                        </span>
+                      </div>
+
+                      {/* Replies */}
+                      {submission.replies.map((reply, index) => (
+                        <div
+                          key={index}
+                          className={`px-3 py-2 text-sm hover:bg-muted/50 cursor-pointer ${
+                            selectedSubmission?.id === submission.id ? 'bg-primary/5' : ''
+                          }`}
+                          onClick={() => setSelectedSubmission(submission)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-muted-foreground">Re:</span>
+                              <span className="truncate">{reply.subject || 'Workers\' Compensation Submission'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 ml-2">
+                              {reply.responded ? (
+                                <Badge variant="default" className="bg-green-600 text-xs">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Responded
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-xs">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Needs Response
+                                </Badge>
+                              )}
+                              <span className="text-muted-foreground text-xs whitespace-nowrap">
+                                {reply.receivedAt && format(new Date(reply.receivedAt.seconds * 1000), 'MMM d')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

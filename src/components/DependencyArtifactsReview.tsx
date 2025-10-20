@@ -316,8 +316,9 @@ export function DependencyArtifactsReview({ task, companyId }: DependencyArtifac
                                     prose-ul:text-foreground prose-ol:text-foreground
                                     prose-li:text-foreground">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {artifact.content.substring(0, 2000)}
-                        {artifact.content.length > 2000 && '\n\n*[Content truncated - click "View Full" to see complete document]*'}
+                        {artifact.content.length > 2000
+                          ? artifact.content.substring(0, 2000) + '\n\n*[Content truncated - click "View Full" to see complete document]*'
+                          : artifact.content}
                       </ReactMarkdown>
                     </div>
                   </ScrollArea>

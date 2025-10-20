@@ -412,30 +412,9 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         return;
       }
 
-      // Fallback to localStorage if no Firebase messages
-      const savedArtifact = localStorage.getItem(storageKey);
-      const savedMessages = localStorage.getItem(chatStorageKey);
-
-      if (savedArtifact) {
-        try {
-          setArtifact(JSON.parse(savedArtifact));
-        } catch (error) {
-          console.error('Failed to load artifact:', error);
-        }
-      }
-
-      if (savedMessages) {
-        try {
-          setMessages(JSON.parse(savedMessages));
-        } catch (error) {
-          console.error('Failed to load chat history:', error);
-        }
-      }
-
-      if (!savedArtifact && !savedMessages) {
-        // Generate initial artifact only if nothing is saved anywhere
-        generateInitialArtifact();
-      }
+      // No localStorage fallback - rely solely on Firebase
+      // If no messages in Firebase, generate initial artifact
+      generateInitialArtifact();
 
     } catch (error) {
       console.error('Error loading from Firebase:', error);
@@ -447,8 +426,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
 
   useEffect(() => {
     if (artifact) {
-      localStorage.setItem(storageKey, JSON.stringify(artifact));
-      
+      // Removed localStorage - only save to Firebase
       // Automatically save/update to database when content actually changes
       if (artifact.content.trim() && artifact.content !== lastSavedContent) {
         saveArtifactToDb(artifact);
@@ -456,11 +434,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
     }
   }, [artifact, storageKey]);
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(chatStorageKey, JSON.stringify(messages));
-    }
-  }, [messages, chatStorageKey]);
+  // Removed localStorage for messages - rely solely on Firebase
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -504,7 +478,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       };
 
       setArtifact(updatedArtifact);
-      localStorage.setItem(storageKey, JSON.stringify(updatedArtifact));
+      // Removed localStorage - only save to Firebase
       setLastSavedContent(artifactToSave.content);
 
       const action = artifactToSave.databaseId ? 'updated' : 'created';
@@ -943,9 +917,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
     setArtifact(null);
     setMessages([]);
     
-    // Clear localStorage
-    localStorage.removeItem(storageKey);
-    localStorage.removeItem(chatStorageKey);
+    // No localStorage to clear - only Firebase
     
     // Regenerate the document
     await generateInitialArtifact();

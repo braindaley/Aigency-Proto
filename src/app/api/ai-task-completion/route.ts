@@ -87,7 +87,45 @@ export async function POST(request: NextRequest) {
     console.log('Relevant content preview:', context.relevantContent.substring(0, 500));
 
     // Build comprehensive prompt for AI task completion
-    const systemPrompt = `You are an AI assistant that automatically completes insurance tasks using available company data and previous task artifacts.
+    // First check if the task has its own systemPrompt
+    let baseSystemPrompt = task.systemPrompt || '';
+
+    // If no system prompt on the task instance, try to fetch from templates
+    if (!baseSystemPrompt && task.taskName) {
+      console.log(`[${timestamp}] 🔍 AI-TASK-COMPLETION: No systemPrompt on task, fetching from templates...`);
+
+      // Query the tasks collection (templates) by taskName
+      const templatesQuery = query(
+        collection(db, 'tasks'),
+        where('taskName', '==', task.taskName)
+      );
+      const templateSnapshot = await getDocs(templatesQuery);
+
+      if (!templateSnapshot.empty) {
+        const template = templateSnapshot.docs[0].data();
+        baseSystemPrompt = template.systemPrompt || '';
+
+        // Also update the task instance with the template's systemPrompt for future use
+        if (baseSystemPrompt) {
+          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Found systemPrompt in template (${baseSystemPrompt.length} chars)`);
+          await updateDoc(taskDocRef, {
+            systemPrompt: baseSystemPrompt,
+            testCriteria: template.testCriteria || task.testCriteria || '',
+            showDependencyArtifacts: template.showDependencyArtifacts ?? task.showDependencyArtifacts ?? false
+          });
+        }
+      } else {
+        console.log(`[${timestamp}] ⚠️ AI-TASK-COMPLETION: No template found for taskName: ${task.taskName}`);
+      }
+    }
+
+    // If still no custom system prompt, use the generic one
+    if (!baseSystemPrompt) {
+      console.log(`[${timestamp}] ℹ️ AI-TASK-COMPLETION: Using generic system prompt`);
+      baseSystemPrompt = `You are an AI assistant that automatically completes insurance tasks using available company data and previous task artifacts.`;
+    }
+
+    const systemPrompt = `${baseSystemPrompt}
 
 TASK TO COMPLETE:
 - Task Name: ${task.taskName}
@@ -236,6 +274,8 @@ OUTPUT FORMAT:
 - Make it visually scannable and professional
 - Do NOT output raw JSON unless specifically requested in the task
 - Present the form as complete and ready for carrier submission
+- DO NOT include the task name as a header in artifact content (it's already shown in the UI)
+- Start directly with the document content (e.g., "# Public Information Research Summary" not "# Research public info\n\n# Summary")
 
 Your response should demonstrate deep utilization of the artifact data to complete the task professionally and accurately.`;
 

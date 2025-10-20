@@ -30,9 +30,10 @@ interface TaskChatProps {
   task: CompanyTask;
   companyId: string;
   onTaskUpdate?: () => void;
+  inlineContent?: React.ReactNode;
 }
 
-export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
+export function TaskChat({ task, companyId, onTaskUpdate, inlineContent }: TaskChatProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -43,6 +44,7 @@ export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
   const [validationResult, setValidationResult] = useState<any>(null);
   const [taskCompleted, setTaskCompleted] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
 
   // Process message content to replace artifact tags with brief summaries
@@ -79,7 +81,13 @@ export function TaskChat({ task, companyId, onTaskUpdate }: TaskChatProps) {
 
   // Load messages from Firestore on component mount
   useEffect(() => {
+    if (hasInitialized) {
+      return; // Prevent duplicate initialization
+    }
+
     const loadMessages = async () => {
+      setHasInitialized(true); // Mark as initialized immediately to prevent race conditions
+
       try {
         // Load messages from Firestore
         const messagesRef = collection(db, 'taskChats', task.id, 'messages');
@@ -577,6 +585,42 @@ How can I assist you with this task today?`;
       const result = await response.json();
       console.log('Validation result:', result);
       setValidationResult(result);
+
+      // Add validation result to chat
+      const validation = result.validation;
+      let validationMessage = '';
+
+      if (validation.overallStatus === 'COMPLETED') {
+        validationMessage = `✅ ${validation.summary}\n\n${validation.nextSteps}`;
+      } else {
+        // Task not completed - show what's missing
+        validationMessage = `⚠️ ${validation.summary}\n\n`;
+
+        if (validation.missingInformation && validation.missingInformation.length > 0) {
+          validationMessage += `**Missing Information:**\n`;
+          validation.missingInformation.forEach((info: string) => {
+            validationMessage += `• ${info}\n`;
+          });
+          validationMessage += '\n';
+        }
+
+        if (validation.recommendations && validation.recommendations.length > 0) {
+          validationMessage += `**Recommendations:**\n`;
+          validation.recommendations.forEach((rec: string) => {
+            validationMessage += `• ${rec}\n`;
+          });
+          validationMessage += '\n';
+        }
+
+        validationMessage += `Please provide the missing information so I can help you complete this task.`;
+      }
+
+      const validationChatMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: validationMessage,
+      };
+      setMessages(prev => [...prev, validationChatMessage]);
     } catch (error) {
       console.error('Validation error:', error);
       const errorMessage: ChatMessage = {
@@ -650,6 +694,10 @@ How can I assist you with this task today?`;
               </div>
             </div>
           )}
+
+          {/* Inline content (e.g., artifact cards) */}
+          {inlineContent && inlineContent}
+
           <div ref={messagesEndRef} />
         </div>
       </div>

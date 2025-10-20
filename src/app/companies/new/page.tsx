@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/ui/file-upload';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes } from 'firebase/storage';
 
 export default function NewCompanyPage() {
@@ -23,16 +23,37 @@ export default function NewCompanyPage() {
   const handleAddCompany = async () => {
     if (companyName.trim()) {
       try {
+        // First create the company document
         const docRef = await addDoc(collection(db, 'companies'), {
           name: companyName.trim(),
           description: description.trim(),
           website: website.trim(),
+          createdAt: new Date(),
         });
 
+        // Upload files to Firebase Storage and collect metadata
         const storage = getStorage();
+        const uploadedFiles = [];
+
         for (const file of files) {
-          const storageRef = ref(storage, `companies/${docRef.id}/${file.name}`);
+          const storageRef = ref(storage, `companies/${docRef.id}/documents/${file.name}`);
           await uploadBytes(storageRef, file);
+
+          // Store file metadata
+          uploadedFiles.push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            path: `companies/${docRef.id}/documents/${file.name}`,
+            uploadedAt: new Date(),
+          });
+        }
+
+        // Update the company document with file metadata
+        if (uploadedFiles.length > 0) {
+          await updateDoc(doc(db, 'companies', docRef.id), {
+            documents: uploadedFiles,
+          });
         }
 
         router.push('/companies');

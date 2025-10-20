@@ -18,6 +18,7 @@ interface ValidationResult {
   completionPercentage: number;
   criteriaAssessment: CriteriaAssessment[];
   summary: string;
+  missingInformation?: string[];
   recommendations: string[];
   nextSteps: string;
 }
@@ -126,6 +127,28 @@ export function TaskValidationResults({ validation, taskName, onClose }: TaskVal
               </div>
             </CardContent>
           </Card>
+
+          {/* Missing Information */}
+          {validation.missingInformation && validation.missingInformation.length > 0 && (
+            <Card className="mb-6 border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="text-orange-900">Missing Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-orange-800 mb-3">
+                  To complete this task, please provide the following information:
+                </p>
+                <ul className="space-y-2">
+                  {validation.missingInformation.map((info, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-orange-900">{info}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Recommendations */}
           {validation.recommendations && validation.recommendations.length > 0 && (

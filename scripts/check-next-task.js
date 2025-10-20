@@ -3,9 +3,9 @@ const { getFirestore, collection, query, where, getDocs, doc, updateDoc } = requ
 
 const firebaseConfig = {
   apiKey: "AIzaSyAPbristGE8ytc59RD-KL0JMJL-EuVW23R8",
-  authDomain: "aigency-mvp.firebaseapp.com",
-  projectId: "aigency-mvp",
-  storageBucket: "aigency-mvp.firebasestorage.app",
+  authDomain: "aigency-proto.firebaseapp.com",
+  projectId: "aigency-proto",
+  storageBucket: "aigency-proto.firebasestorage.app",
   messagingSenderId: "326368003305",
   appId: "1:326368003305:web:0c95f9e94ed99f4ac27bd2"
 };

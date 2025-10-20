@@ -17,6 +17,7 @@ import { AITaskCompletion } from '@/components/AITaskCompletion';
 import { DependencyArtifactsReview } from '@/components/DependencyArtifactsReview';
 import { TaskSubmissionsPanel } from '@/components/TaskSubmissionsPanel';
 import { UnderwriterRepliesPanel } from '@/components/UnderwriterRepliesPanel';
+import { TaskDependencyArtifacts } from '@/components/TaskDependencyArtifacts';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -155,6 +156,7 @@ export default function TaskDetailPage() {
     const wasAutoCompleted = task.status === 'completed' && (task as any).completedBy === 'AI System';
     const isSubmissionTask = task.sortOrder === 12 || task.sortOrder === 14 || task.taskName?.toLowerCase().includes('send submission') || task.taskName?.toLowerCase().includes('send follow-up');
     const isQuestionTask = task.sortOrder === 15 || task.taskName?.toLowerCase().includes('review flagged') || task.taskName?.toLowerCase().includes('underwriter questions');
+    const hasDependencies = task.dependencies && task.dependencies.length > 0;
 
     return (
       <div className="px-4 py-8 md:py-12">
@@ -207,12 +209,15 @@ export default function TaskDetailPage() {
           <div className="space-y-8">
             {/* Show submissions panel for Task 12 & 14 (Send submission packets & follow-ups) */}
             {isSubmissionTask ? (
-              <TaskSubmissionsPanel
-                companyId={companyId || ''}
-                taskId={taskId || ''}
-                taskName={task.taskName}
-                dependencyTaskIds={task.dependencies || []}
-              />
+              <>
+                <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
+                <TaskSubmissionsPanel
+                  companyId={companyId || ''}
+                  taskId={taskId || ''}
+                  taskName={task.taskName}
+                  dependencyTaskIds={task.dependencies || []}
+                />
+              </>
             ) : isQuestionTask ? (
               /* Show chat + replies panel for Task 15 (Review underwriter questions) */
               <>
@@ -222,6 +227,13 @@ export default function TaskDetailPage() {
                   taskId={taskId || ''}
                 />
               </>
+            ) : hasDependencies ? (
+              /* Show chat + dependency artifacts for tasks with dependencies */
+              <TaskDependencyArtifacts
+                task={task}
+                companyId={companyId || ''}
+                onTaskUpdate={refreshTask}
+              />
             ) : (
               <TaskAIArtifacts task={task} companyId={companyId || ''} />
             )}
@@ -231,38 +243,50 @@ export default function TaskDetailPage() {
     );
   }
 
+  // Check if task has dependencies for non-AI tasks
+  const hasDependencies = task.dependencies && task.dependencies.length > 0 && task.showDependencyArtifacts;
+
   return (
-    <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
-      <div className="mb-8">
-        <Button asChild variant="ghost" className="mb-4 -ml-4">
-          <Link href={`/companies/${companyId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Company
-          </Link>
-        </Button>
-        
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <User className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold">{task.taskName}</h1>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline">{task.phase}</Badge>
-              <Badge variant="outline">{task.status}</Badge>
+    <div className="px-4 py-8 md:py-12">
+      <div className={`mx-auto ${hasDependencies ? 'max-w-[1400px]' : 'max-w-[672px]'}`}>
+        <div className="max-w-[672px] mb-8">
+          <Button asChild variant="ghost" className="mb-4 -ml-4">
+            <Link href={`/companies/${companyId}`}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Company
+            </Link>
+          </Button>
+
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+              <User className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold">{task.taskName}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="outline">{task.phase}</Badge>
+                <Badge variant="outline">{task.status}</Badge>
+              </div>
             </div>
           </div>
         </div>
 
+        <div className="space-y-8">
+          {/* Show dependency artifacts with two-column layout if task has dependencies */}
+          {hasDependencies ? (
+            <TaskDependencyArtifacts
+              task={task}
+              companyId={companyId || ''}
+              onTaskUpdate={refreshTask}
+            />
+          ) : (
+            <>
+              <AITaskCompletion task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
+              <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
+            </>
+          )}
+        </div>
       </div>
-
-      {/* Show dependency artifacts review if task has dependencies and flag is enabled */}
-      {task.dependencies && task.dependencies.length > 0 && task.showDependencyArtifacts && (
-        <DependencyArtifactsReview task={task} companyId={companyId || ''} />
-      )}
-
-      <AITaskCompletion task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
-      <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
     </div>
   );
 }
