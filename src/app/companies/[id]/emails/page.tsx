@@ -221,7 +221,7 @@ export default function CompanyEmailsPage() {
       </div>
 
       {/* Split View */}
-      <div className="max-w-[672px]">
+      <div className="max-w-[672px] mx-auto">
         {submissions.length === 0 ? (
           <Card>
             <CardContent className="py-12">
