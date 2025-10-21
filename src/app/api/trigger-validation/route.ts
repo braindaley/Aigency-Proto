@@ -82,22 +82,27 @@ async function validateTaskCompletion(messages: any[], testCriteria: string, lat
     fullResponse: latestResponse
   });
   
+  const validationDetails = {
+    hasEmployeeData,
+    hasJobDescriptions,
+    hasHighRiskIdentification,
+    hasCompletionIndicator
+  };
+
+  const missingCriteria: string[] = [];
+  if (!hasEmployeeData) {
+    missingCriteria.push('employee data or payroll details');
+  }
+  if (!hasJobDescriptions) {
+    missingCriteria.push('job descriptions');
+  }
+  if (!hasHighRiskIdentification) {
+    missingCriteria.push('high-risk roles or loss information');
+  }
+
   if (hasCompletionIndicator) {
-    // If AI explicitly indicates completion with the "Task Complete!" message and mentions employee data, trust it
-    if (responseContent.includes('employee data') || responseContent.includes('employee names') || 
-        responseContent.includes('job titles') || responseContent.includes('job descriptions') || 
-        responseContent.includes('high-risk role')) {
-      console.log('AI completion detected with employee data references - marking as COMPLETED');
-      return { overallStatus: 'COMPLETED' };
-    }
-    // If AI indicates completion and we have some data from documents, consider it complete
-    if (hasEmployeeData || hasJobDescriptions) {
-      console.log('AI completion detected with document data - marking as COMPLETED');
-      return { overallStatus: 'COMPLETED' };
-    }
-    // If AI just says task complete, trust it
-    console.log('AI completion indicator found but no employee data references - marking as COMPLETED anyway');
-    return { overallStatus: 'COMPLETED' };
+    console.log('AI completion indicator found - marking as COMPLETED', validationDetails);
+    return { overallStatus: 'COMPLETED', details: validationDetails, missingCriteria: [] };
   }
 
   // Calculate overall status
@@ -112,11 +117,11 @@ async function validateTaskCompletion(messages: any[], testCriteria: string, lat
   });
   
   if (criteriaCount >= 2) { // At least 2 out of 3 criteria met
-    return { overallStatus: 'COMPLETED' };
+    return { overallStatus: 'COMPLETED', details: validationDetails, missingCriteria: [] };
   } else if (criteriaCount > 0) {
-    return { overallStatus: 'PARTIALLY_COMPLETED' };
+    return { overallStatus: 'PARTIALLY_COMPLETED', details: validationDetails, missingCriteria };
   } else {
-    return { overallStatus: 'NOT_COMPLETED' };
+    return { overallStatus: 'NOT_COMPLETED', details: validationDetails, missingCriteria };
   }
 }
 

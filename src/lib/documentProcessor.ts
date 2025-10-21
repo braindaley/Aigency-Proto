@@ -72,6 +72,15 @@ export async function processDocument(file: File): Promise<ProcessedDocument> {
 
 async function extractTextFromPDF(file: File): Promise<string> {
   try {
+    if (typeof window !== 'undefined') {
+      // Browser environment – fallback to metadata to avoid bundling pdf-parse (Node only)
+      return `PDF DOCUMENT: ${file.name}\n\n` +
+        `File Size: ${file.size} bytes\n` +
+        `Type: ${file.type}\n` +
+        `=`.repeat(60) + '\n\n' +
+        '[PDF content extraction runs on the server only. The file has been uploaded successfully.]';
+    }
+
     console.log(`Attempting PDF extraction for: ${file.name}`);
     
     // Try to dynamically import pdf-parse only when needed
