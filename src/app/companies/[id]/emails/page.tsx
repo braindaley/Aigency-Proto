@@ -144,7 +144,7 @@ export default function CompanyEmailsPage() {
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-8 md:py-12">
-      <div className="max-w-[672px] mb-8">
+      <div className="max-w-[672px] mx-auto mb-8">
         <Button asChild variant="ghost" className="mb-4 -ml-4">
           <Link href={`/companies/${companyId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
