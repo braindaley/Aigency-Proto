@@ -16,6 +16,7 @@
     "@ai-sdk/google": "^2.0.6",
     "@ai-sdk/openai": "^2.0.15",
     "@ai-sdk/react": "^2.0.15",
+    "@anthropic-ai/sdk": "^0.67.0",
     "@genkit-ai/googleai": "^1.14.1",
     "@genkit-ai/next": "^1.14.1",
     "@google-cloud/firestore": "^7.11.3",
