@@ -213,17 +213,17 @@ export function PreferencesProvider({
     return () => clearTimeout(saveTimer);
   }, [preferences, loading]);
 
+  const contextValue = {
+    preferences,
+    loading,
+    updatePreference,
+    updatePreferences,
+    resetToDefaults,
+    refreshPreferences,
+  };
+
   return (
-    <PreferencesContext.Provider
-      value={{
-        preferences,
-        loading,
-        updatePreference,
-        updatePreferences,
-        resetToDefaults,
-        refreshPreferences,
-      }}
-    >
+    <PreferencesContext.Provider value={contextValue}>
       {children}
     </PreferencesContext.Provider>
   );
