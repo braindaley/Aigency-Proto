@@ -1,10 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+// Helper to log audit trail
+async function logAuditTrail(
+  templateId: string,
+  templateName: string,
+  action: 'create' | 'update',
+  changes: any[],
+  userId?: string,
+  userEmail?: string
+) {
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/api/task-templates/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        templateId,
+        templateName,
+        action,
+        changes,
+        userId,
+        userEmail,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to log audit trail:', error);
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { templateId, taskData } = await request.json();
+    const { templateId, taskData, userId, userEmail } = await request.json();
 
     if (!templateId || !taskData) {
       return NextResponse.json(
@@ -12,6 +39,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check if template exists (for audit trail)
+    const taskRef = doc(db, 'tasks', templateId);
+    const existingDoc = await getDoc(taskRef);
+    const isNewTemplate = !existingDoc.exists();
+    const existingData = existingDoc.data();
 
     // Prepare the template data with all fields
     const templateData = {
@@ -40,11 +73,40 @@ export async function POST(request: NextRequest) {
       createdAt: taskData.createdAt || serverTimestamp(),
     };
 
+    // Track changes for audit log
+    const changes = [];
+    if (!isNewTemplate && existingData) {
+      Object.keys(templateData).forEach(key => {
+        if (key !== 'updatedAt' && key !== 'createdAt') {
+          const oldValue = existingData[key];
+          const newValue = taskData[key];
+
+          // Check if value changed
+          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            changes.push({
+              field: key,
+              oldValue,
+              newValue,
+            });
+          }
+        }
+      });
+    }
+
     // Save to the tasks collection (templates)
-    const taskRef = doc(db, 'tasks', templateId);
     await setDoc(taskRef, templateData, { merge: true });
 
     console.log(`✅ Template ${templateId} saved to Firebase`);
+
+    // Log to audit trail
+    await logAuditTrail(
+      templateId,
+      taskData.taskName || templateId,
+      isNewTemplate ? 'create' : 'update',
+      changes,
+      userId,
+      userEmail
+    );
 
     return NextResponse.json({
       success: true,

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Download, Eye } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Download, Eye, RefreshCw, Copy, FileCode } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
@@ -13,6 +14,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskChat } from '@/components/TaskChat';
+import { useToast } from '@/hooks/use-toast';
 
 interface DependencyArtifact {
   taskId: string;
@@ -33,6 +35,8 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
   const [artifacts, setArtifacts] = useState<DependencyArtifact[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedArtifact, setSelectedArtifact] = useState<DependencyArtifact | null>(null);
+  const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
+  const { toast } = useToast();
 
   useEffect(() => {
     loadDependencyArtifacts();
@@ -130,6 +134,30 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
     URL.revokeObjectURL(url);
   };
 
+  const copyToClipboard = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({
+        title: "Copied to clipboard",
+        description: "The artifact content has been copied to your clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the content to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const refreshArtifacts = async () => {
+    await loadDependencyArtifacts();
+    toast({
+      title: "Artifacts refreshed",
+      description: "The artifacts have been reloaded.",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex gap-6 h-[calc(100vh-200px)] bg-background">
@@ -211,20 +239,9 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
           <Card className="h-full flex flex-col">
             <CardHeader>
               <div className="flex items-center justify-between">
-                {selectedArtifact.taskId === task.id ? (
-                  // Current task artifact - no header needed (task name is in page header)
-                  <Button
-                    onClick={() => downloadArtifact(selectedArtifact)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                ) : (
-                  // Dependency artifact - show task name for context
-                  <>
-                    <div>
+                <div>
+                  {selectedArtifact.taskId !== task.id && (
+                    <>
                       <CardTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
                         {selectedArtifact.taskName}
@@ -235,38 +252,76 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
                           {selectedArtifact.taskStatus}
                         </Badge>
                       </div>
-                    </div>
-                    <Button
-                      onClick={() => downloadArtifact(selectedArtifact)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </>
-                )}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'source')}>
+                    <TabsList className="h-8">
+                      <TabsTrigger value="preview" className="text-xs">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Preview
+                      </TabsTrigger>
+                      <TabsTrigger value="source" className="text-xs">
+                        <FileCode className="h-3 w-3 mr-1" />
+                        Source
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  <Button
+                    onClick={refreshArtifacts}
+                    variant="outline"
+                    size="sm"
+                    title="Refresh artifacts"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => copyToClipboard(selectedArtifact.content)}
+                    variant="outline"
+                    size="sm"
+                    title="Copy to clipboard"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => downloadArtifact(selectedArtifact)}
+                    variant="outline"
+                    size="sm"
+                    title="Download artifact"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden">
               <ScrollArea className="h-full">
-                <div className="prose prose-base max-w-none
-                                prose-headings:text-foreground prose-headings:font-semibold
-                                prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6
-                                prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold
-                                prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-h3:font-semibold
-                                prose-p:text-foreground prose-p:leading-7 prose-p:mb-4
-                                prose-strong:text-foreground prose-strong:font-semibold
-                                prose-ul:my-4 prose-ul:pl-6 prose-ul:text-foreground
-                                prose-ol:my-4 prose-ol:pl-6 prose-ol:text-foreground
-                                prose-li:mb-2 prose-li:text-foreground prose-li:leading-relaxed
-                                prose-blockquote:border-l-4 prose-blockquote:border-l-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
-                                prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
-                                [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {String(selectedArtifact.content)}
-                  </ReactMarkdown>
-                </div>
+                {viewMode === 'preview' ? (
+                  <div className="prose prose-base max-w-none
+                                  prose-headings:text-foreground prose-headings:font-semibold
+                                  prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6
+                                  prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold
+                                  prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-h3:font-semibold
+                                  prose-p:text-foreground prose-p:leading-7 prose-p:mb-4
+                                  prose-strong:text-foreground prose-strong:font-semibold
+                                  prose-ul:my-4 prose-ul:pl-6 prose-ul:text-foreground
+                                  prose-ol:my-4 prose-ol:pl-6 prose-ol:text-foreground
+                                  prose-li:mb-2 prose-li:text-foreground prose-li:leading-relaxed
+                                  prose-blockquote:border-l-4 prose-blockquote:border-l-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
+                                  prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
+                                  [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {String(selectedArtifact.content)}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <pre className="p-4 bg-muted/50 rounded-lg overflow-x-auto">
+                    <code className="text-sm font-mono text-foreground">
+                      {String(selectedArtifact.content)}
+                    </code>
+                  </pre>
+                )}
               </ScrollArea>
             </CardContent>
           </Card>
