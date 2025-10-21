@@ -221,28 +221,29 @@ export default function CompanyEmailsPage() {
       </div>
 
       {/* Split View */}
-      {submissions.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground mb-2">No emails sent yet</p>
-              <p className="text-sm text-muted-foreground">
-                Emails sent from carrier submission tasks will appear here
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : filteredSubmissions.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <p className="text-muted-foreground">No emails match the selected filter</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="flex gap-6 h-[calc(100vh-400px)] bg-background">
+      <div className="max-w-[672px]">
+        {submissions.length === 0 ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center">
+                <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground mb-2">No emails sent yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Emails sent from carrier submission tasks will appear here
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredSubmissions.length === 0 ? (
+          <Card>
+            <CardContent className="py-12">
+              <div className="text-center">
+                <p className="text-muted-foreground">No emails match the selected filter</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex gap-6 h-[calc(100vh-400px)] bg-background">
           {/* Left Panel - Emails List */}
           <div className="w-1/2 flex flex-col">
             <Card className="flex-1 flex flex-col">
@@ -448,7 +449,8 @@ export default function CompanyEmailsPage() {
             )}
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
