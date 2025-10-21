@@ -575,8 +575,13 @@ The completed document is available in the artifact viewer on the right. Feel fr
 
       // Mark as completed and trigger dependency updates via the endpoint
       console.log(`[${timestamp}] 🔗 AI-TASK-COMPLETION: Marking task complete and triggering dependent task checks...`);
+
+      // Try to get the correct base URL
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9003';
+      console.log(`[${timestamp}] 🌐 AI-TASK-COMPLETION: Using base URL: ${baseUrl}`);
+
       try {
-        const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:9002'}/api/update-task-status`, {
+        const response = await fetch(`${baseUrl}/api/update-task-status`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -587,12 +592,25 @@ The completed document is available in the artifact viewer on the right. Feel fr
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Status update and dependency check failed with status ${response.status}: ${errorText}`);
+          throw new Error(`Status update failed: ${response.status}`);
         } else {
           const result = await response.json();
           console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task completed and dependency updates triggered successfully:`, result);
         }
       } catch (error) {
-        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to update task status and trigger dependencies:`, error);
+        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to update task status via API, falling back to direct database update:`, error);
+
+        // Fallback: Update the task status directly in the database
+        try {
+          await updateDoc(taskDocRef, {
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task status updated directly in database`);
+        } catch (dbError) {
+          console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to update task status in database:`, dbError);
+        }
       }
     } else {
       console.log(`[${timestamp}] ⏸️ AI-TASK-COMPLETION: Task not marked as completed`);

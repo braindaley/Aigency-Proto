@@ -36,6 +36,7 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
   const [loading, setLoading] = useState(true);
   const [selectedArtifact, setSelectedArtifact] = useState<DependencyArtifact | null>(null);
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
+  const [isAutoExecuting, setIsAutoExecuting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -115,12 +116,136 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
       if (loadedArtifacts.length > 0) {
         setSelectedArtifact(loadedArtifacts[0]);
       }
+
+      // Return whether this task has an artifact
+      return currentTaskArtifacts.length > 0;
     } catch (error) {
       console.error('Error loading artifacts:', error);
+      return false;
     } finally {
       setLoading(false);
     }
   };
+
+  // Check if the system prompt has already been executed
+  // Returns true if artifact exists OR task is already completed
+  const hasSystemPromptExecuted = async (): Promise<boolean> => {
+    try {
+      // Check if task is already completed
+      const taskStatus = (task as any).status;
+      if (taskStatus === 'completed' || taskStatus === 'Complete') {
+        console.log(`[TaskDependencyArtifacts] Task ${task.id} already completed, skipping auto-execution`);
+        return true;
+      }
+
+      // Check if an artifact exists for this task
+      const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+      const artifactsSnapshot = await getDocs(artifactsRef);
+
+      const hasArtifact = artifactsSnapshot.docs.some(doc => {
+        const data = doc.data();
+        return data.taskId === task.id;
+      });
+
+      if (hasArtifact) {
+        console.log(`[TaskDependencyArtifacts] Task ${task.id} already has artifact, skipping auto-execution`);
+      }
+
+      return hasArtifact;
+    } catch (error) {
+      console.error('[TaskDependencyArtifacts] Error checking execution status:', error);
+      return false; // If we can't check, assume it hasn't run to be safe
+    }
+  };
+
+  // Auto-execute system prompt if conditions are met
+  // This function:
+  // 1. Checks if the task is an AI task and hasn't been executed yet
+  // 2. Calls /api/ai-task-completion which:
+  //    - Generates artifact using the system prompt
+  //    - Runs test criteria validation (if defined)
+  //    - Only marks task as completed if BOTH artifact exists AND tests pass
+  // 3. Reloads artifacts and updates UI with results
+  const autoExecuteSystemPrompt = async () => {
+    try {
+      // Only auto-execute for AI tasks
+      if (task.tag !== 'ai') {
+        return;
+      }
+
+      // Check if task has a system prompt (either on task or will be fetched from template)
+      const hasSystemPrompt = !!(task as any).systemPrompt;
+      console.log(`[TaskDependencyArtifacts] Task ${task.id} has systemPrompt: ${hasSystemPrompt}`);
+
+      // Check if already executed
+      const alreadyExecuted = await hasSystemPromptExecuted();
+      if (alreadyExecuted) {
+        return;
+      }
+
+      console.log(`[TaskDependencyArtifacts] Auto-executing system prompt for task ${task.id}: "${task.taskName}"`);
+      setIsAutoExecuting(true);
+
+      // Call the AI task completion endpoint
+      // This endpoint will automatically run test criteria validation if defined
+      const response = await fetch('/api/ai-task-completion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskId: task.id,
+          companyId: companyId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to execute system prompt');
+      }
+
+      const result = await response.json();
+      console.log(`[TaskDependencyArtifacts] System prompt execution result:`, result);
+
+      // Reload artifacts to show the newly created artifact
+      await loadDependencyArtifacts();
+
+      // Notify parent to refresh task status
+      if (onTaskUpdate) {
+        onTaskUpdate();
+      }
+
+      // Show success toast based on completion status
+      if (result.taskCompleted) {
+        toast({
+          title: '✅ Task Completed',
+          description: `${task.taskName} has been completed and validated successfully.`,
+        });
+      } else if (result.success) {
+        // Task executed but not completed (either no test criteria or tests failed)
+        const hasTestCriteria = !!(task as any).testCriteria;
+        toast({
+          title: 'System Prompt Executed',
+          description: hasTestCriteria
+            ? 'AI generated the artifact. Check the chat for test validation results.'
+            : 'AI has generated the artifact. Manual review may be required.',
+        });
+      }
+    } catch (error) {
+      console.error('[TaskDependencyArtifacts] Error auto-executing system prompt:', error);
+      // Don't show error toast for auto-execution failures to avoid disrupting UX
+    } finally {
+      setIsAutoExecuting(false);
+    }
+  };
+
+  // Auto-execute on mount if needed
+  useEffect(() => {
+    // Run auto-execution after artifacts are loaded
+    if (!loading) {
+      autoExecuteSystemPrompt();
+    }
+  }, [loading]); // Only run when loading changes from true to false
 
   const downloadArtifact = (artifact: DependencyArtifact) => {
     const blob = new Blob([artifact.content], { type: 'text/plain' });
@@ -158,14 +283,24 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
     });
   };
 
-  if (loading) {
+  if (loading || isAutoExecuting) {
     return (
       <div className="flex gap-6 h-[calc(100vh-200px)] bg-background">
         <div className="w-1/2 flex flex-col">
           <Skeleton className="h-full w-full" />
         </div>
         <div className="w-1/2">
-          <Skeleton className="h-full w-full" />
+          {isAutoExecuting ? (
+            <Card className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-lg font-medium">Executing System Prompt...</p>
+                <p className="text-sm text-muted-foreground mt-2">AI is processing the task with available data</p>
+              </div>
+            </Card>
+          ) : (
+            <Skeleton className="h-full w-full" />
+          )}
         </div>
       </div>
     );

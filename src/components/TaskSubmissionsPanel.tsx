@@ -114,11 +114,28 @@ export function TaskSubmissionsPanel({ companyId, taskId, taskName, dependencyTa
         try {
           const { doc: firestoreDoc, updateDoc } = await import('firebase/firestore');
           const { db } = await import('@/lib/firebase');
+
+          // Update metadata first
           const taskRef = firestoreDoc(db, 'companyTasks', taskId);
           await updateDoc(taskRef, {
-            status: 'completed',
             updatedAt: new Date()
           });
+
+          // Use the API endpoint to mark as completed, which will trigger dependent tasks
+          const response = await fetch('/api/update-task-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              taskId: taskId,
+              status: 'completed'
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to update task status');
+          }
 
           toast({
             title: 'Task Completed!',
@@ -130,6 +147,11 @@ export function TaskSubmissionsPanel({ companyId, taskId, taskName, dependencyTa
           }, 1500);
         } catch (error) {
           console.error('Failed to mark task as completed:', error);
+          toast({
+            title: 'Error',
+            description: 'Submissions sent but task status update failed',
+            variant: 'destructive'
+          });
         }
       }
     } catch (error: any) {

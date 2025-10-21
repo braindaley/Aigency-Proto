@@ -205,20 +205,45 @@ How can I assist you with this task today?`,
 
         // If task requires documents and files were uploaded, mark as complete
         if (requiresDocuments && filesUploaded) {
+          // Update completion metadata
           await updateDoc(doc(db, 'companyTasks', task.id), {
-            status: 'completed',
             completedAt: serverTimestamp(),
             completionNote: `Documents uploaded: ${fileList}`
           });
 
-          toast({
-            title: 'Task Completed',
-            description: 'Task marked as complete with uploaded documents',
-          });
+          // Use the API endpoint to mark as completed, which will trigger dependent tasks
+          try {
+            const response = await fetch('/api/update-task-status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                taskId: task.id,
+                status: 'completed'
+              }),
+            });
 
-          // Notify parent component
-          if (onTaskComplete) {
-            onTaskComplete();
+            if (!response.ok) {
+              throw new Error('Failed to update task status');
+            }
+
+            toast({
+              title: 'Task Completed',
+              description: 'Task marked as complete with uploaded documents',
+            });
+
+            // Notify parent component
+            if (onTaskComplete) {
+              onTaskComplete();
+            }
+          } catch (error) {
+            console.error('Error updating task status:', error);
+            toast({
+              title: 'Error',
+              description: 'Task documents uploaded but status update failed',
+              variant: 'destructive'
+            });
           }
         }
       } catch (error) {

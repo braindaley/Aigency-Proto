@@ -94,12 +94,30 @@ export async function POST(request: NextRequest) {
     if (successCount === submissions.length && failureCount === 0) {
       console.log(`🎉 All submissions sent successfully, marking task as completed`);
       try {
+        // Update metadata
         const taskRef = doc(db, 'companyTasks', taskId);
         await updateDoc(taskRef, {
-          status: 'completed',
           updatedAt: serverTimestamp()
         });
-        console.log(`✅ Task ${taskId} marked as completed`);
+
+        // Use the API endpoint to mark as completed, which will trigger dependent tasks
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+        const response = await fetch(`${baseUrl}/api/update-task-status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            taskId: taskId,
+            status: 'completed'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update task status');
+        }
+
+        console.log(`✅ Task ${taskId} marked as completed and dependencies updated`);
       } catch (error) {
         console.error('Failed to mark task as completed:', error);
         // Don't fail the whole request if task update fails

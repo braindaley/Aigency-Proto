@@ -138,8 +138,8 @@ export function TaskChat({ task, companyId, onTaskUpdate, inlineContent }: TaskC
                 !msg.content.trim().startsWith('<artifact>')
               )
             : firestoreMessages.filter(msg =>
-                // For in-progress tasks, hide all auto messages and raw artifacts
-                !msg.completedAutomatically &&
+                // For in-progress tasks, show validation messages but hide other auto messages and raw artifacts
+                (!msg.completedAutomatically || msg.isValidation) &&
                 !msg.content.trim().startsWith('<artifact>')
               );
 
@@ -171,7 +171,7 @@ export function TaskChat({ task, companyId, onTaskUpdate, inlineContent }: TaskC
                   !msg.content.trim().startsWith('<artifact>')
                 )
               : firestoreMessages.filter(msg =>
-                  !msg.completedAutomatically &&
+                  (!msg.completedAutomatically || msg.isValidation) &&
                   !msg.content.trim().startsWith('<artifact>')
                 );
 
@@ -528,19 +528,44 @@ How can I assist you with this task today?`;
         });
 
         if (requiresDocuments && filesUploaded) {
+          // Update completion metadata
           await updateDoc(doc(db, 'companyTasks', task.id), {
-            status: 'completed',
             completedAt: serverTimestamp(),
             completionNote: `Documents uploaded: ${fileList}`
           });
 
-          toast({
-            title: 'Task Completed',
-            description: 'Task marked as complete with uploaded documents',
-          });
+          // Use the API endpoint to mark as completed, which will trigger dependent tasks
+          try {
+            const response = await fetch('/api/update-task-status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                taskId: task.id,
+                status: 'completed'
+              }),
+            });
 
-          if (onTaskUpdate) {
-            onTaskUpdate();
+            if (!response.ok) {
+              throw new Error('Failed to update task status');
+            }
+
+            toast({
+              title: 'Task Completed',
+              description: 'Task marked as complete with uploaded documents',
+            });
+
+            if (onTaskUpdate) {
+              onTaskUpdate();
+            }
+          } catch (error) {
+            console.error('Error updating task status:', error);
+            toast({
+              title: 'Error',
+              description: 'Task documents uploaded but status update failed',
+              variant: 'destructive'
+            });
           }
         }
       } catch (error) {
