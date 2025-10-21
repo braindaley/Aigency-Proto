@@ -276,11 +276,61 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
   };
 
   const refreshArtifacts = async () => {
-    await loadDependencyArtifacts();
-    toast({
-      title: "Artifacts refreshed",
-      description: "The artifacts have been reloaded.",
-    });
+    // For AI tasks, re-run the task to regenerate artifacts with latest prompt
+    if (task.tag === 'ai') {
+      setIsAutoExecuting(true);
+      try {
+        const response = await fetch('/api/ai-task-completion', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            taskId: task.id,
+            companyId: companyId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to re-run task');
+        }
+
+        const result = await response.json();
+        console.log('Task re-execution result:', result);
+
+        // Reload artifacts to show the newly created artifact
+        await loadDependencyArtifacts();
+
+        // Notify parent to refresh task status
+        if (onTaskUpdate) {
+          onTaskUpdate();
+        }
+
+        toast({
+          title: result.taskCompleted ? '✅ Task Completed' : '🔄 Task Re-executed',
+          description: result.taskCompleted
+            ? 'Task has been re-run and validated successfully.'
+            : 'Artifact regenerated with updated prompt. Check validation results in chat.',
+        });
+      } catch (error) {
+        console.error('Error re-running task:', error);
+        toast({
+          title: "Error re-running task",
+          description: error instanceof Error ? error.message : 'Unknown error',
+          variant: "destructive",
+        });
+      } finally {
+        setIsAutoExecuting(false);
+      }
+    } else {
+      // For non-AI tasks, just reload the artifacts display
+      await loadDependencyArtifacts();
+      toast({
+        title: "Artifacts refreshed",
+        description: "The artifacts have been reloaded.",
+      });
+    }
   };
 
   if (loading || isAutoExecuting) {

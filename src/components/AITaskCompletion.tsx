@@ -35,72 +35,9 @@ export function AITaskCompletion({ task, companyId, onTaskUpdate }: AITaskComple
     return null;
   }
 
-  // Show re-run option if task is already completed
+  // Don't show if task is already completed (use refresh button in artifact viewer to re-run)
   if (task.status === 'completed') {
-    return (
-      <Card className="mb-6 border-green-200 bg-green-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-800">
-            <CheckCircle className="h-5 w-5" />
-            AI Task Completed
-          </CardTitle>
-          <CardDescription className="text-green-600">
-            This task has been completed automatically by the AI system.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={completeWithAI}
-            disabled={isCompleting}
-            variant="outline"
-            size="sm"
-            className="w-full"
-          >
-            {isCompleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Re-running task...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Re-run Task with Updated Prompt
-              </>
-            )}
-          </Button>
-
-          {completionResult && (
-            <div className={`mt-4 p-4 rounded-lg border ${
-              completionResult.error
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : 'bg-blue-50 border-blue-200 text-blue-800'
-            }`}>
-              {completionResult.error ? (
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium">Error</div>
-                    <div className="text-sm">{completionResult.error}</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 font-medium">
-                    <CheckCircle className="h-5 w-5" />
-                    Task Re-executed Successfully
-                  </div>
-                  <div className="text-sm space-y-1">
-                    <div>• Used {completionResult.documentsUsed} documents</div>
-                    <div>• Referenced {completionResult.artifactsUsed} artifacts</div>
-                    <div>• Analyzed {completionResult.completedTasksReferenced} completed tasks</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   useEffect(() => {
