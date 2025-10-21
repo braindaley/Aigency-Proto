@@ -317,7 +317,7 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
           onTaskUpdate={onTaskUpdate}
           inlineContent={
             artifacts.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 max-w-[80%]">
                 {artifacts.map((artifact, index) => {
                   const isCurrentTask = artifact.taskId === task.id;
                   return (
