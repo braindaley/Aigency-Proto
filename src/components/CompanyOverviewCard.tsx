@@ -156,8 +156,8 @@ const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: Company
   };
   
   return (
-    <Link href={`/companies/${company.id}`} className="block">
-      <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+    <Card className="hover:shadow-lg transition-shadow">
+      <Link href={`/companies/${company.id}`} className="block cursor-pointer">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
             <h2 className="text-lg font-semibold">{company.name}</h2>
@@ -168,7 +168,7 @@ const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: Company
         </CardHeader>
         <CardContent className="space-y-4">
           <Timeline renewals={company.renewals || []} startDate={new Date()} />
-          
+
           <div className="space-y-2 pt-4">
             {activeRenewalTypes.map(renewalType => {
               const renewalTasks = activeTasks.filter(task => task.renewalType === renewalType);
@@ -176,7 +176,7 @@ const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: Company
               const upcomingCount = renewalTasks.filter(t => t.status === 'Upcoming').length;
               const completedCount = renewalTasks.filter(t => t.status === 'Complete').length;
               const bindByDate = getBindByDate(renewalType);
-              
+
               return (
                 <div key={renewalType} className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-4">
@@ -209,35 +209,36 @@ const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: Company
                 </div>
               );
             })}
-            
+
             {activeRenewalTypes.length === 0 && (
               <div className="text-sm text-muted-foreground py-4 text-center">
                 No active tasks
               </div>
             )}
           </div>
-
-          {/* Unread Emails Section */}
-          {unreadEmails > 0 && (
-            <div className="pt-4 border-t">
-              <Link
-                href={`/companies/${company.id}/emails`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Unread Emails</span>
-                </div>
-                <Badge variant="default" className="rounded-full">
-                  {unreadEmails}
-                </Badge>
-              </Link>
-            </div>
-          )}
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+
+      {/* Unread Emails Section */}
+      {unreadEmails > 0 && (
+        <CardContent className="pt-0">
+          <div className="pt-4 border-t">
+            <Link
+              href={`/companies/${company.id}/emails`}
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Unread Emails</span>
+              </div>
+              <Badge variant="default" className="rounded-full">
+                {unreadEmails}
+              </Badge>
+            </Link>
+          </div>
+        </CardContent>
+      )}
+    </Card>
   );
 };
 
