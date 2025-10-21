@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Webpack configuration for production builds (not used in dev with Turbopack)
   webpack: (config, { isServer }) => {
     // Exclude Node.js-only modules from client-side bundle
     if (!isServer) {
