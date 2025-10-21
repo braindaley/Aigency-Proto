@@ -54,15 +54,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prevent duplicate execution on already completed tasks
+    // Allow re-execution of completed tasks (for updated prompts/test criteria)
     if (task.status === 'completed') {
-      console.log(`[${timestamp}] ⏭️ AI-TASK-COMPLETION: Task already completed, skipping execution`);
-      return NextResponse.json({
-        success: true,
-        taskCompleted: true,
-        message: 'Task was already completed',
-        skipped: true
-      });
+      console.log(`[${timestamp}] 🔄 AI-TASK-COMPLETION: Task already completed, but allowing re-execution`);
+      // Delete existing artifact to regenerate with updated prompt
+      const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+      const artifactsQuery = query(artifactsRef, where('taskId', '==', taskId));
+      const artifactsSnapshot = await getDocs(artifactsQuery);
+
+      for (const artifactDoc of artifactsSnapshot.docs) {
+        await deleteDoc(doc(db, `companies/${companyId}/artifacts`, artifactDoc.id));
+        console.log(`[${timestamp}] 🗑️ AI-TASK-COMPLETION: Deleted existing artifact for re-execution`);
+      }
     }
 
     // Get enhanced context with vector search
