@@ -146,35 +146,36 @@ async function updateDependentTasks(completedTaskId: string) {
 async function triggerAIExecution(taskId: string, companyId: string) {
   const timestamp = new Date().toISOString();
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+    console.log(`[${timestamp}] 🚀 AI-TRIGGER: Calling Firebase Cloud Function for task ${taskId}`);
 
-    console.log(`[${timestamp}] 🚀 AI-TRIGGER: Initiating ASYNC AI execution for task ${taskId}`);
-    console.log(`[${timestamp}] 🌐 AI-TRIGGER: Request URL: ${baseUrl}/api/ai-task-completion-async`);
+    // Call Firebase Cloud Function directly via HTTPS
+    // The function is deployed at: https://us-central1-aigency-proto.cloudfunctions.net/processAITask
+    const cloudFunctionUrl = process.env.NEXT_PUBLIC_FIREBASE_CLOUD_FUNCTION_URL ||
+      'https://us-central1-aigency-proto.cloudfunctions.net/processAITask';
 
-    const response = await fetch(`${baseUrl}/api/ai-task-completion-async`, {
+    console.log(`[${timestamp}] 🌐 AI-TRIGGER: Cloud Function URL: ${cloudFunctionUrl}`);
+
+    const response = await fetch(cloudFunctionUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ taskId, companyId }),
+      body: JSON.stringify({
+        data: { taskId, companyId }
+      }),
     });
 
     console.log(`[${timestamp}] 📡 AI-TRIGGER: Response status: ${response.status} ${response.statusText}`);
 
-    if (!response.ok && response.status !== 202) {
+    if (!response.ok) {
       const errorData = await response.json();
-      console.error(`[${timestamp}] ❌ AI-TRIGGER: Failed to queue task:`, errorData);
-      throw new Error(`AI task queueing failed: ${errorData.error || 'Unknown error'}`);
+      console.error(`[${timestamp}] ❌ AI-TRIGGER: Cloud Function failed:`, errorData);
+      throw new Error(`Cloud Function failed: ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const result = await response.json();
-    console.log(`[${timestamp}] ✅ AI-TRIGGER: Task queued successfully`);
-    console.log(`[${timestamp}] 📊 AI-TRIGGER: Queue response:`, {
-      success: result.success,
-      status: result.status,
-      documentsUsed: result.documentsUsed,
-      artifactsUsed: result.artifactsUsed
-    });
+    console.log(`[${timestamp}] ✅ AI-TRIGGER: Cloud Function completed successfully`);
+    console.log(`[${timestamp}] 📊 AI-TRIGGER: Result:`, result);
 
     return result;
   } catch (error) {
