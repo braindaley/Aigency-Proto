@@ -17,7 +17,8 @@ import { db } from '@/lib/firebase';
 import { AITaskWorker } from '@/lib/ai-task-worker';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10; // We only need 10s since we return immediately
+export const maxDuration = 60; // Allow up to 60s for processing (works on Pro/Enterprise)
+// Note: On Netlify free tier, this will be capped at 10s and will timeout
 
 export async function POST(request: NextRequest) {
   const timestamp = new Date().toISOString();
@@ -49,19 +50,25 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${timestamp}] ✅ AI-TASK-ASYNC: Job created in Firestore`);
 
-    // Trigger background processing (non-blocking)
-    // This runs asynchronously and won't block the response
-    AITaskWorker.processTask(taskId, companyId).catch(error => {
-      console.error(`[${timestamp}] ❌ AI-TASK-ASYNC: Background processing error:`, error);
-    });
+    // IMPORTANT: Serverless functions can't do true background processing
+    // We must await the full processing, but the frontend uses real-time listeners
+    // for progress updates, giving the appearance of async processing
 
-    console.log(`[${timestamp}] 🎯 AI-TASK-ASYNC: Background worker triggered`);
+    console.log(`[${timestamp}] 🚀 AI-TASK-ASYNC: Starting task processing...`);
 
-    // Return immediately with HTTP 202 Accepted
+    try {
+      await AITaskWorker.processTask(taskId, companyId);
+      console.log(`[${timestamp}] ✅ AI-TASK-ASYNC: Processing completed successfully`);
+    } catch (error) {
+      console.error(`[${timestamp}] ❌ AI-TASK-ASYNC: Processing failed:`, error);
+      // Error is already logged in job status by the worker
+    }
+
+    // Return success response (job status already updated by worker)
     return NextResponse.json(
       {
         success: true,
-        status: 'queued',
+        status: 'completed',
         message: 'AI task queued for processing. Monitor the job status in Firestore.',
         jobId: taskId,
         trackingPath: `aiTaskJobs/${taskId}`
