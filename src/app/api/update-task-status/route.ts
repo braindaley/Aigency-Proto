@@ -148,10 +148,10 @@ async function triggerAIExecution(taskId: string, companyId: string) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
 
-    console.log(`[${timestamp}] 🚀 AI-TRIGGER: Initiating AI execution for task ${taskId}`);
-    console.log(`[${timestamp}] 🌐 AI-TRIGGER: Request URL: ${baseUrl}/api/ai-task-completion`);
+    console.log(`[${timestamp}] 🚀 AI-TRIGGER: Initiating ASYNC AI execution for task ${taskId}`);
+    console.log(`[${timestamp}] 🌐 AI-TRIGGER: Request URL: ${baseUrl}/api/ai-task-completion-async`);
 
-    const response = await fetch(`${baseUrl}/api/ai-task-completion`, {
+    const response = await fetch(`${baseUrl}/api/ai-task-completion-async`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -161,17 +161,17 @@ async function triggerAIExecution(taskId: string, companyId: string) {
 
     console.log(`[${timestamp}] 📡 AI-TRIGGER: Response status: ${response.status} ${response.statusText}`);
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== 202) {
       const errorData = await response.json();
-      console.error(`[${timestamp}] ❌ AI-TRIGGER: Execution failed:`, errorData);
-      throw new Error(`AI execution failed: ${errorData.error || 'Unknown error'}`);
+      console.error(`[${timestamp}] ❌ AI-TRIGGER: Failed to queue task:`, errorData);
+      throw new Error(`AI task queueing failed: ${errorData.error || 'Unknown error'}`);
     }
 
     const result = await response.json();
-    console.log(`[${timestamp}] ✅ AI-TRIGGER: Execution completed successfully`);
-    console.log(`[${timestamp}] 📊 AI-TRIGGER: Results:`, {
+    console.log(`[${timestamp}] ✅ AI-TRIGGER: Task queued successfully`);
+    console.log(`[${timestamp}] 📊 AI-TRIGGER: Queue response:`, {
       success: result.success,
-      taskCompleted: result.taskCompleted,
+      status: result.status,
       documentsUsed: result.documentsUsed,
       artifactsUsed: result.artifactsUsed
     });

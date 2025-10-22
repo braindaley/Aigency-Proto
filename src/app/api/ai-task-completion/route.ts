@@ -4,6 +4,12 @@ import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, whe
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
 
+// Increase the maximum duration for this API route (in seconds)
+// This helps with longer AI processing times on Netlify
+// Note: Netlify limits - Free: 10s, Pro: 26s, Enterprise: 60s
+export const maxDuration = 60; // Maximum allowed on most platforms
+export const dynamic = 'force-dynamic'; // Ensure this runs as a serverless function
+
 export async function POST(request: NextRequest) {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] 🤖 AI-TASK-COMPLETION: Request received`);

@@ -6,15 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, Eye, RefreshCw, Copy, FileCode } from 'lucide-react';
+import { FileText, Download, Eye, RefreshCw, Copy, FileCode, Loader2 } from 'lucide-react';
 import { CompanyTask } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskChat } from '@/components/TaskChat';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 interface DependencyArtifact {
   taskId: string;
@@ -37,11 +38,48 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
   const [selectedArtifact, setSelectedArtifact] = useState<DependencyArtifact | null>(null);
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
   const [isAutoExecuting, setIsAutoExecuting] = useState(false);
+  const [jobStatus, setJobStatus] = useState<string>('');
+  const [jobProgress, setJobProgress] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     loadDependencyArtifacts();
   }, [task.id, companyId]);
+
+  // Set up real-time listener for job progress
+  useEffect(() => {
+    const jobRef = doc(db, 'aiTaskJobs', task.id);
+
+    const unsubscribe = onSnapshot(jobRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const jobData = snapshot.data();
+        setJobStatus(jobData.status || '');
+        setJobProgress(jobData.progress || '');
+
+        // If job completed or failed, reload artifacts and update task
+        if (jobData.status === 'completed') {
+          setIsAutoExecuting(false);
+          loadDependencyArtifacts();
+          if (onTaskUpdate) {
+            onTaskUpdate();
+          }
+          toast({
+            title: '✅ Task Completed',
+            description: `${task.taskName} has been completed successfully.`,
+          });
+        } else if (jobData.status === 'failed') {
+          setIsAutoExecuting(false);
+          toast({
+            title: 'Task Failed',
+            description: jobData.progress || 'An error occurred during processing.',
+            variant: 'destructive',
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [task.id]);
 
   const loadDependencyArtifacts = async () => {
     setLoading(true);
@@ -186,9 +224,9 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
       console.log(`[TaskDependencyArtifacts] Auto-executing system prompt for task ${task.id}: "${task.taskName}"`);
       setIsAutoExecuting(true);
 
-      // Call the AI task completion endpoint
-      // This endpoint will automatically run test criteria validation if defined
-      const response = await fetch('/api/ai-task-completion', {
+      // Call the ASYNC AI task completion endpoint
+      // This returns immediately (HTTP 202) and processes in the background
+      const response = await fetch('/api/ai-task-completion-async', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,36 +239,19 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to execute system prompt');
+        throw new Error(errorData.error || 'Failed to queue task for processing');
       }
 
       const result = await response.json();
-      console.log(`[TaskDependencyArtifacts] System prompt execution result:`, result);
+      console.log(`[TaskDependencyArtifacts] Task queued for processing:`, result);
 
-      // Reload artifacts to show the newly created artifact
-      await loadDependencyArtifacts();
+      // Show toast that processing has started
+      toast({
+        title: 'Processing Started',
+        description: 'AI task is being processed in the background. You\'ll be notified when it completes.',
+      });
 
-      // Notify parent to refresh task status
-      if (onTaskUpdate) {
-        onTaskUpdate();
-      }
-
-      // Show success toast based on completion status
-      if (result.taskCompleted) {
-        toast({
-          title: '✅ Task Completed',
-          description: `${task.taskName} has been completed and validated successfully.`,
-        });
-      } else if (result.success) {
-        // Task executed but not completed (either no test criteria or tests failed)
-        const hasTestCriteria = !!(task as any).testCriteria;
-        toast({
-          title: 'System Prompt Executed',
-          description: hasTestCriteria
-            ? 'AI generated the artifact. Check the chat for test validation results.'
-            : 'AI has generated the artifact. Manual review may be required.',
-        });
-      }
+      // The real-time listener will handle updates and completion
     } catch (error) {
       console.error('[TaskDependencyArtifacts] Error auto-executing system prompt:', error);
       // Don't show error toast for auto-execution failures to avoid disrupting UX
@@ -280,7 +301,7 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
     if (task.tag === 'ai') {
       setIsAutoExecuting(true);
       try {
-        const response = await fetch('/api/ai-task-completion', {
+        const response = await fetch('/api/ai-task-completion-async', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -293,34 +314,25 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to re-run task');
+          throw new Error(errorData.error || 'Failed to queue task');
         }
 
         const result = await response.json();
-        console.log('Task re-execution result:', result);
-
-        // Reload artifacts to show the newly created artifact
-        await loadDependencyArtifacts();
-
-        // Notify parent to refresh task status
-        if (onTaskUpdate) {
-          onTaskUpdate();
-        }
+        console.log('Task queued for re-execution:', result);
 
         toast({
-          title: result.taskCompleted ? '✅ Task Completed' : '🔄 Task Re-executed',
-          description: result.taskCompleted
-            ? 'Task has been re-run and validated successfully.'
-            : 'Artifact regenerated with updated prompt. Check validation results in chat.',
+          title: '🔄 Re-running Task',
+          description: 'Artifact is being regenerated in the background. You\'ll be notified when complete.',
         });
+
+        // The real-time listener will handle completion
       } catch (error) {
-        console.error('Error re-running task:', error);
+        console.error('Error queueing task:', error);
         toast({
-          title: "Error re-running task",
+          title: "Error queueing task",
           description: error instanceof Error ? error.message : 'Unknown error',
           variant: "destructive",
         });
-      } finally {
         setIsAutoExecuting(false);
       }
     } else {
@@ -342,10 +354,17 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
         <div className="w-1/2">
           {isAutoExecuting ? (
             <Card className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-lg font-medium">Executing System Prompt...</p>
-                <p className="text-sm text-muted-foreground mt-2">AI is processing the task with available data</p>
+              <div className="text-center px-8 max-w-md">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+                <p className="text-lg font-medium mb-2">
+                  {jobStatus === 'processing' ? 'Processing Task...' : 'Queueing Task...'}
+                </p>
+                {jobProgress && (
+                  <p className="text-sm text-muted-foreground mt-2 mb-4">{jobProgress}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  This may take a minute. You'll be notified when complete.
+                </p>
               </div>
             </Card>
           ) : (

@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  # Increase serverless function timeout
+  # Free tier: 10s max
+  # Pro tier: 26s max
+  # Business/Enterprise: up to 60s
+  node_bundler = "esbuild"
