@@ -163,7 +163,33 @@ exports.processAITask = onCall(
         }
       }
 
-      // Mark task as completed (simplified - add validation if needed)
+      // Get context information for completion summary
+      const completedTasksSnapshot = await db.collection('companyTasks')
+          .where('companyId', '==', companyId)
+          .where('status', '==', 'completed')
+          .get();
+      const completedTasksCount = completedTasksSnapshot.size;
+
+      const artifactsSnapshot = await db.collection(`companies/${companyId}/artifacts`).get();
+      const artifactsCount = artifactsSnapshot.size;
+
+      // Add completion summary message
+      await chatRef.add({
+        role: 'assistant',
+        content: `✅ **Task Complete!**
+
+Great news! I've automatically completed this task using data from ${completedTasksCount} previously completed tasks and ${artifactsCount} existing documents in the system.
+
+${task.testCriteria ? 'The work has been validated and meets all the required criteria.' : 'The document has been generated and is ready for your review.'}
+
+The completed document is available in the artifact viewer on the right. Feel free to review it and let me know if you need any adjustments!`,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        isAIGenerated: true,
+        isCompletionSummary: true,
+        completedAutomatically: true,
+      });
+
+      // Mark task as completed
       await updateJobStatus(jobRef, 'processing', 'Completing task...');
       await db.collection('companyTasks').doc(taskId).update({
         status: 'completed',

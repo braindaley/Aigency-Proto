@@ -258,19 +258,22 @@ export function MultipleArtifactsViewer({
                       const match = /language-(\w+)/.exec(className || '');
                       const inline = !match;
                       return !inline ? (
-                        <SyntaxHighlighter
-                          style={(theme === 'dark' ? oneDark : oneLight) as any}
-                          language={match[1]}
-                          PreTag="div"
-                          className="rounded-lg !mt-4 !mb-4"
-                          customStyle={{
-                            backgroundColor: theme === 'dark' ? 'rgb(40, 44, 52)' : 'rgb(250, 250, 250)',
-                            margin: 0
-                          }}
-                          {...props}
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
+                        <div className="rounded-lg !mt-4 !mb-4 bg-muted border border-border">
+                          <SyntaxHighlighter
+                            style={(theme === 'dark' ? oneDark : oneLight) as any}
+                            language={match[1]}
+                            PreTag="div"
+                            className="!bg-transparent"
+                            customStyle={{
+                              backgroundColor: 'transparent',
+                              margin: 0,
+                              padding: '1rem'
+                            }}
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        </div>
                       ) : (
                         <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
                           {children}
