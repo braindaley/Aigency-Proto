@@ -126,8 +126,8 @@ const markdownComponents = {
               )}
             </Button>
           </div>
-          <div className="w-full max-w-full overflow-x-auto rounded-lg bg-slate-900" style={{ maxWidth: '100%' }}>
-            <pre className="!m-0 !p-4 text-sm leading-relaxed text-white overflow-x-auto" style={{ 
+          <div className="w-full max-w-full overflow-x-auto rounded-lg bg-muted border border-border" style={{ maxWidth: '100%' }}>
+            <pre className="!m-0 !p-4 text-sm leading-relaxed text-foreground overflow-x-auto" style={{
               fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace',
               whiteSpace: 'pre',
               overflowX: 'auto',
