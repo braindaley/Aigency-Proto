@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface DependencyArtifact {
@@ -233,7 +234,7 @@ export function DependencyArtifactsReview({ task, companyId }: DependencyArtifac
                             prose-blockquote:border-l-4 prose-blockquote:border-l-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
                             prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
                             [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                 {viewingArtifact.content}
               </ReactMarkdown>
             </div>
@@ -315,7 +316,7 @@ export function DependencyArtifactsReview({ task, companyId }: DependencyArtifac
                                     prose-strong:text-foreground
                                     prose-ul:text-foreground prose-ol:text-foreground
                                     prose-li:text-foreground">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                         {artifact.content.length > 2000
                           ? artifact.content.substring(0, 2000) + '\n\n*[Content truncated - click "View Full" to see complete document]*'
                           : artifact.content}

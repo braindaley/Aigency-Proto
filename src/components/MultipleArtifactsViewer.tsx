@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, Eye, Code, Copy, Download, Database, Check, Loader2, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
@@ -203,6 +204,7 @@ export function MultipleArtifactsViewer({
                               [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
                   components={{
                     h1: ({ children, ...props }) => (
                       <h1 className="text-2xl font-bold text-foreground border-b border-border pb-3 mb-6 mt-0" {...props}>

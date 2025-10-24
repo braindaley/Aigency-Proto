@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Copy, Check } from 'lucide-react';
@@ -179,6 +180,7 @@ function PartialMarkdownRenderer({ content, className = "" }: PartialMarkdownRen
       <ReactMarkdown
         components={markdownComponents}
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
       >
         {processedContent}
       </ReactMarkdown>
@@ -227,6 +229,7 @@ function MarkdownRenderer({ content, className = "" }: PartialMarkdownRendererPr
       <ReactMarkdown
         components={markdownComponents}
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
       >
         {content}
       </ReactMarkdown>

@@ -28,6 +28,8 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { db } from '@/lib/firebase';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { 
   collection, 
   addDoc, 
@@ -836,7 +838,7 @@ export default function CompanyArtifacts() {
                 ) : (
                   <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
                     {selectedArtifact && typeof selectedArtifact.data === 'string' ? (
-                      <ReactMarkdown>{selectedArtifact.data}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{selectedArtifact.data}</ReactMarkdown>
                     ) : (
                       <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
                         {selectedArtifact && formatData(selectedArtifact.data)}
