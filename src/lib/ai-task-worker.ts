@@ -4,7 +4,8 @@
  * to avoid serverless function timeouts on Netlify (10s limit on free tier)
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
@@ -34,8 +35,8 @@ export class AITaskWorker {
     await this.updateJobStatus(taskId, 'processing', 'Initializing AI task completion...');
 
     try {
-      if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-        throw new Error('Google AI API key is not configured');
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OpenAI API key is not configured');
       }
 
       // Fetch the AI task details
@@ -110,17 +111,18 @@ export class AITaskWorker {
       // Update progress
       await this.updateJobStatus(taskId, 'processing', 'Generating AI response...');
 
-      // Initialize Google AI
-      const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      // Process the task with AI using OpenAI
+      const userPrompt = `Please complete the task "${task.taskName}" using all the available company data and previous task artifacts shown in the context above.`;
 
-      // Process the task with AI
-      const prompt = `${systemPrompt}\n\nPlease complete the task "${task.taskName}" using all the available company data and previous task artifacts shown in the context above.`;
+      console.log(`[${timestamp}] 🔮 AI-TASK-WORKER: Generating AI response with GPT-4o...`);
+      const aiResult = await generateText({
+        model: openai('gpt-4o'),
+        system: systemPrompt,
+        prompt: userPrompt,
+        maxSteps: 1,
+      });
 
-      console.log(`[${timestamp}] 🔮 AI-TASK-WORKER: Generating AI response...`);
-      const aiResult = await model.generateContent(prompt);
-      const response = await aiResult.response;
-      const fullText = response.text();
+      const fullText = aiResult.text;
       console.log(`[${timestamp}] ✅ AI-TASK-WORKER: AI response generated (${fullText.length} characters)`);
 
       const result = { text: fullText };
@@ -183,7 +185,7 @@ export class AITaskWorker {
       if (task.testCriteria && task.testCriteria.trim()) {
         await this.updateJobStatus(taskId, 'processing', 'Running test validation...');
 
-        const testsPassed = await this.validateTask(taskId, genAI, result.text, task.testCriteria);
+        const testsPassed = await this.validateTask(taskId, result.text, task.testCriteria);
         indicatesCompletion = hasArtifact && testsPassed;
 
         console.log(`[${timestamp}] ✅ AI-TASK-WORKER: Validation complete - ${testsPassed ? 'PASS' : 'FAIL'}`);
@@ -325,35 +327,35 @@ export class AITaskWorker {
    */
   private static async validateTask(
     taskId: string,
-    genAI: GoogleGenerativeAI,
     resultText: string,
     testCriteria: string
   ): Promise<boolean> {
-    const validationPrompt = `You are validating an AI-generated document against test criteria.
+    const systemPrompt = `You are validating an AI-generated document against test criteria.
 
 CRITICAL INSTRUCTIONS:
 1. You MUST start your response with EXACTLY either "PASS" or "FAIL" on the first line
 2. Evaluate based ONLY on what you can see in the document provided below
 3. If the document contains content addressing the criteria, mark it as PASS
 
-DOCUMENT TO VALIDATE:
-${resultText}
-
-TEST CRITERIA:
-${testCriteria}
-
 RESPONSE FORMAT (REQUIRED):
 Line 1: PASS or FAIL (exactly one of these words, nothing else on this line)
 Line 2+: Your explanation`;
 
-    const validationModel = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-      generationConfig: { temperature: 0.1 }
+    const validationPrompt = `DOCUMENT TO VALIDATE:
+${resultText}
+
+TEST CRITERIA:
+${testCriteria}`;
+
+    const validationResult = await generateText({
+      model: openai('gpt-4o'),
+      system: systemPrompt,
+      prompt: validationPrompt,
+      temperature: 0.1,
+      maxSteps: 1,
     });
 
-    const validationAiResult = await validationModel.generateContent(validationPrompt);
-    const validationAiResponse = await validationAiResult.response;
-    const validationText = validationAiResponse.text();
+    const validationText = validationResult.text;
 
     const testsPassed = validationText.toUpperCase().startsWith('PASS');
 
