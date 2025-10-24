@@ -8,6 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
+import { completeTask } from '@/lib/task-completion-utils';
 
 export interface AITaskJob {
   taskId: string;
@@ -406,28 +407,12 @@ The completed document is available in the artifact viewer on the right. Feel fr
 
     await addDoc(chatRef, completionSummary);
 
-    // Trigger status update via API
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9003';
-
-    try {
-      const response = await fetch(`${baseUrl}/api/update-task-status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, status: 'completed' }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Status update failed: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Failed to update via API, falling back to direct update:', error);
-
-      await updateDoc(taskDocRef, {
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-    }
+    // Use the centralized task completion utility
+    // This ensures dependency updates are ALWAYS triggered
+    await completeTask(taskId, {
+      retries: 3,
+      fallbackToDirect: true
+    });
   }
 
   /**

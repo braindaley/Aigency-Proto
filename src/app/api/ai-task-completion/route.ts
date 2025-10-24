@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
+import { completeTask } from '@/lib/task-completion-utils';
 
 // Increase the maximum duration for this API route (in seconds)
 // This helps with longer AI processing times on Netlify
@@ -582,45 +583,15 @@ The completed document is available in the artifact viewer on the right. Feel fr
 
       await addDoc(chatRef, completionSummary);
 
-      // Mark as completed and trigger dependency updates via the endpoint
+      // Mark as completed and trigger dependency updates using the utility
       console.log(`[${timestamp}] 🔗 AI-TASK-COMPLETION: Marking task complete and triggering dependent task checks...`);
 
-      // Try to get the correct base URL
-      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9003';
-      console.log(`[${timestamp}] 🌐 AI-TASK-COMPLETION: Using base URL: ${baseUrl}`);
+      await completeTask(taskId, {
+        retries: 2,
+        fallbackToDirect: true
+      });
 
-      try {
-        const response = await fetch(`${baseUrl}/api/update-task-status`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ taskId, status: 'completed' }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Status update and dependency check failed with status ${response.status}: ${errorText}`);
-          throw new Error(`Status update failed: ${response.status}`);
-        } else {
-          const result = await response.json();
-          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task completed and dependency updates triggered successfully:`, result);
-        }
-      } catch (error) {
-        console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to update task status via API, falling back to direct database update:`, error);
-
-        // Fallback: Update the task status directly in the database
-        try {
-          await updateDoc(taskDocRef, {
-            status: 'completed',
-            completedAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
-          console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task status updated directly in database`);
-        } catch (dbError) {
-          console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Failed to update task status in database:`, dbError);
-        }
-      }
+      console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: Task completed and dependency updates triggered successfully`);
     } else {
       console.log(`[${timestamp}] ⏸️ AI-TASK-COMPLETION: Task not marked as completed`);
       if (!task.testCriteria || !task.testCriteria.trim()) {

@@ -3,6 +3,7 @@ import { collection, getDocs, query, where, updateDoc, doc, Timestamp, serverTim
 import { db } from '@/lib/firebase';
 import { sendMockEmailBatch } from '@/lib/mock-email-service';
 import type { Submission } from '@/lib/types';
+import { completeTask } from '@/lib/task-completion-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,22 +101,12 @@ export async function POST(request: NextRequest) {
           updatedAt: serverTimestamp()
         });
 
-        // Use the API endpoint to mark as completed, which will trigger dependent tasks
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
-        const response = await fetch(`${baseUrl}/api/update-task-status`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            taskId: taskId,
-            status: 'completed'
-          }),
+        // Use the centralized task completion utility
+        // This ensures dependency updates are ALWAYS triggered
+        await completeTask(taskId, {
+          retries: 2,
+          fallbackToDirect: true
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to update task status');
-        }
 
         console.log(`✅ Task ${taskId} marked as completed and dependencies updated`);
       } catch (error) {
