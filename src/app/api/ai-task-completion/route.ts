@@ -463,6 +463,14 @@ Your response should demonstrate deep utilization of the artifact data to comple
       console.log(`[${timestamp}] 🧪 AI-TASK-COMPLETION: Running test validation...`);
 
       try {
+        // CRITICAL: Validate against the ARTIFACT CONTENT, not the full AI response
+        // The artifact is what gets saved and displayed to the user
+        const documentToValidate = artifacts.length > 0
+          ? artifacts.map((a, i) => `${artifacts.length > 1 ? `\n\n=== ARTIFACT ${i + 1} (${a.id || 'unnamed'}) ===\n\n` : ''}${a.content}`).join('\n\n')
+          : result.text;
+
+        console.log(`[${timestamp}] 📄 AI-TASK-COMPLETION: Validating ${artifacts.length} artifact(s), total length: ${documentToValidate.length} chars`);
+
         const validationPrompt = `You are validating an AI-generated document against test criteria.
 
 CRITICAL INSTRUCTIONS:
@@ -477,7 +485,7 @@ IMPORTANT CONTEXT:
 - Evaluate if the generated content meets the test criteria
 
 DOCUMENT TO VALIDATE:
-${result.text}
+${documentToValidate}
 
 TEST CRITERIA:
 ${task.testCriteria}

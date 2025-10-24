@@ -188,7 +188,7 @@ To complete the submission I'll need the following:
 
 ${task.description}
 
-Can you upload that so I can review and mark this task as completed?`
+Let me know if these are approved.`
             : `Hello! I'm here to help you complete the task: "${task.taskName}".
 
 ${task.description}
@@ -240,7 +240,7 @@ To complete the submission I'll need the following:
 
 ${task.description}
 
-Can you upload that so I can review and mark this task as completed?`
+Let me know if these are approved.`
           : `Hello! I'm here to help you complete the task: "${task.taskName}".
 
 ${task.description}

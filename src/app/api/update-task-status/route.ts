@@ -146,22 +146,22 @@ async function updateDependentTasks(completedTaskId: string) {
 async function triggerAIExecution(taskId: string, companyId: string) {
   const timestamp = new Date().toISOString();
   try {
-    console.log(`[${timestamp}] 🚀 AI-TRIGGER: Calling Firebase Cloud Function for task ${taskId}`);
+    console.log(`[${timestamp}] 🚀 AI-TRIGGER: Calling Next.js async AI processing for task ${taskId}`);
 
-    // Call Firebase Cloud Function directly via HTTPS
-    // The function is deployed at: https://us-central1-aigency-proto.cloudfunctions.net/processAITask
-    const cloudFunctionUrl = process.env.NEXT_PUBLIC_FIREBASE_CLOUD_FUNCTION_URL ||
-      'https://us-central1-aigency-proto.cloudfunctions.net/processAITask';
+    // Call Next.js async endpoint (uses AITaskWorker with full context and vector search)
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
+    const asyncEndpoint = `${baseUrl}/api/ai-task-completion-async`;
 
-    console.log(`[${timestamp}] 🌐 AI-TRIGGER: Cloud Function URL: ${cloudFunctionUrl}`);
+    console.log(`[${timestamp}] 🌐 AI-TRIGGER: Endpoint URL: ${asyncEndpoint}`);
 
-    const response = await fetch(cloudFunctionUrl, {
+    const response = await fetch(asyncEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        data: { taskId, companyId }
+        taskId,
+        companyId
       }),
     });
 
@@ -169,13 +169,13 @@ async function triggerAIExecution(taskId: string, companyId: string) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error(`[${timestamp}] ❌ AI-TRIGGER: Cloud Function failed:`, errorData);
-      throw new Error(`Cloud Function failed: ${errorData.error?.message || 'Unknown error'}`);
+      console.error(`[${timestamp}] ❌ AI-TRIGGER: Async endpoint failed:`, errorData);
+      throw new Error(`Async endpoint failed: ${errorData.error || 'Unknown error'}`);
     }
 
     const result = await response.json();
-    console.log(`[${timestamp}] ✅ AI-TRIGGER: Cloud Function completed successfully`);
-    console.log(`[${timestamp}] 📊 AI-TRIGGER: Result:`, result);
+    console.log(`[${timestamp}] ✅ AI-TRIGGER: Async processing started successfully`);
+    console.log(`[${timestamp}] 📊 AI-TRIGGER: Job tracking: ${result.trackingPath}`);
 
     return result;
   } catch (error) {

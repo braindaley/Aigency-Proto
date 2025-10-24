@@ -16,7 +16,11 @@
   "dependencies": {
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.3.0",
-    "@google/generative-ai": "^0.24.1"
+    "@google/generative-ai": "^0.24.1",
+    "ai": "^5.0.15",
+    "@ai-sdk/google": "^2.0.15",
+    "@ai-sdk/openai": "^2.0.15",
+    "openai": "^4.76.1"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.0.0"

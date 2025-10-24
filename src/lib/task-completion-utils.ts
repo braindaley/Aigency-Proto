@@ -270,14 +270,13 @@ async function checkAllDependenciesCompleted(
  */
 async function triggerAITask(taskId: string, companyId: string): Promise<void> {
   const baseUrl = getBaseUrl();
-  const cloudFunctionUrl = process.env.NEXT_PUBLIC_FIREBASE_CLOUD_FUNCTION_URL ||
-    'https://us-central1-aigency-proto.cloudfunctions.net/processAITask';
+  const asyncEndpoint = `${baseUrl}/api/ai-task-completion-async`;
 
   try {
-    const response = await fetch(cloudFunctionUrl, {
+    const response = await fetch(asyncEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: { taskId, companyId } }),
+      body: JSON.stringify({ taskId, companyId }),
     });
 
     if (!response.ok) {

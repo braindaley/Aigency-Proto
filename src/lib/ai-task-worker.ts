@@ -4,8 +4,9 @@
  * to avoid serverless function timeouts on Netlify (10s limit on free tier)
  */
 
-import { openai } from '@ai-sdk/openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateText } from 'ai';
+import { google } from '@ai-sdk/google';
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
@@ -35,8 +36,8 @@ export class AITaskWorker {
     await this.updateJobStatus(taskId, 'processing', 'Initializing AI task completion...');
 
     try {
-      if (!process.env.OPENAI_API_KEY) {
-        throw new Error('OpenAI API key is not configured');
+      if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        throw new Error('Google Generative AI API key is not configured');
       }
 
       // Fetch the AI task details
@@ -117,17 +118,22 @@ export class AITaskWorker {
         baseSystemPrompt = `You are an AI assistant that automatically completes insurance tasks using available company data and previous task artifacts.`;
       }
 
-      const systemPrompt = this.buildSystemPrompt(baseSystemPrompt, task, context);
+      let systemPrompt = this.buildSystemPrompt(baseSystemPrompt, task, context);
+
+      // Gemini 2.0 Flash has a 1M token context window (~4M chars)
+      // This is more than enough to handle our full context without truncation
+      console.log(`[${timestamp}] 📊 AI-TASK-WORKER: System prompt size: ${systemPrompt.length} chars (Gemini can handle up to ~4M chars)`)
 
       // Update progress
       await this.updateJobStatus(taskId, 'processing', 'Generating AI response...');
 
-      // Process the task with AI using OpenAI
+      // Process the task with AI using Gemini
       const userPrompt = `Please complete the task "${task.taskName}" using all the available company data and previous task artifacts shown in the context above.`;
 
-      console.log(`[${timestamp}] 🔮 AI-TASK-WORKER: Generating AI response with GPT-4o...`);
+      console.log(`[${timestamp}] 🔮 AI-TASK-WORKER: Generating AI response with Gemini 2.0 Flash...`);
+      console.log(`[${timestamp}] 📊 AI-TASK-WORKER: System prompt size: ${systemPrompt.length} chars`);
       const aiResult = await generateText({
-        model: openai('gpt-4o'),
+        model: google('gemini-2.0-flash'),
         system: systemPrompt,
         prompt: userPrompt,
         maxSteps: 1,
@@ -364,7 +370,7 @@ TEST CRITERIA:
 ${testCriteria}`;
 
     const validationResult = await generateText({
-      model: openai('gpt-4o'),
+      model: google('gemini-2.0-flash'),
       system: systemPrompt,
       prompt: validationPrompt,
       temperature: 0.1,
