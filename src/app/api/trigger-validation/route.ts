@@ -1,128 +1,156 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Helper function to validate task completion (copied from chat/task route)
-async function validateTaskCompletion(messages: any[], testCriteria: string, latestResponse: string = '') {
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+
+// Helper function to validate task completion using AI with actual test criteria
+async function validateTaskCompletion(messages: any[], testCriteria: string, taskName: string, taskDescription: string) {
   console.log('=== MANUAL VALIDATION TRIGGER ===');
-  console.log('Latest response:', latestResponse);
-  
-  // Collect all documents from the conversation
+  console.log('Task:', taskName);
+  console.log('Test criteria:', testCriteria);
+
+  // If no test criteria, return completed
+  if (!testCriteria || testCriteria.trim() === '') {
+    console.log('No test criteria defined - marking as completed');
+    return { overallStatus: 'COMPLETED', missingCriteria: [] };
+  }
+
+  // Collect all documents and artifacts from the conversation
   const allDocuments: any[] = [];
+  const allArtifacts: any[] = [];
+  let conversationSummary = '';
+
   messages.forEach((msg: any) => {
     if (msg.documents && Array.isArray(msg.documents)) {
       allDocuments.push(...msg.documents);
     }
-  });
-  
-  console.log('Found documents:', allDocuments.length);
-  allDocuments.forEach((doc, idx) => {
-    console.log(`Document ${idx}:`, {
-      filename: doc.filename,
-      contentLength: doc.content?.length,
-      contentPreview: doc.content?.substring(0, 200)
-    });
+    if (msg.artifacts && Array.isArray(msg.artifacts)) {
+      allArtifacts.push(...msg.artifacts);
+    }
+    conversationSummary += `\n${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content?.substring(0, 500)}...`;
   });
 
-  // Manual validation logic based on actual criteria
-  let hasEmployeeData = false;
-  let hasJobDescriptions = false;
-  let hasHighRiskIdentification = false;
+  console.log('Documents:', allDocuments.length, 'Artifacts:', allArtifacts.length);
 
-  // Check documents for required information
-  for (const doc of allDocuments) {
-    const content = doc.content?.toLowerCase() || '';
-    const filename = doc.filename?.toLowerCase() || '';
-    
-    // Check for employee data - expand criteria to include payroll, classification, etc.
-    if (content.includes('employee') && (content.includes('name') || content.includes('title')) ||
-        content.includes('payroll') || content.includes('classification') || 
-        filename.includes('payroll') || filename.includes('employee') ||
-        (content.includes(',') && (content.includes('title') || content.includes('name') || content.includes('department')))) {
-      hasEmployeeData = true;
+  // Use Gemini to dynamically evaluate the test criteria
+  const validationPrompt = `You are a task validation assistant. Your job is to evaluate whether a task has been completed successfully based on specific test criteria.
+
+## Task Information
+**Task Name:** ${taskName}
+**Task Description:** ${taskDescription}
+
+## Test Criteria (these must ALL be met)
+${testCriteria}
+
+## Conversation History
+${conversationSummary}
+
+## Uploaded Documents
+${allDocuments.length > 0 ? allDocuments.map((doc, i) => {
+  const content = doc.content || '';
+  const preview = content.length > 2000 ? content.substring(0, 2000) + '...[truncated]' : content;
+  return `Document ${i + 1}: ${doc.name || doc.filename || 'Unnamed'}\nFile type: ${doc.type || 'unknown'}\nContent:\n${preview}`;
+}).join('\n\n') : 'No documents uploaded'}
+
+## Created Artifacts
+${allArtifacts.length > 0 ? allArtifacts.map((art, i) => `Artifact ${i + 1} (${art.type}): ${art.name}\nContent preview:\n${(art.content || '').substring(0, 500)}...`).join('\n\n') : 'No artifacts created'}
+
+## CRITICAL Guidelines for Evaluation
+
+**YOU MUST BE PRACTICAL, NOT LITERAL:**
+
+- If a criterion says "X has been obtained" and the user uploaded a document containing X, mark it as MET
+- If a criterion says "documents are verified/official" and the user uploaded appropriate documents, mark it as MET (don't require them to say "I verify these are official")
+- If a criterion says "confirm that X" and X is evident in the uploaded files, mark it as MET (don't require them to write "I confirm")
+- If a criterion asks for data spanning a time period and the uploaded file contains data for that period, mark it as MET
+
+**Interpret criteria as action items, not verbal confirmations:**
+- "Loss runs are verified and official" means → user uploaded loss run documents (MET if uploaded)
+- "Confirmation that format is acceptable" means → format appears standard/reasonable (MET if .xlsx or .pdf)
+- "No gaps in history" means → uploaded data covers the period (MET if years are present)
+- "Data is current and up-to-date" means → uploaded recently or data is recent (MET if uploaded in this session)
+
+**Only mark NOT_MET if:**
+- No document was uploaded when one is required
+- The uploaded document clearly doesn't contain the required information
+- A specific data requirement is obviously missing from the uploaded content
+
+## Your Task
+Evaluate each criterion from the test criteria list and determine:
+1. Whether it has been MET or NOT_MET
+2. Provide specific evidence from the conversation, documents, or artifacts
+3. Explain your reasoning
+
+For each criterion, extract the individual bullet points and evaluate them separately.
+
+Return your evaluation as a JSON object with this exact structure:
+{
+  "criteriaAssessment": [
+    {
+      "criterion": "The specific criterion text",
+      "status": "MET" | "NOT_MET",
+      "evidence": "Specific evidence from conversation/documents/artifacts that proves this",
+      "explanation": "Clear explanation of why this criterion is met or not met"
     }
-    
-    // Check for job descriptions - expand to include classification descriptions
-    if (content.includes('job') && (content.includes('description') || content.includes('responsibilities')) ||
-        content.includes('classification') && content.includes('description') ||
-        content.includes('operations') || content.includes('clerical') || content.includes('warehouse') ||
-        content.includes('drivers') || content.includes('commercial')) {
-      hasJobDescriptions = true;
-    }
-    
-    // Check for risk identification - expand to include rate information and premium data
-    if (content.includes('risk') && (content.includes('high') || content.includes('assessment')) ||
-        content.includes('rate per') || content.includes('premium') ||
-        content.includes('workers compensation') || content.includes('workers comp')) {
-      hasHighRiskIdentification = true;
-    }
+  ],
+  "missingInformation": [
+    "Specific information that is missing (if any criteria are NOT_MET)"
+  ],
+  "recommendations": [
+    "Specific actionable recommendations for completing unmet criteria"
+  ]
+}
 
-    // Special handling for payroll classification documents
-    if (filename.includes('payroll') && filename.includes('classification') ||
-        content.includes('class code') && content.includes('payroll')) {
-      hasEmployeeData = true;
-      hasJobDescriptions = true;
-      hasHighRiskIdentification = true;
-    }
-  }
+Be practical and fair. If the user has genuinely completed the work described in the criteria by uploading appropriate documents or data, mark it as MET.`;
 
-  // Also check the latest AI response for completion indicators
-  const responseContent = latestResponse.toLowerCase();
-  const hasCompletionIndicator = responseContent.includes('completed') || responseContent.includes('all criteria') || responseContent.includes('successfully') ||
-      responseContent.includes('task complete!') || responseContent.includes('✅') || 
-      responseContent.includes('ready for insurance submission') || responseContent.includes('all required information');
-  
-  console.log('Completion indicator check:', { 
-    hasCompletionIndicator, 
-    responsePreview: responseContent.substring(0, 150),
-    hasTaskComplete: responseContent.includes('task complete!'),
-    hasCheckmark: responseContent.includes('✅'),
-    hasEmployeeData: responseContent.includes('employee data'),
-    hasJobTitles: responseContent.includes('job titles'),
-    fullResponse: latestResponse
-  });
-  
-  const validationDetails = {
-    hasEmployeeData,
-    hasJobDescriptions,
-    hasHighRiskIdentification,
-    hasCompletionIndicator
-  };
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+  const result = await model.generateContent(validationPrompt);
+  const response = await result.response;
+  const responseText = response.text();
+  console.log('Gemini validation response:', responseText);
 
-  const missingCriteria: string[] = [];
-  if (!hasEmployeeData) {
-    missingCriteria.push('employee data or payroll details');
-  }
-  if (!hasJobDescriptions) {
-    missingCriteria.push('job descriptions');
-  }
-  if (!hasHighRiskIdentification) {
-    missingCriteria.push('high-risk roles or loss information');
-  }
-
-  if (hasCompletionIndicator) {
-    console.log('AI completion indicator found - marking as COMPLETED', validationDetails);
-    return { overallStatus: 'COMPLETED', details: validationDetails, missingCriteria: [] };
+  // Parse the JSON response
+  let validationData;
+  try {
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || responseText.match(/```\n([\s\S]*?)\n```/);
+    const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+    validationData = JSON.parse(jsonText);
+  } catch (parseError) {
+    console.error('Failed to parse Claude response as JSON:', parseError);
+    // Fallback: assume not completed
+    validationData = {
+      criteriaAssessment: [{
+        criterion: 'Task validation',
+        status: 'NOT_MET',
+        evidence: 'Unable to parse validation response',
+        explanation: 'The validation system encountered an error. Please try again.'
+      }],
+      missingInformation: ['Validation system error'],
+      recommendations: ['Please try validating again']
+    };
   }
 
   // Calculate overall status
-  const criteriaCount = [hasEmployeeData, hasJobDescriptions, hasHighRiskIdentification].filter(Boolean).length;
-  
-  console.log('Validation results:', {
-    hasEmployeeData,
-    hasJobDescriptions,
-    hasHighRiskIdentification,
-    criteriaCount,
-    responseContent: latestResponse.toLowerCase().substring(0, 100)
-  });
-  
-  if (criteriaCount >= 2) { // At least 2 out of 3 criteria met
-    return { overallStatus: 'COMPLETED', details: validationDetails, missingCriteria: [] };
-  } else if (criteriaCount > 0) {
-    return { overallStatus: 'PARTIALLY_COMPLETED', details: validationDetails, missingCriteria };
+  const criteriaAssessment = validationData.criteriaAssessment || [];
+  const metCount = criteriaAssessment.filter((c: any) => c.status === "MET").length;
+  const totalCount = criteriaAssessment.length;
+
+  let overallStatus: string;
+  if (metCount === totalCount && totalCount > 0) {
+    overallStatus = "COMPLETED";
+  } else if (metCount > 0) {
+    overallStatus = "PARTIALLY_COMPLETED";
   } else {
-    return { overallStatus: 'NOT_COMPLETED', details: validationDetails, missingCriteria };
+    overallStatus = "NOT_COMPLETED";
   }
+
+  return {
+    overallStatus,
+    missingCriteria: validationData.missingInformation || []
+  };
 }
 
 // Helper function to update task status
@@ -178,11 +206,19 @@ export async function POST(request: NextRequest) {
 
     const task = { id: taskDoc.id, ...taskDoc.data() } as any;
 
-    if (!task.testCriteria) {
-      return NextResponse.json(
-        { error: 'Task has no test criteria' },
-        { status: 400 }
-      );
+    // Get testCriteria from the template if not on the task itself
+    let testCriteria = task.testCriteria || '';
+
+    if (!testCriteria && task.templateId) {
+      console.log(`Fetching testCriteria from template: ${task.templateId}`);
+      const templateDocRef = doc(db, 'taskTemplates', task.templateId);
+      const templateDoc = await getDoc(templateDocRef);
+
+      if (templateDoc.exists()) {
+        const template = templateDoc.data();
+        testCriteria = template.testCriteria || '';
+        console.log(`Found testCriteria in template: ${testCriteria.substring(0, 100)}...`);
+      }
     }
 
     // Get chat messages for this task
@@ -206,17 +242,11 @@ export async function POST(request: NextRequest) {
       });
     });
     
-    // Get the latest assistant response
-    const latestAssistantMessage = messages
-      .slice()
-      .reverse()
-      .find(msg => msg.role === 'assistant');
-    const latestResponse = latestAssistantMessage?.content || '';
-    
     const validationResult = await validateTaskCompletion(
       messages,
-      task.testCriteria,
-      latestResponse
+      testCriteria,
+      task.taskName || '',
+      task.description || ''
     );
 
     console.log('Manual validation result:', validationResult);

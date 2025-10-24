@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { DataService } from '@/lib/data-service';
 
 // Helper to log audit trail
 async function logAuditTrail(
@@ -97,6 +98,10 @@ export async function POST(request: NextRequest) {
     await setDoc(taskRef, templateData, { merge: true });
 
     console.log(`✅ Template ${templateId} saved to Firebase`);
+
+    // Clear template cache so all company tasks get updates immediately
+    DataService.clearTemplateCache();
+    console.log(`🔄 Template cache cleared - updates will apply to all company tasks`);
 
     // Log to audit trail
     await logAuditTrail(

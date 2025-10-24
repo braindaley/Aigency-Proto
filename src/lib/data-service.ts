@@ -6,16 +6,30 @@ import { VectorService } from './vectorService';
 import { getCompanyContact } from './companyContactData';
 
 export class DataService {
+  // In-memory template cache
+  private static templateCache: { templates: Record<string, Task> | null; timestamp: number } = {
+    templates: null,
+    timestamp: 0
+  };
+  private static CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   // Get all task templates
   static async getTaskTemplates(): Promise<Task[]> {
     try {
-      const tasksRef = collection(db, 'taskTemplates');
-      const snapshot = await getDocs(tasksRef);
-      
+      // Try 'tasks' collection first (new location)
+      let tasksRef = collection(db, 'tasks');
+      let snapshot = await getDocs(tasksRef);
+
+      // Fallback to 'taskTemplates' collection if 'tasks' is empty
+      if (snapshot.empty) {
+        tasksRef = collection(db, 'taskTemplates');
+        snapshot = await getDocs(tasksRef);
+      }
+
       if (snapshot.empty) {
         return defaultTasks;
       }
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -26,27 +40,98 @@ export class DataService {
     }
   }
 
-  // Get company tasks
+  // Get task templates as a map for fast lookup (with caching)
+  static async getTaskTemplatesMap(): Promise<Record<string, Task>> {
+    // Check cache
+    const now = Date.now();
+    if (this.templateCache.templates && (now - this.templateCache.timestamp) < this.CACHE_TTL) {
+      return this.templateCache.templates;
+    }
+
+    // Load templates
+    const templates = await this.getTaskTemplates();
+    const templateMap = templates.reduce((map, template) => {
+      map[template.id] = template;
+      return map;
+    }, {} as Record<string, Task>);
+
+    // Update cache
+    this.templateCache = {
+      templates: templateMap,
+      timestamp: now
+    };
+
+    return templateMap;
+  }
+
+  // Clear template cache (call this when templates are updated)
+  static clearTemplateCache() {
+    this.templateCache = { templates: null, timestamp: 0 };
+  }
+
+  // Get company tasks (with dynamic template merging)
   static async getCompanyTasks(companyId?: string): Promise<CompanyTask[]> {
     try {
+      // 1. Load all templates (cached)
+      const templates = await this.getTaskTemplatesMap();
+
+      // 2. Load company task instances
       const tasksRef = collection(db, 'companyTasks');
       let q;
-      
+
       if (companyId) {
-        // Use simple where filter without orderBy to avoid index issues
         q = query(tasksRef, where('companyId', '==', companyId));
       } else {
-        // For all tasks, just get all without ordering to avoid index issues
         q = query(tasksRef);
       }
-      
+
       const snapshot = await getDocs(q);
-      const tasks = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as CompanyTask));
-      
-      // Sort in memory by renewalDate if needed
+
+      // 3. Merge template data with company data
+      const tasks = snapshot.docs.map(doc => {
+        const companyData = doc.data();
+        const templateId = companyData.templateId || doc.id.split('_')[0]; // Fallback for old format
+        const template = templates[templateId];
+
+        if (!template) {
+          console.warn(`⚠️ Template ${templateId} not found for task ${doc.id}, using company data only`);
+          // Fallback: use company data as-is (backward compatible)
+          return {
+            id: doc.id,
+            ...companyData,
+            templateId
+          } as CompanyTask;
+        }
+
+        // Merge: template data as base + company-specific data overrides
+        return {
+          id: doc.id,
+          // Template data (base values):
+          taskName: template.taskName,
+          description: template.description,
+          systemPrompt: template.systemPrompt,
+          testCriteria: template.testCriteria,
+          tag: template.tag,
+          phase: template.phase,
+          dependencies: template.dependencies,
+          subtasks: template.subtasks,
+          policyType: template.policyType,
+          sortOrder: template.sortOrder,
+          showDependencyArtifacts: template.showDependencyArtifacts,
+          predefinedButtons: template.predefinedButtons,
+
+          // Company-specific data (overrides):
+          ...companyData,
+          templateId,
+
+          // Allow per-company overrides if they exist:
+          taskName: companyData.taskNameOverride || template.taskName,
+          description: companyData.descriptionOverride || template.description,
+          systemPrompt: companyData.systemPromptOverride || template.systemPrompt,
+        } as CompanyTask;
+      });
+
+      // Sort in memory by renewalDate
       return tasks.sort((a, b) => {
         if (!a.renewalDate || !b.renewalDate) return 0;
         return a.renewalDate.toDate().getTime() - b.renewalDate.toDate().getTime();

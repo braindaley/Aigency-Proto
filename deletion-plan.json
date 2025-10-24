@@ -1,0 +1,1756 @@
+{
+  "timestamp": "2025-10-24T22:47:21.338Z",
+  "totalTemplates": 285,
+  "templatesToKeep": 48,
+  "templatesToDelete": 237,
+  "deleteList": [
+    {
+      "id": "UjJiDwePDsKcAe7tcbiE",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "wHSR7trwMhPkkaTyJhf6",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "SznWBmVdUPQKXksG41Y4",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "kYwileJpesW0Qetx7cHT",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "mZDm5dpx30W15icFzbYb",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "qbw5flft2l0aHwHVl625",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "THWw4l2K3whhm8N3mJcf",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "gxc4wzNudwFOgX9nudvm",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "q2zmtHOv5m4PGBf9OLJG",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "va1NgUMSUE7HERmobWN3",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "QcyAPbvducmkEip0GabI",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "DbGjmgrUTS4eD8UpFpPF",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "s7CBkywT6T5tuEh189Z9",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "hUpTEKRCoWRL78lzexqq",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "sMMirp9g7x3nXLjZpKjc",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "rMxEdIQSjlcAFVxV2gch",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "56pGNeLzpbXVG0iCSoPJ",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "r4CNH1wZezajRigFWW2Z",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "TTilYNj1zMNpdKnEzDNg",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "2PTGaGzjVJHvRJ1kIaN4",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "kdsQTOPKKwAUCdd9tjVN",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "fBpcOIEW7OXNFh0FOdJl",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "ySXJyLccKBPMVzEe5Mlj",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "pwTBrn1wX82eBRNDToOz",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "NYsrhW51o1XH2l55Ap4Q",
+      "taskName": "Collect first payment",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "ihS5VPPPQ1XnPnlH5pcx",
+      "taskName": "Collect first payment",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "RJx8b1sp1sKcs4jVJn3j",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "n6OYz4AGuMvZcWg7L6XF",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "sU9KDE3abnMvoLyPgA4d",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "1y21UJfyZNYkvGsVxImy",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "9L9igs360oFgHZnk79xY",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "RDRPimJZeaQnd3HVf3xf",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "wwonaa7IOXuh8d8t3dTB",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "G69Gb2Lo5K4mciCqYdDP",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "GZRLamJQ5eLlNT8fUHmg",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "PVEJUOz6eeuICPNYuh6C",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "eEimATj8rBzomxjslrxj",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "ldaIOdbfPs79LeFDlflV",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "YbKMfrVlnIeytMf6yqV8",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "ohflCtqQ4AhLo85BfAmr",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "JIvDG6RrJjncQPnmrqNB",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "FWkO5zmE5PA2lUEEh3T6",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "yrbkIlFIPkPPEuQHWU9O",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "JeAEAQJv7ObLhbHh7AKK",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "w01pOnQsixM0hKZS9amP",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "3ezG0Zv63DEKCWTInJee",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "xGY5FhSYQsHdO3DTNNkl",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "M6Ad74Bwfx3xsfjRHZ41",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "jdPrxdkdJKP49VF79Eoq",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "401it0yifHSskODIGLzv",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "HiuIA0lNkk90IePN6Ygp",
+      "taskName": "Set renewal reminders",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "OG8tBmeO8myJ16C4KUbC",
+      "taskName": "Set renewal reminders",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "efwT0h68plKjKvJhI5yu",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "ccXwAXolRyhRCWUYobke",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "xRH5D1e581opOMRSw8KQ",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "dIshePRsrlcXHjFE4fa3",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "wV6cQD9W1t0c4hRwJUac",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "Oe1nyqQQO9piemh0RYeZ",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "tyntEimHm2M4OsoWT6Fx",
+      "taskName": "Present proposal to client",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "uKsCYOOkqnxQVASWWL4l",
+      "taskName": "Present proposal to client",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "qAVMGWfygaBXjLLGpsNC",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "p76EfM0qPWmXsMvMTQpa",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "1Md5xJkp8KKvcbZEFJ5d",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "6JemWCEAfvDsK9y2eeaR",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "lnUL5sqcDLPiNxenmxEm",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "zHbaIMo3FFbgkrQTYlwl",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "2DiL0WrILC6Nbxg5zm3H",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "SvoMwUafk1IPnowW7pxT",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "haDymozz8nekvn7Uo9PZ",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "ptijlOThDyDAlX4ChMbM",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "jlELyOlvLRLMqfXHQhv5",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "YBojwwAZTobVOAHyL8Hl",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "6dTS66SI7Z5kdX3cO8I9",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "ABR8MSWN5gdbJdjmVvJj",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "L2oP4xkHcIemXkOUxhnI",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "FKodHXG2azC7spuLUcgw",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "xVyXSnpkRfPtEkdrc7iJ",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "eA9JFH8OIUYIRqJWpk1b",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "75BwWSvvq2XzcsjQC9EE",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "aYYEpbnH6cxfNPsugCe9",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "7XYROX6Dy8XtdhMTny4I",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "eBVZPty8Owr7HzOfWO8g",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "8nbuu2XfhvJ3PpeZdzGP",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "sHDTbEslb7k3io9DAS7Y",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "jH2KcJLwaglZmMhsd92u",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "2NQULwKsEmJekbfnWnVo",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "wf0zWue0Oh6zdi23Lswf",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "u1UABltnXCqKIbhWCTVx",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "AX0FMBYelWK5ly42etru",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "JPDicOMUXlbcvBNkfmDX",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "GO3U1pUm2TeREpw5zhq1",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "KiUGmQTivq3dL09YifhO",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "0f1QR6Y02l5p7GWBaV1W",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "CB9MG6MMVDkYkdF4vqlm",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "8JBAUJDAjPu9aYCkH6MP",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "wWoqGjYghZeZIp6linGF",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "n1SR7gi2sTMMrcdxP36M",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "manual",
+      "phase": "Marketing"
+    },
+    {
+      "id": "fYWs6zPfNA3K31F8u5at",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "manual",
+      "phase": "Marketing"
+    },
+    {
+      "id": "w9qGgmAJiW3NjOGdv93f",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "manual",
+      "phase": "Marketing"
+    },
+    {
+      "id": "NbjlNhw9n5PLrOeQVVWZ",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "manual",
+      "phase": "Marketing"
+    },
+    {
+      "id": "5KIpGSgt481jk1t2pRgP",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "manual",
+      "phase": "Marketing"
+    },
+    {
+      "id": "ba6GdlQFeLYFaxNEDfmQ",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "manual",
+      "phase": "Marketing"
+    },
+    {
+      "id": "ZNI9YtiaPJX0TG5pBjsF",
+      "taskName": "Send follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "qo0hAioRi6OokWz2gCQr",
+      "taskName": "Send follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "yjjUojakXkslCQ8iPx9y",
+      "taskName": "Send follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "9Ymj4z1LjgY32GCYnFRu",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "goBX6c9RnImSIp9Z2wdK",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "IK6VxvGHt1Fg3A6rhDt5",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "JxwYcAQ3oyUyAA0NXHdT",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "OTrxgFL1CQKc6Pleksjt",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "ea13ATVS7J35g6PyUayS",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "rXxTQO5r1FL7HeNWXqQf",
+      "taskName": "Review policy documents",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "w1aJ3yBhpfWjRNgrv7z4",
+      "taskName": "Review policy documents",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "jUQn8oY414vM4jFGQJ1L",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "MWB3AGUOtInCQgyt68sd",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "fiWBLDEinejCItOVQ2Ll",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "V0oA2WmGbedqJmYHvGXe",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "HECGViSb434NUjITDRPQ",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "xUGJ6i1dP3zJhM6UrcPS",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "TSyb0q2KQp4bom0mfbzD",
+      "taskName": "Deliver final policy packet",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "fNI80O9psnjoNHvAxGD1",
+      "taskName": "Deliver final policy packet",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "uNE0W48PVJYm3UiHkTwi",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "yBRbAotz6ykXvA2UJ2Fr",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "Kq4dgl6VtwsgGmIOQkyi",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "QdiqFdOkLssMfWmPkRCC",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "cM6TUp8IKIZFOdvWq9ig",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "fZEnQRQ3obm7xuaMOO7P",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "gHq6juc3pVraQ0JR1QuU",
+      "taskName": "Request binder",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "pqvAfMzmTn0DY3BdfLlF",
+      "taskName": "Request binder",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "Cauu5iDdJ5WcsYuTlMV2",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "1T7kTNvGGaksyBrE7MMr",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "TbR7Di4uUU1OVgbIro7r",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "loiPFZ0h8xDiPRqfdbnJ",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "crK9VtcbJCM4UyVg9uwt",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "vaDBwSkP9wwS2izir4eq",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "Rl1gYseCTxJI2iU54gWJ",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "2J3BSS2h5DjEsN9JqgFO",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "QHfGuPyKY2BXRYRYvTAT",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "yfByaevDHmSYby2OQVSB",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "Cs4dYHW6mtw9yE4RAx8V",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "hU0e0jNbLVaz3HDX62sQ",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "JLVcC4snFzS2HMfu3fwF",
+      "taskName": "Schedule mid-term policy review",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "raXW0GY0P6kftl7rmUqf",
+      "taskName": "Schedule mid-term policy review",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "N2wYc1SRD675Rgpov4Bz",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "RmKEvDf9oY2V72SVbOYZ",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "z2tMaN3ztKC8JxxKJSsu",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "O9LZk3fbhUi4FXrpz6mT",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "tqGiHqsX4apL97ri3C2I",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "hd7B4LnAuWomFvJ4KwtS",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "fJoluhxjOBMTMl6uERew",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "INfuZlwXk9n8MY7QB5Rk",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "YRiBiypAsV85CIICCoZV",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "UpcdJoX01Sf4OvKhH9vR",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "se2KKL4uSvS9TL0fSfNy",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "SxfT6FwvjeuxJvO4AmUh",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "JkuwQpAmHnqEZuodUMTC",
+      "taskName": "Confirm selected quote terms",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "j23DjdKwc6gsSElC4uC8",
+      "taskName": "Confirm selected quote terms",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "nmhCO88hRAbjpgb11IPm",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "lk9bBYefvip01Rs8DnCM",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "Ovcdyb9PFUyzjRVXVxyk",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "oeu8Zk2KXCGyANY8jtzz",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "pAGvVcoMkyn0JPrHtFDH",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "tzxKsXOlpUAlFWnjDUAI",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "qKJRVFwNmLbJbnyxJvcG",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "NtOkV8wg6dI8p52iWzZE",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "GsGqX1s6cAGm1ci3gryH",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "RcSREdnk71z0mI6Yca58",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "Vlrbrd6GHvRFsntYNlPI",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "rIHbSaKRRpxrkETzw2GG",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "zs6oCLUW9BnOlb11sQCu",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "eLq8pWgSpFi8mV8BYhGS",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "8gABETyPmlTL7RkULYlK",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "03x0SiLwmyIUqJc7fTu2",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "2rx9oMHhjo8FCS36opIn",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "XAsMz4mtqHedc80n1C3O",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "5E654SrSIYCliKjLOYDX",
+      "taskName": "Monitor claims and provide updates",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "oTuT4pqeQKZ7qkXm5EB6",
+      "taskName": "Monitor claims and provide updates",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "D5CFfnE5VLctH7FdctR4",
+      "taskName": "Issue certificates of insurance",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "lAzurhshMJHwNVTKcxt8",
+      "taskName": "Issue certificates of insurance",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "aCBaQPuCNo3coedwuCbb",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "0faXhJe1UlAXRt9Jqyzg",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "4uEGDRpIRLWU6PO5XmPI",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "alzdhmijTepLy4z4eszG",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "aI0Jn2gvkylDFhu9Si9r",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "bU0RQj2RkWYC2ZS0pgYD",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission"
+    },
+    {
+      "id": "3QY1hJgj8sR8HpgIK6Wl",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "Drc1a6Gk8LTCntRFygDs",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "swhJ5WZPz4kkdHOShrPZ",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "sC05o0nK4hHwbuC0y573",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "MrzbBFJ4vQgCJRJYpSpv",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "a9gn6ofXGb8miQdz3Uzj",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "oQcsjtubYSPnE5SAzNNE",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "l04aAMv6tOTl8pC6KLIF",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "hkUSAu0JsDBaFBABrqfX",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "wO3zuWEPwYM7ZMpODfuA",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "etRhN2iFgGRLf8Uqiu1j",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "qSMlfMpYQYXPOMI1SF8B",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "0cvxTRcc0WtKzTShEis6",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "BNNBLfxt8GKOWRgBBfor",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "yeUHFmq7ILpG7j8U1KRp",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "4LjDdwd560FTQH7keI5x",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "T6APuPafKSLezR7sV8mq",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "w2vzulTdDBWz84zMVIFv",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "HAObKSYkOpJ5rrjsukSf",
+      "taskName": "Schedule client presentation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "oQngpzETsrpXWn9MVhhm",
+      "taskName": "Schedule client presentation",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "Crq44tpNjPbZpAr7Xv3a",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "XNCMEDZ1pUrvfEBQjONw",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "REq4ndAEAD9nh7V93jCv",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "H6e1URSIum7chC17unIk",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "F3VOhOoeMKvAdF6ZfKVX",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "s9Cm3mEohwZf8Y5clk6y",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "ay5iTbNodXRMpkMIszS0",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "UVO6jng9KqPBBMPQqIwg",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "mGTnAHZYk9xk7rYvtYH4",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "sMoUxJ31KywosdI0lKh6",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "8q2jjI97Tp7B1JP7lurg",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "qGEVNuVzjC4iAzW7n1D6",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "LFMD7vA83Ng7UzYWsdB5",
+      "taskName": "Document client selection",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "wPLOWJTI0QgYRVGDzdGl",
+      "taskName": "Document client selection",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "B10M67bZTVuuI5TFDjRz",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "TWgFuzuADGBfYmg45ljS",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "rB22ny4SDBds3XS16FAT",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "O65Druu6Ca9OxukkUhnz",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "orxM3A6rxPtJrJWy8TlE",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "v2YTMRhT3jaPyNx4Wa4X",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing"
+    },
+    {
+      "id": "KstNWuCRxneZLPHVf9ze",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "KCmdTSVofIsdxd40JBYH",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "QhIbEp467MXNSawW0zHH",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "zbm0Pwjhjl8r5WK0lNpQ",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "45Zw6PW5KTOKMar8fin4",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "3xuho3TytfmAW12qQ22X",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal"
+    },
+    {
+      "id": "CkK8BHbLHe6yABQI7nSR",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "32zQSL4XheaHAfstN7kS",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "54aABbgzpuU3GMeJq3Il",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "9C2g2mMYJwE7jqYzGTkp",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "7jzDpvjLu7PPIt5p47Ce",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission"
+    },
+    {
+      "id": "GPqcFU4NLB20zkSSyLaX",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission"
+    }
+  ],
+  "keepList": [
+    {
+      "id": "4JgmRvEGAJvjDTNCOuvI",
+      "taskName": "Send final policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "5Q8bZgyzgoLQYhbcZsLa",
+      "taskName": "Ingest quotes",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "8SkC7hi868MlQ0CSv62N",
+      "taskName": "Send binder/invoice/COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "8rIkQyWDbnRb4YoksVLN",
+      "taskName": "Send submission packets",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "Ao3KjRNQY3hTI1qHdFw2",
+      "taskName": "Collect first payment",
+      "tag": "ai",
+      "phase": "Binding",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "BKMpe6QHBYIZgGY6mDq8",
+      "taskName": "Package proposal in branded format",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "BUhAeBS8oCHa6tRzhVzG",
+      "taskName": "Flag differences",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "BiCguALYcIHQI0PBHSVp",
+      "taskName": "Compare issued policy vs binder",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "C9ISTHFJdiCWaNOaq75K",
+      "taskName": "Log submissions",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "Ci355cgB0KFwSfxdNzEt",
+      "taskName": "Set renewal reminders",
+      "tag": "ai",
+      "phase": "Policy Check-In",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "DAOGUgowboenJFMuI6k6",
+      "taskName": "Highlight discrepancies",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "DSub3RDHWIhWBJOfDuAd",
+      "taskName": "Present proposal to client",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "EydD6xRJ6PINVohVH2lI",
+      "taskName": "Archive docs",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "G4iT3fkyHWQTdenJKnfz",
+      "taskName": "Generate comparison sheet",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "GAwdJ09qWRT5kmv3CoTB",
+      "taskName": "Review flagged underwriter questions",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "IKCZHshvQY3w9p1eLncb",
+      "taskName": "Research public info (OSHA data, company site)",
+      "tag": "ai",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "JYYrLhkGAuTlpUt8QLjY",
+      "taskName": "Complete ACORD 130 - Workers' Compensation Application",
+      "tag": "ai",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "MpQOk71FT7XMfy1eCbrL",
+      "taskName": "Complete ACORD 125 – Commercial Insurance Application",
+      "tag": "ai",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "uGK2oAo86Yn6NAWgmjlT",
+      "taskName": "Search suitable carriers using marketing database",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "PeFPaMBNUI0vfcpeKG4L",
+      "taskName": "Send follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "PwdXuAVzs447DezaAPvr",
+      "taskName": "Present and discuss",
+      "tag": "manual",
+      "phase": "Proposal"
+    },
+    {
+      "id": "S46sAEklLBYD2gHgNgZa",
+      "taskName": "Review policy documents",
+      "tag": "ai",
+      "phase": "Binding",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "Ss504WJ3CArgS0cDDMMO",
+      "taskName": "Resolve discrepancies",
+      "tag": "manual",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "TmEsNTqQDuE7khBAC1yt",
+      "taskName": "Deliver final policy packet",
+      "tag": "ai",
+      "phase": "Binding",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "UAc1qw6pdUEZjYpecUnP",
+      "taskName": "Write narrative",
+      "tag": "ai",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "UedngQIKS8xof4J25Fph",
+      "taskName": "Request binder",
+      "tag": "ai",
+      "phase": "Binding",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "VvQMNcSEzDWkn1vCdVvW",
+      "taskName": "Track responses & follow-ups",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "WgMGEgnZ7HTugAeLXqUT",
+      "taskName": "Request payroll by classification",
+      "tag": "manual",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "XdEDNHTPjOykK7d3YwAl",
+      "taskName": "Schedule mid-term policy review",
+      "tag": "ai",
+      "phase": "Policy Check-In",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "i5vVDbnyVhBvgTTp5Qvk",
+      "taskName": "Draft client recommendation",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "aBGEEXtOUpD4g3SpPSM2",
+      "taskName": "Draft custom marketing emails",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "cljDgHvNWE9uKcaPwpdd",
+      "taskName": "Confirm selected quote terms",
+      "tag": "ai",
+      "phase": "Binding",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "dSZWRjpGqrZQ5fsj3yj8",
+      "taskName": "Obtain binding confirmation",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "dhqMSGoOVevln0iBipTO",
+      "taskName": "Generate invoice",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "eQpxF3QVi6sezDBoRnm2",
+      "taskName": "Finalize and approve submission package",
+      "tag": "manual",
+      "phase": "Submission",
+      "showDependencyArtifacts": true
+    },
+    {
+      "id": "fTMZcWclL0iBuIhYHSfY",
+      "taskName": "Monitor claims and provide updates",
+      "tag": "ai",
+      "phase": "Policy Check-In",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "fcIRxOi4dGuDERxcIbw2",
+      "taskName": "Issue certificates of insurance",
+      "tag": "ai",
+      "phase": "Binding",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "gIv4tVPtfEAmvuq2rwVU",
+      "taskName": "Generate coverage suggestions",
+      "tag": "ai",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "jDVFTmLWZ6jSpVXiJLuE",
+      "taskName": "ACORD 130 – Include loss forecast",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "piw3VEGB0ksoiZEgoe2I",
+      "taskName": "Notify underwriter",
+      "tag": "manual",
+      "phase": "Binding"
+    },
+    {
+      "id": "rVP8YHHqfiq4rSRkD37b",
+      "taskName": "Archive policy",
+      "tag": "ai",
+      "phase": "Policy Check-In"
+    },
+    {
+      "id": "s3FHCW6ddDxbkho2Qd2t",
+      "taskName": "Schedule client presentation",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "uG1uCDKKKmIKW0kptk7R",
+      "taskName": "Generate COI",
+      "tag": "ai",
+      "phase": "Binding"
+    },
+    {
+      "id": "uvoIpfEmnlbCh6tG9f3G",
+      "taskName": "Request loss runs (3–5 years)",
+      "tag": "manual",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "v6zhvBVcGG4hIFU9Ict6",
+      "taskName": "Document client selection",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "xiruf7gBSf9FnzT7TkZX",
+      "taskName": "Draft follow-up emails",
+      "tag": "ai",
+      "phase": "Marketing",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "y2yT6ZrPg1pQVpwXJme5",
+      "taskName": "Compare rates, mods, endorsements",
+      "tag": "ai",
+      "phase": "Proposal",
+      "showDependencyArtifacts": false
+    },
+    {
+      "id": "yW34qMcpT9snVNZ7JeQZ",
+      "taskName": "Request employee count & job descriptions",
+      "tag": "manual",
+      "phase": "Submission",
+      "showDependencyArtifacts": false
+    }
+  ]
+}

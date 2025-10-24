@@ -186,9 +186,7 @@ export function TaskChat({ task, companyId, onTaskUpdate, inlineContent }: TaskC
 
 To complete the submission I'll need the following:
 
-${task.description}
-
-Let me know if these are approved.`
+${task.description}`
             : `Hello! I'm here to help you complete the task: "${task.taskName}".
 
 ${task.description}
@@ -238,9 +236,7 @@ How can I assist you with this task today?`;
 
 To complete the submission I'll need the following:
 
-${task.description}
-
-Let me know if these are approved.`
+${task.description}`
           : `Hello! I'm here to help you complete the task: "${task.taskName}".
 
 ${task.description}
