@@ -13,6 +13,7 @@ import { collection, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskChat } from '@/components/TaskChat';
 import { useToast } from '@/hooks/use-toast';
@@ -499,7 +500,7 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
                                   prose-blockquote:border-l-4 prose-blockquote:border-l-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
                                   prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
                                   [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                       {String(selectedArtifact.content)}
                     </ReactMarkdown>
                   </div>
