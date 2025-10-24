@@ -68,6 +68,17 @@ export class AITaskWorker {
         }
       }
 
+      // Post initial message to chat letting user know AI is working
+      const chatRef = collection(db, 'taskChats', taskId, 'messages');
+      const startMessage = {
+        role: 'assistant',
+        content: `🤖 I'm working on completing the task: "${task.taskName}". This may take a moment as I gather and analyze all available company data and documents...`,
+        timestamp: new Date(),
+        isAIGenerated: true,
+        completedAutomatically: true
+      };
+      await addDoc(chatRef, startMessage);
+
       // Update progress
       await this.updateJobStatus(taskId, 'processing', 'Gathering company data and context...');
 
@@ -148,9 +159,14 @@ export class AITaskWorker {
 
         if (!chatContent || chatContent.length < 20) {
           if (artifacts.length > 1) {
-            chatContent = `I've generated ${artifacts.length} documents for ${task.taskName}. You can view them in the artifact viewer on the right using the navigation arrows, or download them individually.`;
+            chatContent = `✅ I've completed the task and generated ${artifacts.length} documents for "${task.taskName}". You can view them in the artifact viewer on the right using the navigation arrows, or download them individually.`;
           } else {
-            chatContent = `I've generated the ${task.taskName} document. You can view it in the artifact viewer on the right or download it from the artifacts section.`;
+            chatContent = `✅ I've completed the task "${task.taskName}" and generated the document. You can view it in the artifact viewer on the right or download it from the artifacts section.`;
+          }
+        } else {
+          // Prepend completion indicator if the chat content doesn't already have one
+          if (!chatContent.includes('✅') && !chatContent.toLowerCase().includes('completed')) {
+            chatContent = `✅ Task completed!\n\n${chatContent}`;
           }
         }
       }
