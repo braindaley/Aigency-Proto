@@ -186,7 +186,7 @@ export class AITaskWorker {
         hasArtifact: hasArtifact
       };
 
-      const chatRef = collection(db, 'taskChats', taskId, 'messages');
+      // Reuse chatRef from above (line 72)
       await addDoc(chatRef, chatMessage);
 
       // Save artifacts
