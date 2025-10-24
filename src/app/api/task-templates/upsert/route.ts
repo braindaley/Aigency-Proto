@@ -12,7 +12,7 @@ async function logAuditTrail(
   userEmail?: string
 ) {
   try {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/api/task-templates/audit`, {
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003'}/api/task-templates/audit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

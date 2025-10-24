@@ -131,7 +131,7 @@ async function validateTaskCompletion(messages: any[], testCriteria: string, lat
 async function updateTaskStatus(taskId: string, status: string) {
   // Use the update-task-status endpoint to ensure dependency logic is triggered
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:9002'}/api/update-task-status`, {
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:9003'}/api/update-task-status`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

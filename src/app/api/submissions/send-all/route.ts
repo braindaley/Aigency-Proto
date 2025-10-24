@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Use the API endpoint to mark as completed, which will trigger dependent tasks
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
         const response = await fetch(`${baseUrl}/api/update-task-status`, {
           method: 'POST',
           headers: {
