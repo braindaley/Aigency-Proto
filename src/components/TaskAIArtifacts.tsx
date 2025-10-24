@@ -1122,7 +1122,42 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
                     const { isJson, formatted, markdown } = formatJsonIfNeeded(artifact.content);
 
                     // For preview mode, use the content as-is (markdown or converted JSON)
-                    const contentToRender = (isJson && markdown) ? markdown : artifact.content;
+                    let contentToRender = (isJson && markdown) ? markdown : artifact.content;
+
+                    // Debug: Log the content to see what we're receiving
+                    console.log('[TaskAIArtifacts] Original content first 300 chars:', contentToRender.substring(0, 300));
+                    console.log('[TaskAIArtifacts] Content starts with:', contentToRender.substring(0, 20));
+
+                    // Strip markdown code fence if content is wrapped in ```markdown...```
+                    // Try multiple patterns
+                    let strippedContent = contentToRender;
+
+                    // Pattern 1: ```markdown\n...\n```
+                    let match = strippedContent.match(/^```markdown\s*\n([\s\S]*?)\n```$/);
+                    if (match) {
+                      console.log('[TaskAIArtifacts] Stripped markdown fence (pattern 1)');
+                      strippedContent = match[1];
+                    }
+
+                    // Pattern 2: ```\n...\n```
+                    if (!match) {
+                      match = strippedContent.match(/^```\s*\n([\s\S]*?)\n```$/);
+                      if (match) {
+                        console.log('[TaskAIArtifacts] Stripped code fence (pattern 2)');
+                        strippedContent = match[1];
+                      }
+                    }
+
+                    // Pattern 3: ``` at start without newline
+                    if (!match) {
+                      match = strippedContent.match(/^```markdown\s*([\s\S]*?)\s*```$/);
+                      if (match) {
+                        console.log('[TaskAIArtifacts] Stripped markdown fence (pattern 3)');
+                        strippedContent = match[1];
+                      }
+                    }
+
+                    contentToRender = strippedContent;
 
                     return viewMode === 'preview' ? (
                       <div className="prose prose-base max-w-none

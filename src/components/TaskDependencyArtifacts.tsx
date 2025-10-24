@@ -501,7 +501,23 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
                                   prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
                                   [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                      {String(selectedArtifact.content)}
+                      {(() => {
+                        let content = String(selectedArtifact.content);
+                        // Strip markdown code fence if content is wrapped
+                        const patterns = [
+                          /^```markdown\s*\n([\s\S]*?)\n```$/,
+                          /^```\s*\n([\s\S]*?)\n```$/,
+                          /^```markdown\s*([\s\S]*?)\s*```$/
+                        ];
+                        for (const pattern of patterns) {
+                          const match = content.match(pattern);
+                          if (match) {
+                            content = match[1];
+                            break;
+                          }
+                        }
+                        return content;
+                      })()}
                     </ReactMarkdown>
                   </div>
                 ) : (
