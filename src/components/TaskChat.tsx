@@ -187,11 +187,11 @@ export function TaskChat({ task, companyId, onTaskUpdate, inlineContent }: TaskC
 To complete the submission I'll need the following:
 
 ${task.description}`
-            : `Hello! I'm here to help you complete the task: "${task.taskName}".
+            : `Hello! I'm working on: "${task.taskName}".
 
 ${task.description}
 
-How can I assist you with this task today?`;
+I'll analyze the available data and create this for you now.`;
 
           const initialMsg: ChatMessage = {
             id: 'initial',
@@ -237,11 +237,11 @@ How can I assist you with this task today?`;
 To complete the submission I'll need the following:
 
 ${task.description}`
-          : `Hello! I'm here to help you complete the task: "${task.taskName}".
+          : `Hello! I'm working on: "${task.taskName}".
 
 ${task.description}
 
-How can I assist you with this task today?`;
+I'll analyze the available data and create this for you now.`;
 
         setMessages([{
           id: 'initial',
@@ -608,7 +608,12 @@ How can I assist you with this task today?`;
       console.error('Failed to save user message to Firestore:', error);
     }
 
-    const shouldRunValidationOnly = isEarlyManualTask && filesUploaded;
+    // Check if user is approving/confirming
+    const approvalKeywords = ['approved', 'approve', 'looks good', 'confirmed', 'confirm', 'accepted', 'accept', 'yes', 'ok'];
+    const userInput = input.trim().toLowerCase();
+    const isApprovalMessage = approvalKeywords.some(keyword => userInput.includes(keyword));
+
+    const shouldRunValidationOnly = isEarlyManualTask && (filesUploaded || isApprovalMessage);
 
     if (shouldRunValidationOnly) {
       setIsLoading(true);

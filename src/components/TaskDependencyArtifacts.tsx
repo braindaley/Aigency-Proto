@@ -14,10 +14,20 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskChat } from '@/components/TaskChat';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
+
+// Create a permissive sanitize schema that allows all standard HTML/markdown elements
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    '*': ['className', 'class', 'style'] // Allow common attributes
+  }
+};
 
 interface DependencyArtifact {
   taskId: string;
@@ -487,35 +497,43 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
             <CardContent className="flex-1 overflow-hidden">
               <ScrollArea className="h-full">
                 {viewMode === 'preview' ? (
-                  <div className="prose prose-base max-w-none
-                                  prose-headings:text-foreground prose-headings:font-semibold
-                                  prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6
-                                  prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold
-                                  prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-h3:font-semibold
-                                  prose-p:text-foreground prose-p:leading-7 prose-p:mb-4
+                  <div className="prose prose-base max-w-none bg-background text-foreground
+                                  prose-headings:text-foreground prose-headings:font-semibold prose-headings:bg-transparent
+                                  prose-h1:text-2xl prose-h1:border-b prose-h1:border-border prose-h1:pb-3 prose-h1:mb-6 prose-h1:bg-transparent
+                                  prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:font-semibold prose-h2:bg-transparent
+                                  prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-h3:font-semibold prose-h3:bg-transparent
+                                  prose-p:text-foreground prose-p:leading-7 prose-p:mb-4 prose-p:bg-transparent
                                   prose-strong:text-foreground prose-strong:font-semibold
                                   prose-ul:my-4 prose-ul:pl-6 prose-ul:text-foreground
                                   prose-ol:my-4 prose-ol:pl-6 prose-ol:text-foreground
                                   prose-li:mb-2 prose-li:text-foreground prose-li:leading-relaxed
                                   prose-blockquote:border-l-4 prose-blockquote:border-l-border prose-blockquote:pl-4 prose-blockquote:text-muted-foreground prose-blockquote:italic
                                   prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:text-foreground
-                                  [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                  prose-pre:bg-muted prose-pre:text-foreground
+                                  [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                                  [&_pre]:bg-muted [&_pre]:text-foreground [&_pre]:border [&_pre]:border-border">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>
                       {(() => {
                         let content = String(selectedArtifact.content);
-                        // Strip markdown code fence if content is wrapped
+
+                        // More aggressive code fence stripping - try all variations
                         const patterns = [
                           /^```markdown\s*\n([\s\S]*?)\n```$/,
                           /^```\s*\n([\s\S]*?)\n```$/,
-                          /^```markdown\s*([\s\S]*?)\s*```$/
+                          /^```markdown\s*([\s\S]*?)\s*```$/,
+                          /^```\s*([\s\S]*?)\s*```$/,
+                          /^```[a-z]*\s*\n([\s\S]*?)\n```$/,
+                          /^```[a-z]*\s*([\s\S]*?)\s*```$/
                         ];
+
                         for (const pattern of patterns) {
                           const match = content.match(pattern);
                           if (match) {
-                            content = match[1];
+                            content = match[1].trim();
                             break;
                           }
                         }
+
                         return content;
                       })()}
                     </ReactMarkdown>

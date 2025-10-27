@@ -30,6 +30,17 @@ import { db } from '@/lib/firebase';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+
+// Create a permissive sanitize schema
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    '*': ['className', 'class', 'style']
+  }
+};
+
 import { 
   collection, 
   addDoc, 
@@ -836,11 +847,21 @@ export default function CompanyArtifacts() {
                     {selectedArtifact && formatData(selectedArtifact.data)}
                   </pre>
                 ) : (
-                  <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
+                  <div className="prose prose-sm max-w-none bg-background text-foreground
+                                  prose-headings:text-foreground prose-headings:font-semibold prose-headings:bg-transparent
+                                  prose-h1:text-2xl prose-h1:mb-4 prose-h1:bg-transparent
+                                  prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3 prose-h2:bg-transparent
+                                  prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-2 prose-h3:bg-transparent
+                                  prose-p:text-foreground prose-p:bg-transparent
+                                  prose-strong:text-foreground
+                                  prose-ul:text-foreground prose-ol:text-foreground
+                                  prose-code:bg-muted prose-code:text-foreground
+                                  prose-pre:bg-muted prose-pre:text-foreground
+                                  [&_pre]:bg-muted [&_pre]:text-foreground">
                     {selectedArtifact && typeof selectedArtifact.data === 'string' ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{selectedArtifact.data}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>{selectedArtifact.data}</ReactMarkdown>
                     ) : (
-                      <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
+                      <pre className="text-sm font-mono whitespace-pre-wrap text-foreground">
                         {selectedArtifact && formatData(selectedArtifact.data)}
                       </pre>
                     )}
