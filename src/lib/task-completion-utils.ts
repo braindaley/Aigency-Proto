@@ -252,10 +252,23 @@ async function checkAllDependenciesCompleted(
       }
 
       const depData = depSnapshot.data();
-      if (depData && depData.status !== 'completed') {
-        console.log(`[${timestamp}]   ❌ Dependency "${depData.taskName}" not completed (status: ${depData.status})`);
+      if (!depData) {
+        console.log(`[${timestamp}]   ❌ Dependency data not found`);
         return false;
       }
+
+      // A dependency is satisfied if:
+      // 1. Status is 'completed', OR
+      // 2. Status is 'Needs attention' AND task is tagged as 'ai' (meaning it's queued/running)
+      const isSatisfied = depData.status === 'completed' ||
+                         (depData.status === 'Needs attention' && depData.tag === 'ai');
+
+      if (!isSatisfied) {
+        console.log(`[${timestamp}]   ❌ Dependency "${depData.taskName}" not satisfied (status: ${depData.status}, tag: ${depData.tag})`);
+        return false;
+      }
+
+      console.log(`[${timestamp}]   ✅ Dependency "${depData.taskName}" satisfied (${depData.status})`);
     }
 
     return true;

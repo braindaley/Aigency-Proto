@@ -33,14 +33,26 @@ export async function POST(request: NextRequest) {
       const artifacts = snapshot.docs
         .map(doc => {
           const data = doc.data();
+          // Try to extract carrier name from various sources
+          let carrierName = data.carrierName || data.name || '';
+
+          // If no explicit carrier name, try to extract from content
+          if (!carrierName && data.data) {
+            // Look for patterns like "Carrier: XYZ" or "Company: XYZ" at the beginning
+            const carrierMatch = data.data.match(/(?:Carrier|Company|To):\s*([^\n]+)/i);
+            if (carrierMatch) {
+              carrierName = carrierMatch[1].trim();
+            }
+          }
+
           return {
             id: doc.id,
             title: data.name || '',
             content: data.data || '',
-            carrierName: data.carrierName || data.name
+            carrierName
           };
         })
-        .filter(a => a.carrierName && a.content); // Only include artifacts with carrier names
+        .filter(a => a.carrierName && a.content && a.content.length > 100); // Only include artifacts with carrier names and substantial content
 
       allArtifacts.push(...artifacts);
     }
@@ -52,13 +64,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Gather attachments from all completed tasks in the company
+    // These typically include: ACORD 125, ACORD 130, loss runs, narrative, coverage suggestions
+    const attachments: any[] = [];
+    const completedTasksRef = collection(db, 'companyTasks');
+    const completedTasksQuery = query(
+      completedTasksRef,
+      where('companyId', '==', companyId),
+      where('status', '==', 'completed')
+    );
+    const completedTasksSnapshot = await getDocs(completedTasksQuery);
+
+    // Key artifacts to attach: ACORDs, loss runs, narrative, coverage suggestions
+    const attachmentKeywords = ['acord', 'loss run', 'narrative', 'coverage suggestion', 'payroll', 'application'];
+
+    for (const taskDoc of completedTasksSnapshot.docs) {
+      const taskData = taskDoc.data();
+      const taskName = (taskData.taskName || '').toLowerCase();
+
+      // Check if this task produces documents we want to attach
+      const isAttachmentSource = attachmentKeywords.some(keyword => taskName.includes(keyword));
+
+      if (isAttachmentSource) {
+        const taskArtifactsRef = collection(db, `companies/${companyId}/artifacts`);
+        const taskArtifactsQuery = query(taskArtifactsRef, where('taskId', '==', taskDoc.id));
+        const taskArtifactsSnapshot = await getDocs(taskArtifactsQuery);
+
+        taskArtifactsSnapshot.forEach(artifactDoc => {
+          const artifactData = artifactDoc.data();
+          attachments.push({
+            id: artifactDoc.id,
+            name: artifactData.name || taskData.taskName,
+            type: artifactData.type || 'text',
+            url: `/companies/${companyId}/artifacts/${artifactDoc.id}`, // Reference to artifact
+            taskName: taskData.taskName
+          });
+        });
+      }
+    }
+
+    console.log(`📎 Found ${attachments.length} attachments to include with submissions`);
+
     // Create submissions
     const submissionIds = await createSubmissionsFromArtifacts({
       companyId,
       taskId,
       taskName,
       artifacts: allArtifacts,
-      attachments: [] // Can be enhanced to include actual attachments
+      attachments
     });
 
     console.log(`✅ Created ${submissionIds.length} submissions from ${dependencyTaskIds.length} dependency task(s)`);

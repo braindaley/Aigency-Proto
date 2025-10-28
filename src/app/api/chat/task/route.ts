@@ -232,8 +232,11 @@ FORMATTING REQUIREMENTS:
 IMPORTANT: Keep responses concise but well-formatted.
 
 USER APPROVAL DETECTION:
-If the user says phrases like "pass this task", "approve this", "this is ok", "mark as complete", or similar approval language, respond with:
-"✅ **Task Approved!** Great, I'm marking this task as completed. The work you've done meets the requirements and is ready to proceed."
+If this is an EMAIL task (interfaceType: email) and the user says they want to send emails (like "send them", "yes send", "ok send"):
+- Respond with: "📧 **Sending emails now...** I'm sending all ${task.interfaceType === 'email' ? 'prepared' : ''} emails to the carriers. Once sent, I'll mark this task as complete."
+
+For other tasks, if the user says phrases like "pass this task", "approve this", "this is ok", "mark as complete":
+- Respond with: "✅ **Task Approved!** Great, I'm marking this task as completed. The work you've done meets the requirements and is ready to proceed."
 
 DOCUMENT ANALYSIS:
 When a user uploads documents, analyze them appropriately based on their content:
@@ -297,14 +300,30 @@ Otherwise, provide brief guidance on what's needed.`;
       'complete this task',
       'complete the task',
       'accept this',
-      'this works'
+      'this works',
+      'send them',
+      'send the emails',
+      'send all',
+      'yes send',
+      'go ahead'
     ];
 
     const userIsApproving = approvalPhrases.some(phrase => userContent.includes(phrase));
 
+    // Check if this is an email task and user wants to send emails
+    const isEmailTask = task.interfaceType === 'email';
+    const userWantsToSendEmails = isEmailTask && (
+      userContent.includes('send') ||
+      (userContent.includes('yes') && userContent.length < 20) ||
+      userContent.includes('ok') ||
+      userContent.includes('approve')
+    );
+
     console.log('🔍 USER APPROVAL CHECK:', {
       userContent: userContent.substring(0, 100),
       userIsApproving,
+      isEmailTask,
+      userWantsToSendEmails,
       currentTaskStatus: task.status,
       taskId
     });
@@ -312,7 +331,33 @@ Otherwise, provide brief guidance on what's needed.`;
     // Check if task is not already completed (handle both 'completed' and 'Complete')
     const isNotCompleted = task.status !== 'completed' && task.status !== 'Complete';
 
-    if (userIsApproving && isNotCompleted) {
+    // Handle email tasks - send emails (even if task is completed, to allow resending)
+    if (userWantsToSendEmails) {
+      console.log(`📧 User approved sending emails for task ${taskId}, sending now...`);
+      (async () => {
+        try {
+          // Call the send-all-for-task API
+          const sendResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:9003'}/api/submissions/send-all-for-task`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId, taskId }),
+          });
+
+          if (sendResponse.ok) {
+            console.log(`✅ Emails sent successfully for task ${taskId}`);
+            // Mark task as completed after sending (if not already)
+            if (isNotCompleted) {
+              await updateTaskStatus(taskId, 'completed');
+              console.log(`✅ Task ${taskId} marked as completed after sending emails`);
+            }
+          } else {
+            console.error(`❌ Failed to send emails for task ${taskId}`);
+          }
+        } catch (error) {
+          console.error('❌ Failed to send emails:', error);
+        }
+      })();
+    } else if (userIsApproving && isNotCompleted) {
       console.log(`✅ User explicitly approved task ${taskId}, marking as completed`);
       // Don't use setTimeout - call immediately to ensure it executes
       (async () => {

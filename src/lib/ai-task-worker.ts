@@ -11,6 +11,7 @@ import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, whe
 import { db } from '@/lib/firebase';
 import { DataService } from '@/lib/data-service';
 import { completeTask } from '@/lib/task-completion-utils';
+import { syncTaskWithTemplate } from '@/lib/task-template-sync';
 
 export interface AITaskJob {
   taskId: string;
@@ -38,6 +39,13 @@ export class AITaskWorker {
     try {
       if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
         throw new Error('Google Generative AI API key is not configured');
+      }
+
+      // Sync task with template before processing
+      await this.updateJobStatus(taskId, 'processing', 'Syncing with task template...');
+      const syncResult = await syncTaskWithTemplate(taskId, { force: false });
+      if (syncResult.synced) {
+        console.log(`[${timestamp}] 🔄 AI-TASK-WORKER: Task synced with template - updated: ${syncResult.updatedFields.join(', ')}`);
       }
 
       // Fetch the AI task details
@@ -144,24 +152,38 @@ export class AITaskWorker {
 
       const result = { text: fullText };
 
-      // Extract artifacts
-      const artifactMatches = result.text.matchAll(/<artifact(?:\s+id="([^"]+)")?>([\s\S]*?)<\/artifact>/g);
+      // Extract artifacts (support both XML tags and markdown code blocks)
       const artifacts: Array<{ id?: string; content: string }> = [];
 
-      for (const match of artifactMatches) {
-        const artifactId = match[1];
+      // First, try XML-style artifacts with flexible attributes: <artifact id="..." name="..." type="...">content</artifact>
+      // This regex captures the id attribute and ignores other attributes
+      const xmlArtifactMatches = Array.from(result.text.matchAll(/<artifact(?:\s+[^>]*?id="([^"]+)"[^>]*?)?(?:\s+[^>]*)?>(\s*[\s\S]*?)<\/artifact>/g));
+      for (const match of xmlArtifactMatches) {
+        const artifactId = match[1]; // Captured id if present
         const artifactContent = match[2].trim();
         if (artifactContent.length > 100) {
           artifacts.push({ id: artifactId, content: artifactContent });
         }
       }
 
+      // Second, try markdown-style artifacts: ```artifact ... ```
+      const markdownArtifactMatches = Array.from(result.text.matchAll(/```artifact\s*\n([\s\S]*?)\n```/g));
+      for (const match of markdownArtifactMatches) {
+        const artifactContent = match[1].trim();
+        if (artifactContent.length > 100) {
+          artifacts.push({ content: artifactContent });
+        }
+      }
+
       const hasArtifact = artifacts.length > 0;
 
-      // Extract chat content
+      // Extract chat content (remove artifacts)
       let chatContent = result.text;
       if (hasArtifact) {
-        chatContent = result.text.replace(/<artifact(?:\s+id="[^"]+")?>[\s\S]*?<\/artifact>/g, '').trim();
+        // Remove XML-style artifacts (with any attributes)
+        chatContent = chatContent.replace(/<artifact(?:\s+[^>]*)?>[\s\S]*?<\/artifact>/g, '').trim();
+        // Remove markdown-style artifacts
+        chatContent = chatContent.replace(/```artifact\s*\n[\s\S]*?\n```/g, '').trim();
 
         if (!chatContent || chatContent.length < 20) {
           if (artifacts.length > 1) {
@@ -199,6 +221,21 @@ export class AITaskWorker {
       if (hasArtifact && artifacts.length > 0) {
         await this.updateJobStatus(taskId, 'processing', `Saving ${artifacts.length} artifact(s)...`);
         await this.saveArtifacts(taskId, companyId, task, artifacts);
+      }
+
+      // Create email submissions for submission/follow-up tasks (sortOrder 12, 14)
+      // Also include marketing email tasks (sortOrder 11) that have "email" or "marketing" in the name
+      const isSubmissionTask = task.sortOrder === 12 || task.sortOrder === 14 ||
+                               task.taskName?.toLowerCase().includes('send submission') ||
+                               task.taskName?.toLowerCase().includes('send follow-up') ||
+                               (task.sortOrder === 11 && (
+                                 task.taskName?.toLowerCase().includes('email') ||
+                                 task.taskName?.toLowerCase().includes('marketing')
+                               ));
+
+      if (isSubmissionTask && task.dependencies && task.dependencies.length > 0) {
+        await this.updateJobStatus(taskId, 'processing', 'Creating email submissions...');
+        await this.createSubmissionsFromDependencies(taskId, companyId, task);
       }
 
       // Run validation if test criteria exist
@@ -345,6 +382,51 @@ export class AITaskWorker {
   }
 
   /**
+   * Create email submissions from dependency task artifacts
+   * For submission/follow-up tasks (sortOrder 12, 14)
+   */
+  private static async createSubmissionsFromDependencies(
+    taskId: string,
+    companyId: string,
+    task: any
+  ): Promise<void> {
+    const timestamp = new Date().toISOString();
+    try {
+      console.log(`[${timestamp}] 📧 AI-TASK-WORKER: Creating submissions for task ${taskId} (${task.taskName})`);
+
+      const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
+      const response = await fetch(`${baseUrl}/api/submissions/create-from-dependencies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId,
+          taskId,
+          taskName: task.taskName,
+          dependencyTaskIds: task.dependencies || []
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(`[${timestamp}] ❌ AI-TASK-WORKER: Failed to create submissions:`, errorData);
+        throw new Error(errorData.error || 'Failed to create submissions');
+      }
+
+      const result = await response.json();
+      console.log(`[${timestamp}] ✅ AI-TASK-WORKER: Created ${result.count} email submission(s)`);
+
+      if (result.artifacts && result.artifacts.length > 0) {
+        console.log(`[${timestamp}] 📋 AI-TASK-WORKER: Submissions created for carriers:`,
+          result.artifacts.map((a: any) => a.carrierName).join(', '));
+      }
+    } catch (error) {
+      console.error(`[${timestamp}] ❌ AI-TASK-WORKER: Error creating submissions:`, error);
+      // Don't throw - we want the task to complete even if submission creation fails
+      // The user can manually create submissions if needed
+    }
+  }
+
+  /**
    * Validate task completion against test criteria
    */
   private static async validateTask(
@@ -454,6 +536,30 @@ TASK TO COMPLETE:
 CRITICAL REQUIREMENT - YOU MUST GENERATE AN ARTIFACT:
 For this task to be considered complete, you MUST create a document wrapped in <artifact> tags.
 The artifact should be a complete, professional document that fulfills the task requirements.
+
+IMPORTANT: Use XML-style tags, NOT markdown code blocks:
+✅ CORRECT:   <artifact>...document content...</artifact>
+❌ INCORRECT: \`\`\`artifact\n...document content...\n\`\`\`
+
+The artifact MUST be wrapped in <artifact> opening and closing tags.
+
+ARTIFACT CONTENT FORMAT - ALWAYS USE MARKDOWN:
+The content INSIDE the <artifact> tags MUST be formatted as clean, well-structured Markdown.
+✅ CORRECT:   <artifact># Title\\n\\n## Section\\n\\nContent here...</artifact>
+❌ INCORRECT: <artifact><?xml version="1.0"?><document>...</document></artifact>
+❌ INCORRECT: <artifact><html><body>...</body></html></artifact>
+❌ INCORRECT: <artifact>{"title": "...", "content": "..."}</artifact>
+
+Use proper Markdown formatting:
+- # for main title, ## for sections, ### for subsections
+- **bold** for emphasis
+- Bullet points with - or *
+- Numbered lists with 1., 2., 3.
+- > for blockquotes
+- Inline code with backticks, code blocks with triple backticks
+- [text](url) for links
+
+DO NOT use XML, HTML, or JSON inside the artifact tags. Only use Markdown.
 
 AVAILABLE CONTEXT:
 ${context.relevantContent}

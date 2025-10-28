@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 export default function CompanyEmailsPage() {
   const params = useParams();
@@ -143,8 +144,8 @@ export default function CompanyEmailsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-8 md:py-12">
-      <div className="max-w-[672px] mx-auto mb-8">
+    <div className="px-4 py-8 md:py-12">
+      <div className="max-w-[1400px] mx-auto mb-8">
         <Button asChild variant="ghost" className="mb-4 -ml-4">
           <Link href={`/companies/${companyId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -157,10 +158,35 @@ export default function CompanyEmailsPage() {
             <h1 className="text-3xl font-bold">Emails</h1>
             <p className="text-muted-foreground mt-2">{companyName}</p>
           </div>
-          <Button variant="outline" onClick={loadData} size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Filter */}
+            {submissions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as SubmissionStatus | 'all')}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="ready">Ready</SelectItem>
+                    <SelectItem value="sending">Sending</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="opened">Opened</SelectItem>
+                    <SelectItem value="clicked">Clicked</SelectItem>
+                    <SelectItem value="replied">Replied</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="bounced">Bounced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <Button variant="outline" onClick={loadData} size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Stats Summary */}
@@ -192,36 +218,10 @@ export default function CompanyEmailsPage() {
             </Card>
           </div>
         )}
-
-        {/* Filter */}
-        {submissions.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as SubmissionStatus | 'all')}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="ready">Ready</SelectItem>
-                  <SelectItem value="sending">Sending</SelectItem>
-                  <SelectItem value="sent">Sent</SelectItem>
-                  <SelectItem value="opened">Opened</SelectItem>
-                  <SelectItem value="clicked">Clicked</SelectItem>
-                  <SelectItem value="replied">Replied</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="bounced">Bounced</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Split View */}
-      <div className="max-w-[672px] mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         {submissions.length === 0 ? (
           <Card>
             <CardContent className="py-12">
@@ -399,26 +399,45 @@ export default function CompanyEmailsPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground mb-1">Task</div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm">{selectedSubmission.taskName}</div>
-                          <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
-                            <Link href={`/companies/${companyId}/tasks/${selectedSubmission.taskId}`}>
-                              View Task
-                            </Link>
-                          </Button>
+                      {selectedSubmission.sentAt && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground mb-1">Date</div>
+                          <div className="text-sm">{new Date(selectedSubmission.sentAt.toMillis()).toLocaleString()}</div>
                         </div>
+                      )}
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">To</div>
+                        <div className="text-sm">{selectedSubmission.carrierEmail}</div>
                       </div>
                       <div>
                         <div className="text-sm font-medium text-muted-foreground mb-1">Subject</div>
                         <div className="text-sm">{selectedSubmission.subject}</div>
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground mb-1">Body</div>
-                        <div className="text-sm whitespace-pre-wrap bg-muted/30 p-4 rounded border">
-                          {selectedSubmission.body}
-                        </div>
+                      <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                        <MarkdownRenderer content={(() => {
+                          let body = selectedSubmission.body;
+
+                          // Remove the redundant header information from marketing emails
+                          // Remove lines like "# Email to The Hartford"
+                          body = body.replace(/^#\s+Email to[^\n]+\n\n?/i, '');
+
+                          // Remove **Subject:** line
+                          body = body.replace(/\*\*Subject:\*\*[^\n]+\n\n?/i, '');
+
+                          // Remove **To:** line
+                          body = body.replace(/\*\*To:\*\*[^\n]+\n\n?/i, '');
+
+                          // Remove "## Email Body" header
+                          body = body.replace(/##\s+Email Body\s*\n\n?/i, '');
+
+                          // Remove "## Attached Documents" section since we show attachments separately
+                          body = body.replace(/##\s+Attached Documents[\s\S]*?(?=\n##|\n\*\*|$)/i, '');
+
+                          // Also remove any standalone "Attached Documents:" or similar headers
+                          body = body.replace(/\*\*Attached Documents:?\*\*[\s\S]*?(?=\n\n[A-Z]|\n\*\*|$)/i, '');
+
+                          return body.trim();
+                        })()} />
                       </div>
                       {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
                         <div>

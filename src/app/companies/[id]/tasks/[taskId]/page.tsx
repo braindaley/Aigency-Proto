@@ -18,6 +18,7 @@ import { DependencyArtifactsReview } from '@/components/DependencyArtifactsRevie
 import { TaskSubmissionsPanel } from '@/components/TaskSubmissionsPanel';
 import { UnderwriterRepliesPanel } from '@/components/UnderwriterRepliesPanel';
 import { TaskDependencyArtifacts } from '@/components/TaskDependencyArtifacts';
+import { autoSyncTaskOnLoad } from '@/lib/task-template-sync';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -30,12 +31,19 @@ export default function TaskDetailPage() {
   const refreshTask = useCallback(async () => {
     if (companyId && taskId) {
       try {
+        // First, sync task with template if needed
+        const syncResult = await autoSyncTaskOnLoad(taskId, true);
+        if (syncResult.synced) {
+          console.log('🔄 Task synced with template:', syncResult.updatedFields.join(', '));
+        }
+
+        // Then fetch the updated task data
         const taskDocRef = doc(db, 'companyTasks', taskId);
         const taskDoc = await getDoc(taskDocRef);
 
         if (taskDoc.exists()) {
           const newTaskData = { id: taskDoc.id, ...taskDoc.data() } as CompanyTask;
-          
+
           setTask(prevTask => {
             // Check if status changed to completed
             if (prevTask && prevTask.status !== 'completed' && newTaskData.status === 'completed') {
@@ -55,6 +63,13 @@ export default function TaskDetailPage() {
       const fetchTask = async () => {
         setLoading(true);
         try {
+          // First, sync task with template if needed
+          const syncResult = await autoSyncTaskOnLoad(taskId, true);
+          if (syncResult.synced) {
+            console.log('🔄 Task synced with template:', syncResult.updatedFields.join(', '));
+          }
+
+          // Then fetch the task data
           const taskDocRef = doc(db, 'companyTasks', taskId);
           const taskDoc = await getDoc(taskDocRef);
 
@@ -154,18 +169,37 @@ export default function TaskDetailPage() {
 
   if (task.tag === 'ai') {
     const wasAutoCompleted = task.status === 'completed' && (task as any).completedBy === 'AI System';
-    const isSubmissionTask = task.sortOrder === 12 || task.sortOrder === 14 || task.taskName?.toLowerCase().includes('send submission') || task.taskName?.toLowerCase().includes('send follow-up');
-    const isQuestionTask = task.sortOrder === 15 || task.taskName?.toLowerCase().includes('review flagged') || task.taskName?.toLowerCase().includes('underwriter questions');
+
+    // Determine interface type - use explicit interfaceType if set, otherwise fall back to legacy logic
+    let interfaceType = task.interfaceType;
+    if (!interfaceType) {
+      // Legacy fallback logic for backwards compatibility
+      const isSubmissionTask = task.sortOrder === 12 || task.sortOrder === 14 || task.taskName?.toLowerCase().includes('send submission') || task.taskName?.toLowerCase().includes('send follow-up');
+      const isQuestionTask = task.sortOrder === 15 || task.taskName?.toLowerCase().includes('review flagged') || task.taskName?.toLowerCase().includes('underwriter questions');
+      const hasDependencies = task.dependencies && task.dependencies.length > 0;
+
+      if (isSubmissionTask) {
+        interfaceType = 'email';
+      } else if (isQuestionTask) {
+        interfaceType = 'chat'; // Questions use chat + replies panel (handled separately below)
+      } else if (hasDependencies || task.showDependencyArtifacts) {
+        interfaceType = 'artifact';
+      } else {
+        interfaceType = 'chat';
+      }
+    }
+
     const hasDependencies = task.dependencies && task.dependencies.length > 0;
+    const isQuestionTask = task.sortOrder === 15 || task.taskName?.toLowerCase().includes('review flagged') || task.taskName?.toLowerCase().includes('underwriter questions');
 
     return (
       <div className="px-4 py-8 md:py-12">
-        <div className={`mx-auto ${isSubmissionTask ? 'max-w-[1400px]' : 'max-w-[1400px]'}`}>
+        <div className="mx-auto max-w-[1400px]">
           <div className="max-w-[672px] mb-8">
             <Button asChild variant="ghost" className="mb-4 -ml-4">
-              <Link href={`/companies/${companyId}`}>
+              <Link href={`/companies/${companyId}/tasks`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Company
+                Back to Tasks
               </Link>
             </Button>
 
@@ -207,19 +241,24 @@ export default function TaskDetailPage() {
           </div>
 
           <div className="space-y-8">
-            {/* Show submissions panel for Task 12 & 14 (Send submission packets & follow-ups) */}
-            {isSubmissionTask ? (
-              <>
-                <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
-                <TaskSubmissionsPanel
-                  companyId={companyId || ''}
-                  taskId={taskId || ''}
-                  taskName={task.taskName}
-                  dependencyTaskIds={task.dependencies || []}
-                />
-              </>
+            {/* Render UI based on interfaceType */}
+            {interfaceType === 'email' ? (
+              /* Email submissions interface */
+              <TaskDependencyArtifacts
+                task={task}
+                companyId={companyId || ''}
+                onTaskUpdate={refreshTask}
+                isEmailTask={true}
+              />
+            ) : interfaceType === 'artifact' ? (
+              /* Artifact creation interface with dependency artifacts */
+              <TaskDependencyArtifacts
+                task={task}
+                companyId={companyId || ''}
+                onTaskUpdate={refreshTask}
+              />
             ) : isQuestionTask ? (
-              /* Show chat + replies panel for Task 15 (Review underwriter questions) */
+              /* Special case: Questions use chat + replies panel */
               <>
                 <TaskChat task={task} companyId={companyId || ''} onTaskUpdate={refreshTask} />
                 <UnderwriterRepliesPanel
@@ -227,14 +266,8 @@ export default function TaskDetailPage() {
                   taskId={taskId || ''}
                 />
               </>
-            ) : hasDependencies ? (
-              /* Show chat + dependency artifacts for tasks with dependencies */
-              <TaskDependencyArtifacts
-                task={task}
-                companyId={companyId || ''}
-                onTaskUpdate={refreshTask}
-              />
             ) : (
+              /* Default chat only interface */
               <TaskAIArtifacts task={task} companyId={companyId || ''} />
             )}
           </div>
@@ -251,9 +284,9 @@ export default function TaskDetailPage() {
       <div className={`mx-auto ${hasDependencies ? 'max-w-[1400px]' : 'max-w-[672px]'}`}>
         <div className="max-w-[672px] mb-8">
           <Button asChild variant="ghost" className="mb-4 -ml-4">
-            <Link href={`/companies/${companyId}`}>
+            <Link href={`/companies/${companyId}/tasks`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Company
+              Back to Tasks
             </Link>
           </Button>
 

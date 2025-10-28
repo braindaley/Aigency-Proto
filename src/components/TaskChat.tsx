@@ -60,13 +60,16 @@ export function TaskChat({ task, companyId, onTaskUpdate, inlineContent }: TaskC
         ? Number.parseInt(String(task.sortOrder), 10)
         : undefined;
   const isEarlyManualTask =
-    task.tag === 'manual' &&
+    (task.tag === 'manual' || task.tag === 'approved') &&
     (
       (parsedSortOrder !== undefined &&
         !Number.isNaN(parsedSortOrder) &&
         [1, 2, 3].includes(parsedSortOrder)) ||
       (task.taskName ? earlyTaskNames.has(task.taskName.toLowerCase().trim()) : false)
     );
+
+  // For 'approved' tag tasks, we should also trigger validation on approval keywords
+  const isApprovalTask = task.tag === 'approved';
 
   // Process message content to replace artifact tags with brief summaries
   const processMessageForDisplay = (content: string, taskName: string): string => {
@@ -613,7 +616,12 @@ I'll analyze the available data and create this for you now.`;
     const userInput = input.trim().toLowerCase();
     const isApprovalMessage = approvalKeywords.some(keyword => userInput.includes(keyword));
 
-    const shouldRunValidationOnly = isEarlyManualTask && (filesUploaded || isApprovalMessage);
+    // Run validation for:
+    // 1. Early manual tasks with files uploaded or approval message
+    // 2. Any approval task when user says an approval keyword
+    const shouldRunValidationOnly =
+      (isEarlyManualTask && (filesUploaded || isApprovalMessage)) ||
+      (isApprovalTask && isApprovalMessage);
 
     if (shouldRunValidationOnly) {
       setIsLoading(true);

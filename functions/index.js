@@ -101,7 +101,7 @@ exports.processAITask = onCall(
       await updateJobStatus(jobRef, 'processing', 'Generating AI response with Gemini 2.0 Flash...');
       console.log(`[${timestamp}] 🔮 Generating AI response with Gemini 2.0 Flash...`);
 
-      const userPrompt = `Task: ${task.taskName}\nDescription: ${task.description}\n\nAvailable Context:\n${context}\n\nPlease complete this task using all the available company data shown above. Wrap your response in <artifact> tags.`;
+      const userPrompt = `Task: ${task.taskName}\nDescription: ${task.description}\n\nCRITICAL: You MUST wrap your document output in <artifact> tags (NOT markdown code blocks).\n✅ CORRECT: <artifact>...content...</artifact>\n❌ WRONG: \`\`\`artifact...content...\`\`\`\n\nAvailable Context:\n${context}\n\nPlease complete this task using all the available company data shown above.`;
 
       const aiResult = await generateText({
         model: google('gemini-2.0-flash'),
@@ -114,11 +114,12 @@ exports.processAITask = onCall(
 
       console.log(`[${timestamp}] ✅ AI response generated (${fullText.length} chars)`);
 
-      // Extract artifacts
-      const artifactMatches = fullText.matchAll(/<artifact(?:\s+id="([^"]+)")?>([\s\S]*?)<\/artifact>/g);
+      // Extract artifacts (support both XML tags and markdown code blocks)
       const artifacts = [];
 
-      for (const match of artifactMatches) {
+      // First, try XML-style artifacts: <artifact id="optional-id">content</artifact>
+      const xmlArtifactMatches = Array.from(fullText.matchAll(/<artifact(?:\s+id="([^"]+)")?>([\s\S]*?)<\/artifact>/g));
+      for (const match of xmlArtifactMatches) {
         const artifactId = match[1];
         const artifactContent = match[2].trim();
         if (artifactContent.length > 100) {
@@ -126,11 +127,23 @@ exports.processAITask = onCall(
         }
       }
 
+      // Second, try markdown-style artifacts: ```artifact ... ```
+      const markdownArtifactMatches = Array.from(fullText.matchAll(/```artifact\s*\n([\s\S]*?)\n```/g));
+      for (const match of markdownArtifactMatches) {
+        const artifactContent = match[1].trim();
+        if (artifactContent.length > 100) {
+          artifacts.push({content: artifactContent});
+        }
+      }
+
       const hasArtifact = artifacts.length > 0;
 
-      // Save chat message
+      // Save chat message (remove artifacts from chat content)
       await updateJobStatus(jobRef, 'processing', 'Saving results...');
-      let chatContent = fullText.replace(/<artifact(?:\s+id="[^"]+")?>[\s\S]*?<\/artifact>/g, '').trim();
+      let chatContent = fullText
+        .replace(/<artifact(?:\s+id="[^"]+")?>[\s\S]*?<\/artifact>/g, '')
+        .replace(/```artifact\s*\n[\s\S]*?\n```/g, '')
+        .trim();
 
       if (!chatContent && hasArtifact) {
         chatContent = artifacts.length > 1 ?

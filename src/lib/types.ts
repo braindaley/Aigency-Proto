@@ -4,6 +4,7 @@ import type { Timestamp } from 'firebase/firestore';
 export type TaskTag = 'waiting' | 'approved' | 'ai' | 'manual';
 export type TaskPhase = 'Submission' | 'Marketing' | 'Proposal' | 'Binding' | 'Policy Check-In';
 export type TaskStatus = 'Needs attention' | 'Upcoming' | 'Complete';
+export type TaskInterfaceType = 'chat' | 'artifact' | 'email';
 
 export interface Subtask {
   id: number;
@@ -24,7 +25,8 @@ export interface Task {
   phase: TaskPhase;
   status: TaskStatus;
   dependencies?: string[];
-  showDependencyArtifacts?: boolean; // Show artifacts from dependency tasks for review
+  showDependencyArtifacts?: boolean; // Show artifacts from dependency tasks for review (deprecated, use interfaceType)
+  interfaceType?: TaskInterfaceType; // UI interface type: chat, artifact, or email
   policyType?: string;
   subtasks?: Subtask[];
   systemPrompt?: string;

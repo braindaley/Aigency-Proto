@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Settings, Sparkles, User, FileText, Database, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { format, addMonths, differenceInCalendarMonths } from "date-fns"
+import { format, addMonths, differenceInCalendarMonths, differenceInCalendarDays } from "date-fns"
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { CompanyTask } from '@/lib/types';
+import type { CompanyTask, Task } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Company {
   id: string;
@@ -122,7 +123,8 @@ export default function CompanyDetailPage() {
   const [attentionTasks, setAttentionTasks] = useState<CompanyTask[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<CompanyTask[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
-  
+  const [generatedRenewals, setGeneratedRenewals] = useState<string[]>([]);
+
   const companyId = typeof id === 'string' ? id : '';
 
   useEffect(() => {
@@ -187,6 +189,11 @@ export default function CompanyDetailPage() {
 
         upcomingTasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
         setUpcomingTasks(upcomingTasksList);
+
+        // Track which renewal types have tasks generated
+        const allTasks = [...tasksList, ...upcomingTasksList];
+        const generated = [...new Set(allTasks.map(task => task.renewalType))];
+        setGeneratedRenewals(generated);
       } catch (error) {
          console.error("Error fetching tasks:", error);
       } finally {
@@ -196,7 +203,101 @@ export default function CompanyDetailPage() {
 
     fetchCompanyData();
   }, [companyId]);
-  
+
+  const handleCreateTasks = async (renewal: Renewal) => {
+    if (!companyId || !renewal.date) {
+      return;
+    }
+
+    const templatesQuery = query(collection(db, 'tasks'), where('policyType', '==', renewal.type));
+    const templatesSnapshot = await getDocs(templatesQuery);
+
+    if (templatesSnapshot.empty) {
+        toast({
+          variant: "destructive",
+          title: "No Templates Found",
+          description: `No task templates found for ${renewal.type}. Please create templates first in Settings > Task Settings.`,
+        });
+        return;
+    }
+
+    const batch = writeBatch(db);
+    const companyTasksCollection = collection(db, 'companyTasks');
+
+    const templates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Task }));
+
+    templates.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+    templates.forEach((templateData) => {
+      const { id, ...restOfTemplateData } = templateData;
+      const newCompanyTaskRef = doc(companyTasksCollection);
+
+      // Tasks without dependencies should start with "Needs attention"
+      const hasDependencies = templateData.dependencies && templateData.dependencies.length > 0;
+      const initialStatus = hasDependencies ? 'Upcoming' : 'Needs attention';
+
+      const newCompanyTask = {
+        ...restOfTemplateData,
+        templateId: id,
+        companyId: companyId,
+        renewalType: renewal.type,
+        renewalDate: Timestamp.fromDate(renewal.date!),
+        status: initialStatus as const,
+      };
+      batch.set(newCompanyTaskRef, newCompanyTask);
+    });
+
+    try {
+        await batch.commit();
+        toast({
+          title: "Tasks Created",
+          description: `Successfully created ${templates.length} tasks for ${policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}.`,
+        });
+
+        // Refresh tasks
+        const tasksQuery = query(
+          collection(db, 'companyTasks'),
+          where('companyId', '==', companyId),
+          where('status', '==', 'Needs attention')
+        );
+        const tasksSnapshot = await getDocs(tasksQuery);
+        const tasksList = tasksSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as CompanyTask[];
+
+        tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setAttentionTasks(tasksList);
+
+        // Fetch upcoming tasks
+        const upcomingQuery = query(
+          collection(db, 'companyTasks'),
+          where('companyId', '==', companyId),
+          where('status', '==', 'Upcoming')
+        );
+        const upcomingSnapshot = await getDocs(upcomingQuery);
+        const upcomingTasksList = upcomingSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as CompanyTask[];
+
+        upcomingTasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setUpcomingTasks(upcomingTasksList);
+
+        // Update generated renewals
+        const allTasks = [...tasksList, ...upcomingTasksList];
+        const generated = [...new Set(allTasks.map(task => task.renewalType))];
+        setGeneratedRenewals(generated);
+    } catch (error) {
+        console.error('Error creating company tasks:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create tasks. Please try again.",
+        });
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -227,6 +328,14 @@ export default function CompanyDetailPage() {
   const activeRenewalType = attentionTasks.length > 0
     ? policyTypes.find(p => p.value === attentionTasks[0].renewalType)?.label || attentionTasks[0].renewalType
     : null;
+
+  // Get upcoming renewals (within 120 days)
+  const today = new Date();
+  const upcomingRenewals = displayRenewals.filter(r => {
+    if (!r.date) return false;
+    const daysUntilRenewal = differenceInCalendarDays(r.date, today);
+    return daysUntilRenewal >= 0 && daysUntilRenewal <= 120;
+  });
 
   // Helper function to get upcoming tasks for a specific renewal type
   const getUpcomingTasksForRenewalType = (renewalTypeLabel: string): CompanyTask[] => {
@@ -320,30 +429,59 @@ export default function CompanyDetailPage() {
       </div>
       
       <div className="mt-12">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Tasks</h2>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/companies/${company.id}/tasks`}>
-              View all tasks
-            </Link>
-          </Button>
-        </div>
-        
+        <h2 className="text-xl font-semibold mb-4">Tasks</h2>
+
+        {/* Show alerts for upcoming renewals without tasks */}
+        {!tasksLoading && upcomingRenewals.filter(renewal => !generatedRenewals.includes(renewal.type)).length > 0 && (
+          <div className="space-y-4 mb-6">
+            {upcomingRenewals.filter(renewal => !generatedRenewals.includes(renewal.type)).map(renewal => {
+              const renewalLabel = policyTypes.find(p => p.value === renewal.type)?.label || renewal.type;
+              return (
+                <Alert key={renewal.type}>
+                  <AlertDescription>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{renewalLabel} renewal upcoming</span>
+                        {renewal.date && (
+                          <span className="text-sm text-muted-foreground ml-2">
+                            ({format(renewal.date, 'PPP')})
+                          </span>
+                        )}
+                      </div>
+                      <Button onClick={() => handleCreateTasks(renewal)} size="sm">
+                        Create tasks
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              );
+            })}
+          </div>
+        )}
+
         <div className="mt-4">
           {tasksLoading ? (
             <p>Loading tasks...</p>
           ) : attentionTasks.length > 0 || upcomingTasks.length > 0 ? (
             <div className="space-y-8">
               {getAllRenewalTypes().map((renewalType) => {
+                const renewalTypeValue = policyTypes.find(p => p.label === renewalType)?.value || renewalType.toLowerCase().replace(/[^a-z0-9]/g, '-');
                 const attentionTasksForType = attentionTasks.filter(task => {
                   const taskRenewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
                   return taskRenewalType === renewalType;
                 });
                 const upcomingTasksForType = getUpcomingTasksForRenewalType(renewalType);
-                
+
                 return (
                   <div key={renewalType} className="border rounded-lg p-6">
-                    <h3 className="text-lg font-semibold">{renewalType}</h3>
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-semibold">{renewalType}</h3>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/companies/${company.id}/renewals/${renewalTypeValue}`}>
+                          View all tasks
+                        </Link>
+                      </Button>
+                    </div>
                     
                     {attentionTasksForType.length > 0 && (
                       <>
@@ -365,36 +503,6 @@ export default function CompanyDetailPage() {
                                 <Badge variant="secondary">{task.phase}</Badge>
                               </div>
                               <Button asChild variant="outline" size="sm">
-                                <Link href={`/companies/${companyId}/tasks/${task.id}`}>
-                                  View
-                                </Link>
-                              </Button>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    
-                    {upcomingTasksForType.length > 0 && (
-                      <>
-                        <h4 className="text-base font-medium mb-4 mt-2 text-muted-foreground">Upcoming</h4>
-                        <ul className="divide-y">
-                          {upcomingTasksForType.map((task) => (
-                            <li key={task.id} className="flex items-center justify-between p-4 opacity-75">
-                              <div className="flex items-center gap-4">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                  {task.tag === 'ai' ? (
-                                    <Sparkles className="h-5 w-5 text-muted-foreground" />
-                                  ) : (
-                                    <User className="h-5 w-5 text-muted-foreground" />
-                                  )}
-                                </div>
-                                <div>
-                                  <p className="font-medium text-muted-foreground">{task.taskName || 'Unnamed Task'}</p>
-                                </div>
-                                <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30">{task.phase}</Badge>
-                              </div>
-                              <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
                                 <Link href={`/companies/${companyId}/tasks/${task.id}`}>
                                   View
                                 </Link>

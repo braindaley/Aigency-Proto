@@ -263,11 +263,29 @@ ARTIFACT SEARCH & DATA UTILIZATION INSTRUCTIONS:
 DOCUMENT GENERATION INSTRUCTIONS:
 1. Generate a complete, professional document for the task "${task.taskName}"
 2. Use actual data from the artifacts and documents above whenever possible
-3. The document should be in Markdown format with professional structure
+3. The document MUST be in clean, well-structured Markdown format (NOT XML, HTML, or JSON)
 4. Include all relevant sections based on task requirements AND available data
 5. You MUST wrap the ENTIRE generated document content between <artifact> and </artifact> tags
 6. Do not include any explanation outside the artifact tags - ONLY output the artifact tags and content
 7. The document should be immediately usable and data-rich
+
+ARTIFACT CONTENT FORMAT - ALWAYS USE MARKDOWN:
+The content INSIDE the <artifact> tags MUST be formatted as clean, well-structured Markdown.
+✅ CORRECT:   <artifact># Title\\n\\n## Section\\n\\nContent here...</artifact>
+❌ INCORRECT: <artifact><?xml version="1.0"?><document>...</document></artifact>
+❌ INCORRECT: <artifact><html><body>...</body></html></artifact>
+❌ INCORRECT: <artifact>{"title": "...", "content": "..."}</artifact>
+
+Use proper Markdown formatting:
+- # for main title, ## for sections, ### for subsections
+- **bold** for emphasis
+- Bullet points with - or *
+- Numbered lists with 1., 2., 3.
+- > for blockquotes
+- Inline code with backticks, code blocks with triple backticks
+- [text](url) for links
+
+DO NOT use XML, HTML, or JSON inside the artifact tags. Only use Markdown.
 
 CRITICAL - COMPLETING FORMS WITH AVAILABLE DATA:
 - Search through ALL available artifacts, documents, and company data to find information
@@ -308,9 +326,14 @@ ${currentArtifact || 'No current document'}
 IMPORTANT INSTRUCTIONS:
 1. First, provide a brief explanation of what you're updating (1-2 sentences max)
 2. Then update the document based on the user's request
-3. Maintain the professional structure and format
+3. Maintain the professional structure and Markdown format
 4. You MUST wrap the ENTIRE updated document between <artifact> and </artifact> tags
 5. The updated document should be complete (not just the changes)
+
+ARTIFACT CONTENT FORMAT - ALWAYS USE MARKDOWN:
+The content INSIDE the <artifact> tags MUST be formatted as clean, well-structured Markdown (NOT XML, HTML, or JSON).
+Use proper Markdown formatting: # for titles, ## for sections, **bold** for emphasis, bullet points with -, etc.
+DO NOT use XML, HTML, or JSON inside the artifact tags. Only use Markdown.
 
 CRITICAL - DO NOT INCLUDE IN THE ARTIFACT:
 - Do NOT include disclaimers about AI limitations within the artifact document

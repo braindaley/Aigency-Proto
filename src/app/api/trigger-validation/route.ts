@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
 
     if (!testCriteria && task.templateId) {
       console.log(`Fetching testCriteria from template: ${task.templateId}`);
-      const templateDocRef = doc(db, 'taskTemplates', task.templateId);
+      const templateDocRef = doc(db, 'tasks', task.templateId.toString());
       const templateDoc = await getDoc(templateDocRef);
 
       if (templateDoc.exists()) {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles, User, Trash2 } from 'lucide-react';
@@ -40,7 +40,9 @@ const STATUS_ORDER: TaskStatus[] = ['Needs attention', 'Upcoming', 'Complete'];
 
 export default function CompanyTasksPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const companyId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const renewalTypeFilter = searchParams.get('renewalType');
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -94,10 +96,15 @@ export default function CompanyTasksPage() {
         const q = query(tasksCollection, where('companyId', '==', companyId));
         const tasksSnapshot = await getDocs(q);
         
-        const tasksList = tasksSnapshot.docs.map(doc => ({
+        let tasksList = tasksSnapshot.docs.map(doc => ({
           ...doc.data(),
           id: doc.id,
         })) as CompanyTask[];
+
+        // Filter by renewalType if specified in query params
+        if (renewalTypeFilter) {
+          tasksList = tasksList.filter(task => task.renewalType === renewalTypeFilter);
+        }
 
         tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
@@ -144,7 +151,7 @@ export default function CompanyTasksPage() {
 
   useEffect(() => {
     fetchCompanyAndTasks();
-  }, [companyId]);
+  }, [companyId, renewalTypeFilter]);
 
   useEffect(() => {
     if (company?.renewals) {
@@ -300,9 +307,17 @@ export default function CompanyTasksPage() {
             </div>
         ) : (
             <div>
-                <h1 className="text-3xl font-bold">Tasks for {company?.name || 'Company'}</h1>
+                <h1 className="text-3xl font-bold">
+                  {renewalTypeFilter
+                    ? `${policyTypes.find(p => p.value === renewalTypeFilter)?.label || renewalTypeFilter} Tasks for ${company?.name || 'Company'}`
+                    : `Tasks for ${company?.name || 'Company'}`
+                  }
+                </h1>
                 <p className="text-muted-foreground mt-2">
-                    This is where you can view all the tasks for this specific company.
+                    {renewalTypeFilter
+                      ? `Viewing ${policyTypes.find(p => p.value === renewalTypeFilter)?.label || renewalTypeFilter} renewal tasks.`
+                      : 'This is where you can view all the tasks for this specific company.'
+                    }
                 </p>
                 
             </div>

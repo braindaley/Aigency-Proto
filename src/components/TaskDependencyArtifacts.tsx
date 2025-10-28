@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, Eye, RefreshCw, Copy, FileCode, Loader2 } from 'lucide-react';
-import { CompanyTask } from '@/lib/types';
+import { FileText, Download, Eye, RefreshCw, Copy, FileCode, Loader2, Mail, CheckCircle2, Paperclip } from 'lucide-react';
+import { CompanyTask, Submission } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, onSnapshot, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18,7 +18,6 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TaskChat } from '@/components/TaskChat';
 import { useToast } from '@/hooks/use-toast';
-import { Progress } from '@/components/ui/progress';
 
 // Create a permissive sanitize schema that allows all standard HTML/markdown elements
 const sanitizeSchema = {
@@ -36,16 +35,21 @@ interface DependencyArtifact {
   taskStatus: string;
   content: string;
   timestamp?: Date;
+  artifactIndex?: number;
+  totalArtifacts?: number;
 }
 
 interface TaskDependencyArtifactsProps {
   task: CompanyTask;
   companyId: string;
   onTaskUpdate: () => void;
+  isEmailTask?: boolean;
 }
 
-export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskDependencyArtifactsProps) {
+export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate, isEmailTask = false }: TaskDependencyArtifactsProps) {
   const [artifacts, setArtifacts] = useState<DependencyArtifact[]>([]);
+  const [emailSubmissions, setEmailSubmissions] = useState<Submission[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedArtifact, setSelectedArtifact] = useState<DependencyArtifact | null>(null);
   const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview');
@@ -57,6 +61,27 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
   useEffect(() => {
     loadDependencyArtifacts();
   }, [task.id, companyId]);
+
+  // Add initial assistant message for email tasks
+  const ensureInitialEmailMessage = async (emailCount: number) => {
+    try {
+      // Check if there's already a message
+      const messagesRef = collection(db, `companies/${companyId}/tasks/${task.id}/messages`);
+      const messagesSnapshot = await getDocs(messagesRef);
+
+      if (messagesSnapshot.empty) {
+        // Add initial assistant message
+        await addDoc(messagesRef, {
+          role: 'assistant',
+          content: `I've prepared ${emailCount} marketing email${emailCount !== 1 ? 's' : ''} for your review. Please review each email on the left side.\n\nWhen you're ready to send all emails, please let me know and I'll send them to the carriers.`,
+          createdAt: serverTimestamp(),
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error adding initial email message:', error);
+    }
+  };
 
   // Set up real-time listener for job progress
   useEffect(() => {
@@ -98,25 +123,75 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
     const loadedArtifacts: DependencyArtifact[] = [];
 
     try {
+      // If this is an email task, load submissions instead of artifacts
+      if (isEmailTask) {
+        const submissionsRef = collection(db, `companies/${companyId}/submissions`);
+        const q = query(submissionsRef, where('taskId', '==', task.id));
+        const submissionsSnapshot = await getDocs(q);
+
+        const loadedSubmissions = submissionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Submission[];
+
+        // Sort by createdAt
+        loadedSubmissions.sort((a, b) => {
+          const aTime = a.createdAt?.toMillis?.() || 0;
+          const bTime = b.createdAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        });
+
+        setEmailSubmissions(loadedSubmissions);
+        if (loadedSubmissions.length > 0) {
+          setSelectedSubmission(loadedSubmissions[0]);
+
+          // Add an initial assistant message if there are submissions and no messages yet
+          await ensureInitialEmailMessage(loadedSubmissions.length);
+        }
+        setLoading(false);
+        return loadedSubmissions.length > 0;
+      }
+
       // Get all artifacts for this company
       const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
       const artifactsSnapshot = await getDocs(artifactsRef);
 
-      // FIRST: Load the current task's own artifact
+      // FIRST: Load the current task's own artifacts (ALL of them for multi-artifact tasks)
       const currentTaskArtifacts = artifactsSnapshot.docs.filter(doc => {
         const data = doc.data();
         return data.taskId === task.id;
       });
 
       if (currentTaskArtifacts.length > 0) {
-        const artifactData = currentTaskArtifacts[0].data();
-        loadedArtifacts.push({
-          taskId: task.id,
-          taskName: task.taskName,
-          taskPhase: task.phase,
-          taskStatus: task.status,
-          content: artifactData.data || '',
-          timestamp: artifactData.updatedAt?.toDate?.() || artifactData.createdAt?.toDate?.()
+        // Sort by artifactIndex if available
+        const sortedArtifacts = currentTaskArtifacts.sort((a, b) => {
+          const aIndex = a.data().artifactIndex ?? 0;
+          const bIndex = b.data().artifactIndex ?? 0;
+          return aIndex - bIndex;
+        });
+
+        // Add each artifact separately (for multi-artifact tasks like marketing emails)
+        sortedArtifacts.forEach((artifactDoc, index) => {
+          const artifactData = artifactDoc.data();
+          const artifactId = artifactData.artifactId || artifactData.name;
+
+          // Ensure artifactId is a string - handle case where it might be an object
+          const displayName = typeof artifactId === 'string'
+            ? artifactId
+            : (typeof artifactId === 'object' && artifactId?.name)
+              ? String(artifactId.name)
+              : `${task.taskName} (${index + 1}/${sortedArtifacts.length})`;
+
+          loadedArtifacts.push({
+            taskId: `${task.id}-${index}`, // Unique ID for each artifact
+            taskName: displayName,
+            taskPhase: task.phase,
+            taskStatus: task.status,
+            content: artifactData.data || '',
+            timestamp: artifactData.updatedAt?.toDate?.() || artifactData.createdAt?.toDate?.(),
+            artifactIndex: index,
+            totalArtifacts: sortedArtifacts.length
+          });
         });
       }
 
@@ -380,7 +455,63 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
           companyId={companyId}
           onTaskUpdate={onTaskUpdate}
           inlineContent={
-            artifacts.length > 0 ? (
+            isEmailTask ? (
+              emailSubmissions.length > 0 ? (
+                <div className="space-y-1 max-w-[80%] border rounded-lg overflow-hidden">
+                  {(() => {
+                    // Group submissions by carrier name
+                    const groupedByCarrier = emailSubmissions.reduce((acc, submission) => {
+                      let carrierName = submission.carrierName || 'Unknown Carrier';
+                      // Normalize carrier name
+                      carrierName = carrierName
+                        .replace(/\s+Follow\s+Up$/i, '')
+                        .replace(/\s+Insurance\s+Group$/i, '')
+                        .trim();
+
+                      if (!acc[carrierName]) {
+                        acc[carrierName] = [];
+                      }
+                      acc[carrierName].push(submission);
+                      return acc;
+                    }, {} as Record<string, typeof emailSubmissions>);
+
+                    return Object.entries(groupedByCarrier).map(([carrierName, carrierSubmissions]) => (
+                      <div key={carrierName}>
+                        {carrierSubmissions.map((submission) => (
+                          <div
+                            key={submission.id}
+                            onClick={() => setSelectedSubmission(submission)}
+                            className={`px-3 py-2 text-sm hover:bg-muted/50 cursor-pointer border-b last:border-b-0 ${
+                              selectedSubmission?.id === submission.id ? 'bg-primary/5' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate">
+                                  <span className="text-muted-foreground">To: </span>
+                                  <span className="font-medium">{carrierName}</span>
+                                  <span className="text-muted-foreground mx-2">•</span>
+                                  <span>{submission.subject || 'Workers\' Compensation Submission'}</span>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className="ml-2 text-xs flex-shrink-0">
+                                {submission.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ));
+                  })()}
+                </div>
+              ) : (
+                <div className="p-4 border rounded-lg bg-muted/50 text-center text-sm text-muted-foreground">
+                  <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No email submissions found for this task.</p>
+                  <p className="text-xs mt-1">Submissions will appear here once the task creates them.</p>
+                </div>
+              )
+            ) : artifacts.length > 0 ? (
               <div className="space-y-2 max-w-[80%]">
                 {artifacts.map((artifact, index) => {
                   const isCurrentTask = artifact.taskId === task.id;
@@ -432,9 +563,92 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
         />
       </div>
 
-      {/* Right Side: Artifact Viewer */}
+      {/* Right Side: Artifact/Email Viewer */}
       <div className="w-1/2">
-        {selectedArtifact ? (
+        {isEmailTask && selectedSubmission ? (
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="truncate">{selectedSubmission.carrierName}</CardTitle>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="outline">{selectedSubmission.status}</Badge>
+                    {selectedSubmission.sentAt && (
+                      <span className="text-xs text-muted-foreground">
+                        Sent {new Date(selectedSubmission.sentAt.toMillis()).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => copyToClipboard(selectedSubmission.body)}
+                    variant="outline"
+                    size="sm"
+                    title="Copy email body"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">To</div>
+                    <div className="text-sm">{selectedSubmission.carrierEmail}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Subject</div>
+                    <div className="text-sm">{selectedSubmission.subject}</div>
+                  </div>
+                  <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {(() => {
+                        let body = selectedSubmission.body;
+
+                        // Remove the redundant header information from marketing emails
+                        // Remove lines like "# Email to The Hartford"
+                        body = body.replace(/^#\s+Email to[^\n]+\n\n?/i, '');
+
+                        // Remove **Subject:** line
+                        body = body.replace(/\*\*Subject:\*\*[^\n]+\n\n?/i, '');
+
+                        // Remove **To:** line
+                        body = body.replace(/\*\*To:\*\*[^\n]+\n\n?/i, '');
+
+                        // Remove "## Email Body" header
+                        body = body.replace(/##\s+Email Body\s*\n\n?/i, '');
+
+                        // Remove "## Attached Documents" section since we show attachments separately
+                        body = body.replace(/##\s+Attached Documents[\s\S]*?(?=\n##|\n\*\*|$)/i, '');
+
+                        // Also remove any standalone "Attached Documents:" or similar headers
+                        body = body.replace(/\*\*Attached Documents:?\*\*[\s\S]*?(?=\n\n[A-Z]|\n\*\*|$)/i, '');
+
+                        return body.trim();
+                      })()}
+                    </ReactMarkdown>
+                  </div>
+                  {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">Attachments</div>
+                      <div className="space-y-1">
+                        {selectedSubmission.attachments.map((attachment, idx) => (
+                          <div key={idx} className="text-sm flex items-center gap-2 text-muted-foreground">
+                            <Paperclip className="h-3 w-3" />
+                            <span>{attachment.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        ) : selectedArtifact ? (
           <Card className="h-full flex flex-col">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -551,8 +765,17 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate }: TaskD
         ) : (
           <Card className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
-              <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Select a document to view</p>
+              {isEmailTask ? (
+                <>
+                  <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Select an email to view</p>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Select a document to view</p>
+                </>
+              )}
             </div>
           </Card>
         )}

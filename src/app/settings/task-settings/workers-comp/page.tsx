@@ -3,18 +3,44 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, User, Sparkles, GripVertical } from 'lucide-react';
+import { ArrowLeft, Plus, User, Sparkles, GripVertical, MessageSquare, FileText, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { Task, TaskPhase } from '@/lib/types';
+import type { Task, TaskPhase, TaskInterfaceType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 const PHASES_ORDER: TaskPhase[] = ['Submission', 'Marketing', 'Proposal', 'Binding', 'Policy Check-In'];
+
+// Helper function to determine interface type (same logic as task detail page)
+function getInterfaceType(task: Task): TaskInterfaceType {
+  if (task.interfaceType) {
+    return task.interfaceType;
+  }
+
+  // Legacy fallback logic
+  const isSubmissionTask = task.sortOrder === 12 || task.sortOrder === 14 ||
+                          task.taskName?.toLowerCase().includes('send submission') ||
+                          task.taskName?.toLowerCase().includes('send follow-up');
+  const isQuestionTask = task.sortOrder === 15 ||
+                        task.taskName?.toLowerCase().includes('review flagged') ||
+                        task.taskName?.toLowerCase().includes('underwriter questions');
+  const hasDependencies = task.dependencies && task.dependencies.length > 0;
+
+  if (isSubmissionTask) {
+    return 'email';
+  } else if (isQuestionTask) {
+    return 'chat'; // Questions use chat interface (with replies panel)
+  } else if (hasDependencies || task.showDependencyArtifacts) {
+    return 'artifact';
+  } else {
+    return 'chat';
+  }
+}
 
 export default function WorkersCompTasksPage() {
   const { toast } = useToast();
@@ -168,43 +194,63 @@ export default function WorkersCompTasksPage() {
     if (tasks.length === 0) {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this phase.</p>;
     }
+
+    const getInterfaceIcon = (interfaceType: TaskInterfaceType) => {
+      switch (interfaceType) {
+        case 'email':
+          return <Mail className="h-4 w-4 text-muted-foreground" />;
+        case 'artifact':
+          return <FileText className="h-4 w-4 text-muted-foreground" />;
+        case 'chat':
+          return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
+        default:
+          return <MessageSquare className="h-4 w-4 text-muted-foreground" />;
+      }
+    };
+
     return (
       <ul className="border-t-0" onDragOver={handleDragOver}>
-        {tasks.map((task) => (
-          <li
-            key={task.id.toString()}
-            draggable
-            onDragStart={(e) => handleDragStart(e, task)}
-            onDragEnter={(e) => handleDragEnter(e, task)}
-            onDrop={(e) => handleDrop(e, phase)}
-            onDragOver={handleDragOver}
-            className={cn('flex items-center justify-between p-4 cursor-grab', {
-              'opacity-50': dragging && dragItem.current?.id === task.id,
-            })}
-          >
-            <div className="flex items-center gap-4">
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
-                {task.sortOrder}
+        {tasks.map((task) => {
+          const interfaceType = getInterfaceType(task);
+          return (
+            <li
+              key={task.id.toString()}
+              draggable
+              onDragStart={(e) => handleDragStart(e, task)}
+              onDragEnter={(e) => handleDragEnter(e, task)}
+              onDrop={(e) => handleDrop(e, phase)}
+              onDragOver={handleDragOver}
+              className={cn('flex items-center justify-between p-4 cursor-grab', {
+                'opacity-50': dragging && dragItem.current?.id === task.id,
+              })}
+            >
+              <div className="flex items-center gap-4">
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                  {task.sortOrder}
+                </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  {task.tag === 'ai' ? (
+                    <Sparkles className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  {getInterfaceIcon(interfaceType)}
+                </div>
+                <div>
+                  <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
+                </div>
               </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                {task.tag === 'ai' ? (
-                  <Sparkles className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                  <User className="h-5 w-5 text-muted-foreground" />
-                )}
-              </div>
-              <div>
-                <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
-              </div>
-            </div>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/settings/task-settings/workers-comp/${task.id}`}>
-                View
-              </Link>
-            </Button>
-          </li>
-        ))}
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/settings/task-settings/workers-comp/${task.id}`}>
+                  View
+                </Link>
+              </Button>
+            </li>
+          );
+        })}
       </ul>
     );
   };

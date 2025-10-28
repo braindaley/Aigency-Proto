@@ -334,6 +334,7 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
         });
 
         // Set the artifacts array for display
+        console.log(`🎨 Setting ${artifactObjects.length} artifacts for display`);
         setArtifacts(artifactObjects);
 
         // Set the first artifact as the current one
@@ -1025,13 +1026,12 @@ export function TaskAIArtifacts({ task, companyId }: TaskAIArtifactsProps) {
       </div>
 
       <div className="w-1/2 flex flex-col">
-        {artifacts.length > 1 ? (
+        {(() => {
+          console.log(`🔍 Render check: artifacts.length = ${artifacts.length}, showing ${artifacts.length > 1 ? 'MultipleArtifactsViewer' : 'Single View'}`);
+          return artifacts.length > 1;
+        })() ? (
           <MultipleArtifactsViewer
-            artifacts={artifacts.map(a => ({
-              id: a.id,
-              title: a.title,
-              content: a.content
-            }))}
+            artifacts={artifacts}
             theme={theme}
             isSavingToDatabase={isSavingToDatabase}
             isRegenerating={isGenerating || isLoading}

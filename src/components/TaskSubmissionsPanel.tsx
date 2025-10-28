@@ -11,6 +11,7 @@ import { Send, Mail, RefreshCw, Eye, Clock, CheckCircle2, Paperclip, Edit2, Save
 import { useToast } from '@/hooks/use-toast';
 import type { Submission } from '@/lib/types';
 import { format } from 'date-fns';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 interface TaskSubmissionsPanelProps {
   companyId: string;
@@ -507,8 +508,8 @@ export function TaskSubmissionsPanel({ companyId, taskId, taskName, dependencyTa
                   </div>
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-1">Body</div>
-                    <div className="text-sm whitespace-pre-wrap bg-muted/30 p-4 rounded border">
-                      {selectedSubmission.body}
+                    <div className="text-sm bg-muted/30 p-4 rounded border prose prose-sm max-w-none dark:prose-invert">
+                      <MarkdownRenderer content={selectedSubmission.body} />
                     </div>
                   </div>
                   {selectedSubmission.attachments && selectedSubmission.attachments.length > 0 && (

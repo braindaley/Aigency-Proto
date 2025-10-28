@@ -81,16 +81,30 @@ export async function createSubmissionsFromArtifacts({
   const submissionIds: string[] = [];
 
   for (const artifact of artifacts) {
-    // Extract subject from first line or use default
-    const lines = artifact.content.trim().split('\n');
-    const subjectLine = lines.find(line => line.toLowerCase().startsWith('subject:'));
-    const subject = subjectLine
-      ? subjectLine.replace(/^subject:\s*/i, '').trim()
-      : `${taskName} - ${artifact.carrierName || 'Submission'}`;
+    // Extract subject from content (look for **Subject:** line)
+    const subjectMatch = artifact.content.match(/\*\*Subject:\*\*\s*(.+?)(?:\n|$)/i);
+    const subject = subjectMatch
+      ? subjectMatch[1].trim()
+      : `Workers' Compensation Submission - ${artifact.carrierName || 'Submission'}`;
 
     // Extract carrier email from content or use placeholder
-    const emailMatch = artifact.content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    const carrierEmail = emailMatch ? emailMatch[0] : `underwriter@${(artifact.carrierName || 'carrier').toLowerCase().replace(/\s+/g, '')}.com`;
+    // First try to find email in "To:" line (preferred)
+    const toLineMatch = artifact.content.match(/\*\*To:\*\*\s*(?:[^\n]*?[-–]\s*)?(?:[^\n]*?,\s*)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    let carrierEmail = toLineMatch ? toLineMatch[1] : null;
+
+    // If not found in To: line, look for any email in content but filter out known sender emails
+    if (!carrierEmail) {
+      const allEmails = artifact.content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+      const senderEmails = ['bdaley@goldencomm.com', 'submissions@orionrisk.com', 'noreply@', 'donotreply@'];
+      carrierEmail = allEmails.find(email =>
+        !senderEmails.some(sender => email.toLowerCase().includes(sender.toLowerCase()))
+      ) || null;
+    }
+
+    // Fall back to placeholder if still not found
+    if (!carrierEmail) {
+      carrierEmail = `underwriter@${(artifact.carrierName || 'carrier').toLowerCase().replace(/\s+/g, '')}.com`;
+    }
 
     try {
       const submissionId = await createSubmissionFromArtifact({
@@ -255,11 +269,20 @@ export async function recordEmailOpen(companyId: string, submissionId: string): 
  * Extract carrier email from email body content
  */
 export function extractCarrierEmail(content: string): string | null {
+  // First try to find email in "To:" line (preferred)
+  const toLineMatch = content.match(/\*\*To:\*\*\s*(?:[^\n]*?[-–]\s*)?(?:[^\n]*?,\s*)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (toLineMatch) return toLineMatch[1];
+
   // Look for email in "Dear" line
   const dearMatch = content.match(/Dear\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
   if (dearMatch) return dearMatch[1];
 
-  // Look for any email address in the content
-  const emailMatch = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  return emailMatch ? emailMatch[0] : null;
+  // Look for any email address in content but filter out known sender emails
+  const allEmails = content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
+  const senderEmails = ['bdaley@goldencomm.com', 'submissions@orionrisk.com', 'noreply@', 'donotreply@'];
+  const carrierEmail = allEmails.find(email =>
+    !senderEmails.some(sender => email.toLowerCase().includes(sender.toLowerCase()))
+  );
+
+  return carrierEmail || null;
 }

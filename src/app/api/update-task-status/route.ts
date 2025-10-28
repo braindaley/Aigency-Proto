@@ -223,12 +223,19 @@ async function checkAllDependenciesCompleted(dependencies: string[], companyId: 
       const depTaskName = depData.taskName || 'Unknown';
       console.log(`[${timestamp}]   - Task: "${depTaskName}"`);
       console.log(`[${timestamp}]   - Status: ${depData.status}`);
+      console.log(`[${timestamp}]   - Tag: ${depData.tag}`);
 
-      if (depData.status !== 'completed') {
-        console.log(`[${timestamp}]   ❌ NOT COMPLETED - stopping check`);
+      // A dependency is satisfied if:
+      // 1. Status is 'completed', OR
+      // 2. Status is 'Needs attention' AND task is tagged as 'ai' (meaning it's queued/running)
+      const isSatisfied = depData.status === 'completed' ||
+                         (depData.status === 'Needs attention' && depData.tag === 'ai');
+
+      if (!isSatisfied) {
+        console.log(`[${timestamp}]   ❌ NOT SATISFIED - stopping check`);
         return false;
       }
-      console.log(`[${timestamp}]   ✅ COMPLETED`);
+      console.log(`[${timestamp}]   ✅ SATISFIED (${depData.status})`);
     }
     console.log(`[${timestamp}] ✅ CHECK-DEPS: All ${dependencies.length} dependencies are completed`);
     return true;

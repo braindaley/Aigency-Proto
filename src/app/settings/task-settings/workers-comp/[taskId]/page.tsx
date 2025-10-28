@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react';
-import type { TaskTag, Subtask, Task, TaskPhase } from '@/lib/types';
+import type { TaskTag, Subtask, Task, TaskPhase, TaskInterfaceType } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { useState, useMemo, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,7 +55,8 @@ export default function TaskPage() {
   const [newSubtask, setNewSubtask] = useState('');
   const [tag, setTag] = useState<TaskTag>('manual');
   const [phase, setPhase] = useState<TaskPhase>('Submission');
-  
+  const [interfaceType, setInterfaceType] = useState<TaskInterfaceType>('chat');
+
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [dependencies, setDependencies] = useState<string[]>([]);
   const [showDependencyArtifacts, setShowDependencyArtifacts] = useState(false);
@@ -87,6 +88,7 @@ export default function TaskPage() {
         setSubtasks(taskData.subtasks || []);
         setTag(taskData.tag || 'manual');
         setPhase(taskData.phase || 'Submission');
+        setInterfaceType(taskData.interfaceType || 'chat');
         setDependencies(taskData.dependencies || []);
         setShowDependencyArtifacts(taskData.showDependencyArtifacts || false);
 
@@ -98,6 +100,7 @@ export default function TaskPage() {
           subtasks: taskData.subtasks || [],
           tag: taskData.tag || 'manual',
           phase: taskData.phase || 'Submission',
+          interfaceType: taskData.interfaceType || 'chat',
           dependencies: taskData.dependencies || [],
           showDependencyArtifacts: taskData.showDependencyArtifacts || false,
         };
@@ -141,11 +144,12 @@ export default function TaskPage() {
       subtasks,
       tag,
       phase,
+      interfaceType,
       dependencies,
       showDependencyArtifacts,
     };
     return JSON.stringify(initialState) !== JSON.stringify(currentState);
-  }, [task, taskName, description, testCriteria, systemPrompt, subtasks, tag, phase, dependencies, showDependencyArtifacts, initialState]);
+  }, [task, taskName, description, testCriteria, systemPrompt, subtasks, tag, phase, interfaceType, dependencies, showDependencyArtifacts, initialState]);
   
   const handleAddSubtask = () => {
     if (newSubtask.trim() !== '') {
@@ -170,6 +174,7 @@ export default function TaskPage() {
         subtasks,
         tag,
         phase,
+        interfaceType,
         dependencies,
         showDependencyArtifacts,
       };
@@ -344,6 +349,22 @@ export default function TaskPage() {
                     <SelectItem value="ai">AI</SelectItem>
                 </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="interfaceType">Interface Type</Label>
+            <Select onValueChange={(value: TaskInterfaceType) => setInterfaceType(value)} value={interfaceType}>
+                <SelectTrigger id="interfaceType">
+                    <SelectValue placeholder="Select interface type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="chat">Chat Only</SelectItem>
+                    <SelectItem value="artifact">Artifact Creation</SelectItem>
+                    <SelectItem value="email">Email Submissions</SelectItem>
+                </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              Determines the UI interface for this task: chat only, artifact viewer, or email submissions panel.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="dependencies">Dependencies</Label>
