@@ -62,6 +62,35 @@ export function TaskDependencyArtifacts({ task, companyId, onTaskUpdate, isEmail
     loadDependencyArtifacts();
   }, [task.id, companyId]);
 
+  // Set up real-time listener for submissions (for email tasks)
+  useEffect(() => {
+    if (!isEmailTask || !task.id || !companyId) return;
+
+    const submissionsRef = collection(db, `companies/${companyId}/submissions`);
+    const q = query(submissionsRef, where('taskId', '==', task.id));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loadedSubmissions = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Submission[];
+
+      // Sort by createdAt
+      loadedSubmissions.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
+
+      setEmailSubmissions(loadedSubmissions);
+      if (loadedSubmissions.length > 0 && !selectedSubmission) {
+        setSelectedSubmission(loadedSubmissions[0]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isEmailTask, task.id, companyId]);
+
   // Add initial assistant message for email tasks
   const ensureInitialEmailMessage = async (emailCount: number) => {
     try {

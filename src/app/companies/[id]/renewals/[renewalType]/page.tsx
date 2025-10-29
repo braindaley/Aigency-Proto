@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, User, Trash2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, User, Trash2, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
@@ -53,6 +54,8 @@ export default function CompanyTasksPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [generatedRenewals, setGeneratedRenewals] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
 
   const fetchCompanyAndTasks = async () => {
       if (!companyId) {
@@ -255,6 +258,54 @@ export default function CompanyTasksPage() {
     }
   };
 
+  const handleRefreshStatuses = async () => {
+    if (!companyId) return;
+
+    setRefreshing(true);
+    try {
+      const response = await fetch('/api/refresh-task-statuses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId,
+          renewalType: renewalTypeFilter
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        if (result.updated === 0) {
+          toast({
+            title: 'All up to date',
+            description: 'All task statuses are already correct.',
+          });
+        } else {
+          toast({
+            title: 'Tasks updated',
+            description: `Updated ${result.updated} task(s) to "Needs attention"${result.aiTasksTriggered > 0 ? ` and triggered ${result.aiTasksTriggered} AI task(s)` : ''}.`,
+          });
+        }
+
+        // Refresh the task list
+        await fetchCompanyTasks();
+      } else {
+        throw new Error(result.error || 'Failed to refresh statuses');
+      }
+    } catch (error) {
+      console.error('Error refreshing statuses:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh task statuses. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const renderTaskList = (tasks: CompanyTask[]) => {
     if (tasks.length === 0) {
       return <p className="text-sm text-muted-foreground px-4 py-4 text-center">No tasks in this category.</p>;
@@ -318,7 +369,24 @@ export default function CompanyTasksPage() {
                       : 'This is where you can view all the tasks for this specific company.'
                     }
                 </p>
-                
+
+                {/* Refresh Statuses Button */}
+                {allTasksCount > 0 && (
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefreshStatuses}
+                      disabled={refreshing}
+                    >
+                      <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                      {refreshing ? 'Refreshing...' : 'Refresh Task Statuses'}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Click to check if any tasks should move to "Needs attention"
+                    </p>
+                  </div>
+                )}
             </div>
         )}
 

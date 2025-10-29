@@ -22,10 +22,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve dependency IDs to actual company task IDs
+    // Dependencies can be either template IDs or company task IDs
+    // We need to find the actual company task instances
+    const resolvedTaskIds: string[] = [];
+
+    for (const depId of dependencyTaskIds) {
+      // First try to find a company task with this exact ID
+      const companyTasksRef = collection(db, 'companyTasks');
+      const exactMatchQuery = query(
+        companyTasksRef,
+        where('companyId', '==', companyId)
+      );
+      const exactMatchSnapshot = await getDocs(exactMatchQuery);
+
+      let foundTaskId: string | null = null;
+
+      // Check if depId matches a document ID or templateId
+      exactMatchSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (doc.id === depId || data.templateId === depId) {
+          foundTaskId = doc.id;
+        }
+      });
+
+      if (foundTaskId) {
+        resolvedTaskIds.push(foundTaskId);
+        console.log(`✅ Resolved dependency ${depId} to company task ${foundTaskId}`);
+      } else {
+        console.log(`⚠️ Could not resolve dependency ${depId}, using as-is`);
+        resolvedTaskIds.push(depId);
+      }
+    }
+
+    console.log(`📋 Looking for artifacts from tasks: ${resolvedTaskIds.join(', ')}`);
+
     // Get all artifacts from dependency tasks
     const allArtifacts: Array<{ id: string; title: string; content: string; carrierName?: string }> = [];
 
-    for (const depTaskId of dependencyTaskIds) {
+    for (const depTaskId of resolvedTaskIds) {
       const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
       const q = query(artifactsRef, where('taskId', '==', depTaskId));
       const snapshot = await getDocs(q);
@@ -54,6 +89,7 @@ export async function POST(request: NextRequest) {
         })
         .filter(a => a.carrierName && a.content && a.content.length > 100); // Only include artifacts with carrier names and substantial content
 
+      console.log(`  Found ${snapshot.size} total artifacts, ${artifacts.length} with carrier names from task ${depTaskId}`);
       allArtifacts.push(...artifacts);
     }
 

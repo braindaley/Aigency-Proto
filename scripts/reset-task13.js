@@ -1,36 +1,66 @@
 const { initializeApp } = require('firebase/app');
-const { getFirestore, doc, updateDoc } = require('firebase/firestore');
+const { getFirestore, doc, updateDoc, collection, query, where, getDocs, deleteDoc } = require('firebase/firestore');
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAPbristGE8ytc59RD-KL0JMJL-EuVW23R8",
-  authDomain: "aigency-proto.firebaseapp.com",
-  projectId: "aigency-proto",
-  storageBucket: "aigency-proto.firebasestorage.app",
-  messagingSenderId: "326368003305",
-  appId: "1:326368003305:web:0c95f9e94ed99f4ac27bd2"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function resetTask13() {
-  const taskId = 'B10M67bZTVuuI5TFDjRz'; // Task 13
+  const companyId = 'OHioSIzK4i7HwcjLbX5r';
+  const task13Id = 'GwnjdfTi1JOPGBcpPWot';
 
-  console.log('\nResetting Task 13 status to "pending"...');
+  console.log('=== RESETTING TASK 13 ===\n');
 
-  const taskRef = doc(db, 'companyTasks', taskId);
+  // 1. Delete all artifacts for this task
+  console.log('1. Deleting old artifacts...');
+  const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+  const q1 = query(artifactsRef, where('taskId', '==', task13Id));
+  const artifactsSnap = await getDocs(q1);
+
+  let deletedArtifacts = 0;
+  for (const doc of artifactsSnap.docs) {
+    await deleteDoc(doc.ref);
+    deletedArtifacts++;
+  }
+  console.log(`   ✅ Deleted ${deletedArtifacts} artifacts\n`);
+
+  // 2. Delete all messages for this task
+  console.log('2. Deleting old messages...');
+  const messagesRef = collection(db, `companies/${companyId}/tasks/${task13Id}/messages`);
+  const messagesSnap = await getDocs(messagesRef);
+
+  let deletedMessages = 0;
+  for (const doc of messagesSnap.docs) {
+    await deleteDoc(doc.ref);
+    deletedMessages++;
+  }
+  console.log(`   ✅ Deleted ${deletedMessages} messages\n`);
+
+  // 3. Change task status back to "Needs attention"
+  console.log('3. Resetting task status...');
+  const taskRef = doc(db, 'companyTasks', task13Id);
   await updateDoc(taskRef, {
-    status: 'pending',
-    updatedAt: new Date()
+    status: 'Needs attention'
   });
+  console.log('   ✅ Status changed to "Needs attention"\n');
 
-  console.log('✅ Task 13 reset to pending status');
-  console.log('\nNow you can trigger the AI task completion API');
-
-  process.exit(0);
+  console.log('✅ TASK 13 RESET COMPLETE!\n');
+  console.log('Next steps:');
+  console.log('  1. Open Task 13: http://localhost:9003/companies/OHioSIzK4i7HwcjLbX5r/tasks/GwnjdfTi1JOPGBcpPWot');
+  console.log('  2. The task should now auto-execute with the updated prompt');
+  console.log('  3. Wait for it to generate 5 follow-up emails');
+  console.log('  4. Once complete, run: node scripts/retrigger-task14.js');
 }
 
-resetTask13().catch(err => {
+resetTask13().then(() => process.exit(0)).catch(err => {
   console.error('Error:', err);
   process.exit(1);
 });

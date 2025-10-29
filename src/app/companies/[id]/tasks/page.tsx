@@ -442,7 +442,12 @@ export default function CompanyTasksPage() {
                                         <User className="h-5 w-5 text-muted-foreground" />
                                       )}
                                     </div>
-                                    <div>
+                                    <div className="flex items-center gap-3">
+                                      {task.sortOrder && (
+                                        <span className="text-sm font-semibold text-muted-foreground min-w-[2rem]">
+                                          {task.sortOrder}.
+                                        </span>
+                                      )}
                                       <p className={`font-medium ${
                                         status === 'Complete' ? 'line-through text-muted-foreground' : ''
                                       }`}>
