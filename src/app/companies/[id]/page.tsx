@@ -324,8 +324,10 @@ export default function CompanyDetailPage() {
                         <h3 className="font-semibold text-sm">Policy Check</h3>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <Button variant="outline" size="sm" className="whitespace-normal text-left justify-start">
-                          Compare policy
+                        <Button asChild variant="outline" size="sm" className="whitespace-normal text-left justify-start">
+                          <Link href={`/companies/${company.id}/compare-policy`}>
+                            Compare policy
+                          </Link>
                         </Button>
                       </div>
                     </div>

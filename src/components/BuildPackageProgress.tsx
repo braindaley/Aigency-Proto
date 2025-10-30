@@ -48,7 +48,7 @@ export function BuildPackageProgress({ taskIds }: BuildPackageProgressProps) {
             const taskProgress: TaskProgress = {
               id: taskId,
               name: TASK_NAMES[index] || taskData.taskName,
-              status: taskData.status === 'Complete' ? 'completed' :
+              status: taskData.status === 'Complete' || taskData.status === 'completed' ? 'completed' :
                       taskData.status === 'Needs attention' ? 'in_progress' :
                       'pending',
             };

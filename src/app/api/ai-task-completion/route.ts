@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       throw new Error('Google AI API key is not configured');
     }
 
-    const { taskId, companyId } = await request.json();
+    const { taskId, companyId, workflowId } = await request.json();
 
-    console.log(`[${timestamp}] 📋 AI-TASK-COMPLETION: Processing taskId=${taskId}, companyId=${companyId}`);
+    console.log(`[${timestamp}] 📋 AI-TASK-COMPLETION: Processing taskId=${taskId}, companyId=${companyId}, workflowId=${workflowId || 'none'}`);
 
     if (!taskId || !companyId) {
       console.error(`[${timestamp}] ❌ AI-TASK-COMPLETION: Missing required parameters`);
@@ -559,9 +559,14 @@ REMEMBER: Start with exactly "PASS" or "FAIL" on line 1. Base your decision on t
         console.log(`[${timestamp}] ❌ AI-TASK-COMPLETION: Validation error, will not mark complete`);
       }
     } else {
-      // No test criteria defined - do NOT auto-complete
-      console.log(`[${timestamp}] ⏸️ AI-TASK-COMPLETION: No test criteria defined - task will NOT be auto-completed`);
-      console.log(`[${timestamp}]   Task requires manual review or test criteria to be added`);
+      // No test criteria defined - auto-complete if artifact was generated
+      if (hasArtifact) {
+        console.log(`[${timestamp}] ✅ AI-TASK-COMPLETION: No test criteria, but artifact generated - will auto-complete`);
+        indicatesCompletion = true;
+      } else {
+        console.log(`[${timestamp}] ⏸️ AI-TASK-COMPLETION: No test criteria and no artifact - task will NOT be auto-completed`);
+        console.log(`[${timestamp}]   Task requires manual review or test criteria to be added`);
+      }
     }
 
     // Auto-complete the task if it seems finished and passes tests
@@ -608,6 +613,110 @@ The completed document is available in the artifact viewer on the right. Feel fr
         console.log(`[${timestamp}]   Reason: No valid artifact generated`);
       } else {
         console.log(`[${timestamp}]   Reason: Test validation failed`);
+      }
+    }
+
+    // If this is part of a workflow, handle workflow progression
+    if (workflowId && indicatesCompletion) {
+      console.log(`[${timestamp}] 🔄 AI-TASK-COMPLETION: Handling workflow progression for workflowId=${workflowId}`);
+
+      try {
+        const workflowRef = doc(db, 'buildPackageWorkflows', workflowId);
+        const workflowDoc = await getDoc(workflowRef);
+
+        if (workflowDoc.exists()) {
+          const workflowData = workflowDoc.data();
+          const allTaskIds = workflowData.taskIds || [];
+
+          // Add completion message to chat
+          const completionMessage = {
+            role: 'assistant',
+            content: `✓ ${task.taskName || 'Task'} completed`,
+            timestamp: Timestamp.now(),
+          };
+
+          const updatedChatHistory = [
+            ...(workflowData.chatHistory || []),
+            completionMessage,
+          ];
+
+          await updateDoc(workflowRef, {
+            chatHistory: updatedChatHistory,
+            updatedAt: Timestamp.now(),
+          });
+
+          // Find current task index and trigger next task
+          const currentIndex = allTaskIds.indexOf(taskId);
+          const aiTaskIds = allTaskIds.slice(3, 8); // Tasks 4-8
+          const currentAiIndex = aiTaskIds.indexOf(taskId);
+
+          console.log(`[${timestamp}]   Current task index in workflow: ${currentIndex}, AI task index: ${currentAiIndex}`);
+
+          // Check if there's a next AI task
+          if (currentAiIndex >= 0 && currentAiIndex < aiTaskIds.length - 1) {
+            const nextTaskId = aiTaskIds[currentAiIndex + 1];
+            console.log(`[${timestamp}]   Triggering next task: ${nextTaskId}`);
+
+            // Update next task status
+            const nextTaskRef = doc(db, 'companyTasks', nextTaskId);
+            await updateDoc(nextTaskRef, {
+              status: 'Needs attention',
+              updatedAt: Timestamp.now(),
+            });
+
+            // Trigger next task (don't await)
+            const apiUrl = `${request.nextUrl.origin}/api/ai-task-completion`;
+            console.log(`[${timestamp}]   API URL: ${apiUrl}`);
+
+            fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                taskId: nextTaskId,
+                companyId,
+                workflowId,
+              }),
+            })
+            .then(response => {
+              console.log(`[${timestamp}]   Next task fetch response status: ${response.status}`);
+              if (!response.ok) {
+                return response.text().then(text => {
+                  console.error(`[${timestamp}]   Next task fetch error response:`, text);
+                });
+              }
+              return response.json().then(data => {
+                console.log(`[${timestamp}]   Next task triggered successfully:`, data);
+              });
+            })
+            .catch(error => {
+              console.error(`[${timestamp}] Error triggering next task:`, error);
+              console.error(`[${timestamp}]   Error stack:`, error.stack);
+            });
+          } else if (currentAiIndex === aiTaskIds.length - 1) {
+            // This was the last AI task - move workflow to review phase
+            console.log(`[${timestamp}]   Last task completed, moving workflow to review phase`);
+
+            const reviewMessage = {
+              role: 'assistant',
+              content: "Your submission package is ready! Review the generated documents on the right side. You can download any document individually. When you're ready, we can proceed to the next steps.",
+              timestamp: Timestamp.now(),
+            };
+
+            const finalChatHistory = [
+              ...updatedChatHistory,
+              reviewMessage,
+            ];
+
+            await updateDoc(workflowRef, {
+              phase: 'review',
+              chatHistory: finalChatHistory,
+              updatedAt: Timestamp.now(),
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`[${timestamp}] Error handling workflow progression:`, error);
+        // Don't fail the task completion if workflow update fails
       }
     }
 

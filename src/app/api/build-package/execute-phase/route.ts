@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, Timestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 
 // Set maxDuration to allow longer processing
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +32,25 @@ export async function POST(req: NextRequest) {
     // Tasks 4-8 (indices 3-7) are the AI tasks to execute
     const aiTaskIds = taskIds.slice(3, 8);
 
+    // Delete old artifacts for tasks 4-8 before regenerating
+    console.log('Deleting old artifacts for tasks 4-8...');
+    for (const taskId of aiTaskIds) {
+      if (!taskId) continue;
+
+      try {
+        const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+        const artifactsQuery = query(artifactsRef, where('taskId', '==', taskId));
+        const artifactsSnapshot = await getDocs(artifactsQuery);
+
+        for (const artifactDoc of artifactsSnapshot.docs) {
+          await deleteDoc(doc(db, `companies/${companyId}/artifacts`, artifactDoc.id));
+          console.log(`Deleted old artifact for task ${taskId}`);
+        }
+      } catch (error) {
+        console.error(`Error deleting artifacts for task ${taskId}:`, error);
+      }
+    }
+
     // Update task 1-3 status to Complete (document upload tasks)
     for (let i = 0; i < 3; i++) {
       const taskId = taskIds[i];
@@ -44,13 +63,34 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Trigger AI task completion for tasks 4-8 in the background
-    // Return immediately and let tasks process asynchronously
-    processTasksInBackground(aiTaskIds, companyId, workflowId, req.nextUrl.origin).catch(error => {
-      console.error('Background task processing error:', error);
-    });
+    // Trigger only the FIRST AI task (task 4)
+    // Each task will trigger the next one when it completes (handled in ai-task-completion)
+    if (aiTaskIds.length > 0 && aiTaskIds[0]) {
+      const firstTaskId = aiTaskIds[0];
+      console.log(`Triggering first task: ${firstTaskId}`);
 
-    return NextResponse.json({ success: true, message: 'Processing tasks in background' });
+      // Update task status to "Needs attention"
+      const taskRef = doc(db, 'companyTasks', firstTaskId);
+      await updateDoc(taskRef, {
+        status: 'Needs attention',
+        updatedAt: Timestamp.now(),
+      });
+
+      // Trigger the first task asynchronously (don't await)
+      fetch(`${req.nextUrl.origin}/api/ai-task-completion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: firstTaskId,
+          companyId,
+          workflowId, // Pass workflowId so it can trigger next task and update workflow
+        }),
+      }).catch(error => {
+        console.error('Error triggering first task:', error);
+      });
+    }
+
+    return NextResponse.json({ success: true, message: 'Processing started' });
   } catch (error) {
     console.error('Error executing workflow phase:', error);
     return NextResponse.json(
@@ -58,93 +98,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Process tasks in the background
-async function processTasksInBackground(
-  aiTaskIds: string[],
-  companyId: string,
-  workflowId: string,
-  origin: string
-) {
-  const workflowRef = doc(db, 'buildPackageWorkflows', workflowId);
-
-  for (const taskId of aiTaskIds) {
-    if (!taskId) continue;
-
-    try {
-      console.log(`Processing task ${taskId}...`);
-
-      // Update task status to "Needs attention" to trigger processing
-      const taskRef = doc(db, 'companyTasks', taskId);
-      await updateDoc(taskRef, {
-        status: 'Needs attention',
-        updatedAt: Timestamp.now(),
-      });
-
-      // Call the AI task completion endpoint
-      const response = await fetch(`${origin}/api/ai-task-completion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId,
-          companyId,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error(`Failed to execute task ${taskId}:`, await response.text());
-      } else {
-        console.log(`Task ${taskId} completed successfully`);
-
-        // Add chat message when task completes
-        const taskDoc = await getDoc(taskRef);
-        const taskData = taskDoc.data();
-
-        const completionMessage = {
-          role: 'assistant',
-          content: `✓ ${taskData?.taskName || 'Task'} completed`,
-          timestamp: Timestamp.now(),
-        };
-
-        const workflowSnapshot = await getDoc(workflowRef);
-        const currentWorkflowData = workflowSnapshot.data();
-        const updatedChatHistory = [
-          ...(currentWorkflowData?.chatHistory || []),
-          completionMessage,
-        ];
-
-        await updateDoc(workflowRef, {
-          chatHistory: updatedChatHistory,
-          updatedAt: Timestamp.now(),
-        });
-      }
-    } catch (error) {
-      console.error(`Error executing task ${taskId}:`, error);
-    }
-  }
-
-  // Update workflow to review phase after all tasks complete
-  console.log('All tasks completed, updating workflow to review phase');
-
-  const reviewMessage = {
-    role: 'assistant',
-    content: "Your submission package is ready! Review the generated documents on the right side. You can download any document individually. When you're ready, we can proceed to the next steps.",
-    timestamp: Timestamp.now(),
-  };
-
-  const finalWorkflowSnapshot = await getDoc(workflowRef);
-  const finalWorkflowData = finalWorkflowSnapshot.data();
-  const finalChatHistory = [
-    ...(finalWorkflowData?.chatHistory || []),
-    reviewMessage,
-  ];
-
-  await updateDoc(workflowRef, {
-    phase: 'review',
-    chatHistory: finalChatHistory,
-    updatedAt: Timestamp.now(),
-  });
-
-  console.log('Workflow updated to review phase');
 }

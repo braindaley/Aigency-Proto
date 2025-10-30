@@ -45,6 +45,13 @@ export function BuildPackageArtifacts({ taskIds, companyId }: BuildPackageArtifa
     loadArtifacts();
   }, [taskIds, companyId]);
 
+  // Reset selected artifact when taskIds change
+  useEffect(() => {
+    if (artifacts.length > 0) {
+      setSelectedArtifact(artifacts[0]);
+    }
+  }, [artifacts]);
+
   const loadArtifacts = async () => {
     if (!taskIds || taskIds.length === 0) {
       setLoading(false);
@@ -115,9 +122,6 @@ export function BuildPackageArtifacts({ taskIds, companyId }: BuildPackageArtifa
       }
 
       setArtifacts(loadedArtifacts);
-      if (loadedArtifacts.length > 0 && !selectedArtifact) {
-        setSelectedArtifact(loadedArtifacts[0]);
-      }
     } catch (error) {
       console.error('Error loading artifacts:', error);
     } finally {
