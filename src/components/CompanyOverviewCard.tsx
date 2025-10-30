@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { format, addMonths, differenceInCalendarMonths } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import type { CompanyTask } from '@/lib/types';
 import { Mail } from 'lucide-react';
 import Link from 'next/link';
@@ -26,11 +25,6 @@ interface Company {
   lastUpdated?: Date;
 }
 
-interface TaskCounts {
-  needsAction: number;
-  upcoming: number;
-  completed: number;
-}
 
 const policyTypeAbbreviations: { [key: string]: string } = {
   'workers-comp': 'WC',
@@ -112,47 +106,20 @@ const Timeline = ({ renewals, startDate }: { renewals: Renewal[], startDate: Dat
 
 interface CompanyCardProps {
   company: Company;
-  taskCounts: TaskCounts;
-  activeTasks: CompanyTask[];
   unreadEmails: number;
 }
 
-const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: CompanyCardProps) => {
-  const policyTypeLabels: { [key: string]: string } = {
-    'workers-comp': 'Workers Comp',
-    'automotive': 'Auto',
-    'general-liability': 'General Liability',
-    'property': 'Property',
-  };
-
-  // Get unique renewal types
-  const activeRenewalTypes = [...new Set(activeTasks.map(task => task.renewalType))];
-  
+const CompanyCard = ({ company, unreadEmails }: CompanyCardProps) => {
   // Calculate how many days ago was last updated
   const getLastUpdatedText = (lastUpdated?: Date) => {
     if (!lastUpdated) return '';
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - lastUpdated.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return 'Last updated today';
     if (diffDays === 1) return 'Last updated yesterday';
     return `Last updated ${diffDays} days ago`;
-  };
-
-  // Get the earliest renewal date for "Bind by" display
-  const getBindByDate = (renewalType: string) => {
-    const renewalTasks = activeTasks.filter(task => task.renewalType === renewalType);
-    if (renewalTasks.length === 0) return null;
-    
-    // Assuming renewalDate exists on tasks
-    const dates = renewalTasks
-      .filter(task => task.renewalDate)
-      .map(task => task.renewalDate.toDate());
-    
-    if (dates.length === 0) return null;
-    const earliestDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    return `Bind by ${format(earliestDate, 'M/d/yyyy')}`;
   };
   
   return (
@@ -168,54 +135,6 @@ const CompanyCard = ({ company, taskCounts, activeTasks, unreadEmails }: Company
         </CardHeader>
         <CardContent className="space-y-4">
           <Timeline renewals={company.renewals || []} startDate={new Date()} />
-
-          <div className="space-y-2 pt-4">
-            {activeRenewalTypes.map(renewalType => {
-              const renewalTasks = activeTasks.filter(task => task.renewalType === renewalType);
-              const needsActionCount = renewalTasks.filter(t => t.status === 'Needs attention').length;
-              const upcomingCount = renewalTasks.filter(t => t.status === 'Upcoming').length;
-              const completedCount = renewalTasks.filter(t => t.status === 'Complete').length;
-              const bindByDate = getBindByDate(renewalType);
-
-              return (
-                <div key={renewalType} className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-4">
-                    <span className="font-medium text-sm min-w-[140px]">
-                      {policyTypeLabels[renewalType] || renewalType}
-                    </span>
-                    {bindByDate && (
-                      <span className="text-sm text-muted-foreground">
-                        {bindByDate}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {needsActionCount > 0 && (
-                      <Badge variant="destructive" className="rounded-full px-3">
-                        {needsActionCount} Needs action
-                      </Badge>
-                    )}
-                    {upcomingCount > 0 && (
-                      <Badge variant="secondary" className="rounded-full px-3">
-                        {upcomingCount} Upcoming
-                      </Badge>
-                    )}
-                    {completedCount > 0 && (
-                      <Badge variant="outline" className="rounded-full px-3">
-                        {completedCount} Complete
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {activeRenewalTypes.length === 0 && (
-              <div className="text-sm text-muted-foreground py-4 text-center">
-                No active tasks
-              </div>
-            )}
-          </div>
         </CardContent>
       </Link>
 
@@ -359,19 +278,10 @@ export default function CompanyOverviewCards() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {companies.map(company => {
-        const companyTasks = tasksByCompany[company.id] || [];
-        const taskCounts: TaskCounts = {
-          needsAction: companyTasks.filter(t => t.status === 'Needs attention').length,
-          upcoming: companyTasks.filter(t => t.status === 'Upcoming').length,
-          completed: companyTasks.filter(t => t.status === 'Complete').length,
-        };
-        
         return (
           <CompanyCard
             key={company.id}
             company={company}
-            taskCounts={taskCounts}
-            activeTasks={companyTasks}
             unreadEmails={unreadEmailsByCompany[company.id] || 0}
           />
         );

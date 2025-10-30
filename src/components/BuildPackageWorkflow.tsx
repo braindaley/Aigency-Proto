@@ -64,8 +64,8 @@ export function BuildPackageWorkflow({
 
         // Update artifact task IDs for processing and review phases
         if (data.phase === 'processing' || data.phase === 'review' || data.phase === 'complete') {
-          // Show artifacts from tasks 5, 6, 7 (ACORD 130, ACORD 125, narrative)
-          const artifactIndices = [4, 5, 6]; // 0-indexed: tasks 5, 6, 7
+          // Show artifacts from tasks 4-8 (Research OSHA, ACORD 130, ACORD 125, narrative, coverage suggestions)
+          const artifactIndices = [3, 4, 5, 6, 7]; // 0-indexed: tasks 4, 5, 6, 7, 8
           console.log('All taskIds:', data.taskIds);
           const artifactIds = artifactIndices
             .map((idx) => {

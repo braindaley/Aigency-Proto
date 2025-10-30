@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 
+// Set maxDuration to allow longer processing
+export const maxDuration = 300; // 5 minutes
+
 export async function POST(req: NextRequest) {
   try {
     const { workflowId } = await req.json();
@@ -41,80 +44,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Trigger AI task completion for tasks 4-8 sequentially
-    // We'll use the existing AI task completion system
-    for (const taskId of aiTaskIds) {
-      if (!taskId) continue;
-
-      try {
-        // Update task status to "Needs attention" to trigger processing
-        const taskRef = doc(db, 'companyTasks', taskId);
-        await updateDoc(taskRef, {
-          status: 'Needs attention',
-          updatedAt: Timestamp.now(),
-        });
-
-        // Call the AI task completion endpoint
-        const response = await fetch(`${req.nextUrl.origin}/api/ai-task-completion`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taskId,
-            companyId,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to execute task ${taskId}:`, await response.text());
-        } else {
-          // Add chat message when task completes
-          const taskDoc = await getDoc(taskRef);
-          const taskData = taskDoc.data();
-
-          const completionMessage = {
-            role: 'assistant',
-            content: `✓ ${taskData?.taskName || 'Task'} completed`,
-            timestamp: Timestamp.now(),
-          };
-
-          const workflowSnapshot = await getDoc(workflowRef);
-          const currentWorkflowData = workflowSnapshot.data();
-          const updatedChatHistory = [
-            ...(currentWorkflowData?.chatHistory || []),
-            completionMessage,
-          ];
-
-          await updateDoc(workflowRef, {
-            chatHistory: updatedChatHistory,
-            updatedAt: Timestamp.now(),
-          });
-        }
-      } catch (error) {
-        console.error(`Error executing task ${taskId}:`, error);
-      }
-    }
-
-    // Update workflow to review phase after all tasks complete
-    const reviewMessage = {
-      role: 'assistant',
-      content: "Your submission package is ready! Review the generated documents on the right side. You can download any document individually. When you're ready, we can proceed to the next steps.",
-      timestamp: Timestamp.now(),
-    };
-
-    const finalWorkflowSnapshot = await getDoc(workflowRef);
-    const finalWorkflowData = finalWorkflowSnapshot.data();
-    const finalChatHistory = [
-      ...(finalWorkflowData?.chatHistory || []),
-      reviewMessage,
-    ];
-
-    await updateDoc(workflowRef, {
-      phase: 'review',
-      chatHistory: finalChatHistory,
-      updatedAt: Timestamp.now(),
+    // Trigger AI task completion for tasks 4-8 in the background
+    // Return immediately and let tasks process asynchronously
+    processTasksInBackground(aiTaskIds, companyId, workflowId, req.nextUrl.origin).catch(error => {
+      console.error('Background task processing error:', error);
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Processing tasks in background' });
   } catch (error) {
     console.error('Error executing workflow phase:', error);
     return NextResponse.json(
@@ -122,4 +58,93 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Process tasks in the background
+async function processTasksInBackground(
+  aiTaskIds: string[],
+  companyId: string,
+  workflowId: string,
+  origin: string
+) {
+  const workflowRef = doc(db, 'buildPackageWorkflows', workflowId);
+
+  for (const taskId of aiTaskIds) {
+    if (!taskId) continue;
+
+    try {
+      console.log(`Processing task ${taskId}...`);
+
+      // Update task status to "Needs attention" to trigger processing
+      const taskRef = doc(db, 'companyTasks', taskId);
+      await updateDoc(taskRef, {
+        status: 'Needs attention',
+        updatedAt: Timestamp.now(),
+      });
+
+      // Call the AI task completion endpoint
+      const response = await fetch(`${origin}/api/ai-task-completion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          companyId,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to execute task ${taskId}:`, await response.text());
+      } else {
+        console.log(`Task ${taskId} completed successfully`);
+
+        // Add chat message when task completes
+        const taskDoc = await getDoc(taskRef);
+        const taskData = taskDoc.data();
+
+        const completionMessage = {
+          role: 'assistant',
+          content: `✓ ${taskData?.taskName || 'Task'} completed`,
+          timestamp: Timestamp.now(),
+        };
+
+        const workflowSnapshot = await getDoc(workflowRef);
+        const currentWorkflowData = workflowSnapshot.data();
+        const updatedChatHistory = [
+          ...(currentWorkflowData?.chatHistory || []),
+          completionMessage,
+        ];
+
+        await updateDoc(workflowRef, {
+          chatHistory: updatedChatHistory,
+          updatedAt: Timestamp.now(),
+        });
+      }
+    } catch (error) {
+      console.error(`Error executing task ${taskId}:`, error);
+    }
+  }
+
+  // Update workflow to review phase after all tasks complete
+  console.log('All tasks completed, updating workflow to review phase');
+
+  const reviewMessage = {
+    role: 'assistant',
+    content: "Your submission package is ready! Review the generated documents on the right side. You can download any document individually. When you're ready, we can proceed to the next steps.",
+    timestamp: Timestamp.now(),
+  };
+
+  const finalWorkflowSnapshot = await getDoc(workflowRef);
+  const finalWorkflowData = finalWorkflowSnapshot.data();
+  const finalChatHistory = [
+    ...(finalWorkflowData?.chatHistory || []),
+    reviewMessage,
+  ];
+
+  await updateDoc(workflowRef, {
+    phase: 'review',
+    chatHistory: finalChatHistory,
+    updatedAt: Timestamp.now(),
+  });
+
+  console.log('Workflow updated to review phase');
 }
