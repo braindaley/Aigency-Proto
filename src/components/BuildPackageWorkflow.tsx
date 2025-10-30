@@ -9,7 +9,7 @@ import { BuildPackageProgress } from './BuildPackageProgress';
 import { BuildPackageArtifacts } from './BuildPackageArtifacts';
 import { BuildPackageArtifactThumbnails } from './BuildPackageArtifactThumbnails';
 import { db, storage } from '@/lib/firebase';
-import { doc, onSnapshot, collection, addDoc, Timestamp, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc, Timestamp, updateDoc, deleteDoc, getDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { SmartMessageRenderer } from '@/components/MarkdownRenderer';
 
@@ -49,6 +49,7 @@ export function BuildPackageWorkflow({
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [artifactTaskIds, setArtifactTaskIds] = useState<string[]>([]);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
+  const [allArtifactsReady, setAllArtifactsReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,6 +89,62 @@ export function BuildPackageWorkflow({
     // Auto-scroll to bottom when new messages arrive
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    // Check if all displayable artifacts are ready
+    const checkArtifactsReady = async () => {
+      if (artifactTaskIds.length === 0) {
+        setAllArtifactsReady(false);
+        return;
+      }
+
+      try {
+        const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+        const artifactsSnapshot = await getDocs(artifactsRef);
+
+        let readyCount = 0;
+        let displayableCount = 0;
+
+        for (const taskId of artifactTaskIds) {
+          const artifactDoc = artifactsSnapshot.docs.find(doc => {
+            const data = doc.data();
+            return data.taskId === taskId && data.data && data.data.trim().length > 0;
+          });
+
+          if (artifactDoc) {
+            const data = artifactDoc.data();
+            const taskName = data.taskName || '';
+
+            // Only count artifacts that will be displayed (ACORD 130, ACORD 125, narrative)
+            const shouldShowPreview = taskName.toLowerCase().includes('acord 130') ||
+                                     taskName.toLowerCase().includes('acord 125') ||
+                                     taskName.toLowerCase().includes('narrative');
+
+            if (shouldShowPreview) {
+              displayableCount++;
+              readyCount++;
+            }
+          }
+        }
+
+        // All displayable artifacts must be ready (typically 3: ACORD 130, ACORD 125, narrative)
+        const allReady = displayableCount >= 3 && readyCount === displayableCount;
+        setAllArtifactsReady(allReady);
+        console.log(`Displayable artifacts ready: ${readyCount}/${displayableCount} (total tasks: ${artifactTaskIds.length})`, allReady);
+      } catch (error) {
+        console.error('Error checking artifacts:', error);
+        setAllArtifactsReady(false);
+      }
+    };
+
+    checkArtifactsReady();
+
+    // Poll for updates during processing phase
+    if (workflow?.phase === 'processing' && artifactTaskIds.length > 0) {
+      const interval = setInterval(checkArtifactsReady, 3000); // Check every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [artifactTaskIds, companyId, workflow?.phase]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -206,13 +263,63 @@ export function BuildPackageWorkflow({
   };
 
   const handleReset = async () => {
-    if (!confirm('Are you sure you want to reset this workflow? This will delete all progress.')) {
+    if (!confirm('Are you sure you want to reset this workflow? This will delete all progress, uploaded documents, and generated artifacts.')) {
       return;
     }
 
     try {
-      // Reset the workflow document
+      // Get workflow data to access task IDs
       const workflowRef = doc(db, 'buildPackageWorkflows', workflowId);
+      const workflowDoc = await getDoc(workflowRef);
+
+      if (workflowDoc.exists()) {
+        const workflowData = workflowDoc.data();
+        const taskIds = workflowData.taskIds || [];
+
+        // Delete artifacts for all workflow tasks
+        if (taskIds.length > 0) {
+          const artifactsRef = collection(db, `companies/${companyId}/artifacts`);
+          const artifactsSnapshot = await getDocs(artifactsRef);
+
+          const deletePromises = artifactsSnapshot.docs
+            .filter(doc => {
+              const data = doc.data();
+              return taskIds.includes(data.taskId);
+            })
+            .map(doc => deleteDoc(doc.ref));
+
+          await Promise.all(deletePromises);
+          console.log(`Deleted ${deletePromises.length} artifacts`);
+        }
+
+        // Delete uploaded documents if they were tracked
+        const uploadedDocs = workflowData.uploadedDocuments || {};
+        const docIds = Object.values(uploadedDocs).filter(Boolean) as string[];
+
+        if (docIds.length > 0) {
+          const docDeletePromises = docIds.map(docId =>
+            deleteDoc(doc(db, `companies/${companyId}/documents`, docId))
+          );
+
+          await Promise.all(docDeletePromises);
+          console.log(`Deleted ${docIds.length} uploaded documents`);
+        }
+
+        // Reset all task statuses back to Upcoming
+        if (taskIds.length > 0) {
+          const taskUpdatePromises = taskIds.map(taskId =>
+            updateDoc(doc(db, 'companyTasks', taskId), {
+              status: 'Upcoming',
+              updatedAt: Timestamp.now(),
+            })
+          );
+
+          await Promise.all(taskUpdatePromises);
+          console.log(`Reset ${taskIds.length} tasks to Upcoming status`);
+        }
+      }
+
+      // Reset the workflow document
       await updateDoc(workflowRef, {
         phase: 'upload',
         uploadedDocuments: {},
@@ -226,6 +333,7 @@ export function BuildPackageWorkflow({
 
       // Clear local state - messages will be updated by the snapshot listener
       setArtifactTaskIds([]);
+      setAllArtifactsReady(false);
       setAttachedFiles([]);
       setInput('');
     } catch (error) {
@@ -238,11 +346,12 @@ export function BuildPackageWorkflow({
     return <div>Loading workflow...</div>;
   }
 
-  const showArtifacts = (workflow.phase === 'processing' || workflow.phase === 'review' || workflow.phase === 'complete') && artifactTaskIds.length > 0;
+  const showArtifacts = (workflow.phase === 'processing' || workflow.phase === 'review' || workflow.phase === 'complete') && artifactTaskIds.length > 0 && allArtifactsReady;
 
   console.log('Workflow state:', {
     phase: workflow.phase,
     artifactTaskIds,
+    allArtifactsReady,
     showArtifacts,
     taskIdsLength: workflow.taskIds?.length
   });
@@ -299,8 +408,8 @@ export function BuildPackageWorkflow({
                 </div>
               ))}
 
-              {/* Show artifact thumbnails inline when in review/complete phase */}
-              {(workflow.phase === 'review' || workflow.phase === 'complete') && artifactTaskIds.length > 0 && (
+              {/* Show artifact thumbnails inline when in review/complete phase and all artifacts are ready */}
+              {(workflow.phase === 'review' || workflow.phase === 'complete') && artifactTaskIds.length > 0 && allArtifactsReady && (
                 <div className="flex gap-4">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
                     <Sparkles className="h-4 w-4 text-muted-foreground" />
