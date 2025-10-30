@@ -86,7 +86,19 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < SUBMISSION_TASK_IDS.length; i++) {
       const templateId = SUBMISSION_TASK_IDS[i];
 
-      // Create company task with minimal data
+      // Fetch template data from Firestore to copy all fields
+      const templateRef = doc(db, 'tasks', templateId);
+      const templateDoc = await getDoc(templateRef);
+
+      let templateData = {};
+      if (templateDoc.exists()) {
+        templateData = templateDoc.data();
+        console.log(`Loaded template for ${taskNames[i]}, has testCriteria: ${!!templateData.testCriteria}`);
+      } else {
+        console.warn(`Template ${templateId} not found in Firestore, using minimal data`);
+      }
+
+      // Create company task with data from template
       const taskRef = await addDoc(collection(db, 'companyTasks'), {
         taskName: taskNames[i],
         companyId,
@@ -99,6 +111,11 @@ export async function POST(req: NextRequest) {
         status: 'Upcoming',
         dependencies: [],
         sortOrder: i + 1,
+        // Copy important fields from template
+        description: templateData.description || '',
+        systemPrompt: templateData.systemPrompt || '',
+        testCriteria: templateData.testCriteria || null,
+        showDependencyArtifacts: templateData.showDependencyArtifacts || false,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
