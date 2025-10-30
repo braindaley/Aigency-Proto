@@ -1,5 +1,5 @@
 async function triggerComparison() {
-  const workflowId = 'swcTQ2gfJkWCnXNy1vQr';
+  const workflowId = 'swcTQ2gfJkWCnXNy1vQr'; // Update if needed
 
   console.log('🚀 Manually triggering policy comparison...\n');
 
