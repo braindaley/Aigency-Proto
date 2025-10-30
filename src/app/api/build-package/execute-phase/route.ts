@@ -76,18 +76,28 @@ export async function POST(req: NextRequest) {
         updatedAt: Timestamp.now(),
       });
 
-      // Trigger the first task asynchronously (don't await)
-      fetch(`${req.nextUrl.origin}/api/ai-task-completion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId: firstTaskId,
-          companyId,
-          workflowId, // Pass workflowId so it can trigger next task and update workflow
-        }),
-      }).catch(error => {
-        console.error('Error triggering first task:', error);
-      });
+      // Trigger the first task (MUST await to prevent serverless termination)
+      try {
+        const taskResponse = await fetch(`${req.nextUrl.origin}/api/ai-task-completion`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: firstTaskId,
+            companyId,
+            workflowId, // Pass workflowId so it can trigger next task and update workflow
+          }),
+        });
+
+        if (!taskResponse.ok) {
+          const errorText = await taskResponse.text();
+          console.error('❌ First task failed:', errorText);
+        } else {
+          const result = await taskResponse.json();
+          console.log('✅ First task completed:', result);
+        }
+      } catch (error) {
+        console.error('❌ Error triggering first task:', error);
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Processing started' });

@@ -224,7 +224,7 @@ export function ComparePolicyWorkflow({
         uploadedDocuments: {},
         chatHistory: [{
           role: 'assistant',
-          content: "Let's compare your Workers' Compensation policy documents! Please upload:\n\n1. **Proposal/Binder** - The original quote or binding document\n2. **Issued Policy** - The final policy document from the carrier\n\nYou can drag and drop both files at once, or click the upload button below.",
+          content: "Let's compare your Workers' Compensation policy documents! Please upload:\n\n1. **ACORD 130** - The ACORD 130 form\n2. **Issued Policy** - The final policy document from the carrier\n\nYou can drag and drop both files at once, or click the upload button below.",
           timestamp: Timestamp.now(),
         }],
         status: 'in_progress',

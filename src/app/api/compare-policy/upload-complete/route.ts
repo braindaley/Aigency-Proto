@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const newMessage = {
       role: 'assistant',
       content: allDocsUploaded
-        ? "Perfect! I've received both documents. I'm now analyzing and comparing:\n\n✓ Proposal/Binder document\n✓ Issued Policy document\n\nThis may take a moment as I carefully review coverage details, premiums, classifications, and endorsements to identify any discrepancies."
+        ? "Perfect! I've received both documents. I'm now analyzing and comparing:\n\n✓ ACORD 130 form\n✓ Issued Policy document\n\nThis may take a moment as I carefully review coverage details, premiums, classifications, and endorsements to identify any discrepancies."
         : "Documents uploaded! Please upload the remaining document to continue.",
       timestamp: Timestamp.now(),
     };
@@ -63,14 +63,26 @@ export async function POST(req: NextRequest) {
 
     // If all documents uploaded, trigger comparison
     if (allDocsUploaded) {
-      // Trigger execute-comparison endpoint
-      fetch(`${req.nextUrl.origin}/api/compare-policy/execute-comparison`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowId }),
-      }).catch((error) => {
-        console.error('Error triggering execute-comparison:', error);
-      });
+      console.log('🚀 Triggering execute-comparison endpoint...');
+
+      try {
+        // IMPORTANT: Await the fetch so it completes before the serverless function terminates
+        const comparisonResponse = await fetch(`${req.nextUrl.origin}/api/compare-policy/execute-comparison`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workflowId }),
+        });
+
+        if (!comparisonResponse.ok) {
+          const errorText = await comparisonResponse.text();
+          console.error('❌ Execute-comparison failed:', errorText);
+        } else {
+          const result = await comparisonResponse.json();
+          console.log('✅ Execute-comparison completed:', result);
+        }
+      } catch (error) {
+        console.error('❌ Error triggering execute-comparison:', error);
+      }
     }
 
     return NextResponse.json({ success: true });
