@@ -5,15 +5,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Settings, Sparkles, User, FileText, Database, Mail } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Settings, FileText, Database, Mail, ArrowRight, Package, Megaphone, FileBarChart, CheckCircle, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
-import { format, addMonths, differenceInCalendarMonths, differenceInCalendarDays } from "date-fns"
+import { format, addMonths, differenceInCalendarMonths } from "date-fns"
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, writeBatch, Timestamp } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import type { CompanyTask, Task } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface Company {
   id: string;
@@ -114,16 +110,10 @@ const Timeline = ({ renewals, startDate }: { renewals: Renewal[], startDate: Dat
 
 export default function CompanyDetailPage() {
   const { id } = useParams();
-  const { toast } = useToast();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
   const [timelineStartDate, setTimelineStartDate] = useState(new Date());
-  
-  const [attentionTasks, setAttentionTasks] = useState<CompanyTask[]>([]);
-  const [upcomingTasks, setUpcomingTasks] = useState<CompanyTask[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(true);
-  const [generatedRenewals, setGeneratedRenewals] = useState<string[]>([]);
 
   const companyId = typeof id === 'string' ? id : '';
 
@@ -131,11 +121,9 @@ export default function CompanyDetailPage() {
     const fetchCompanyData = async () => {
       if (!companyId) {
         setIsLoading(false);
-        setTasksLoading(false);
         return;
       }
       setIsLoading(true);
-      setTasksLoading(true);
       try {
         // Fetch company details
         const companyDoc = await getDoc(doc(db, 'companies', companyId));
@@ -158,145 +146,10 @@ export default function CompanyDetailPage() {
       } finally {
         setIsLoading(false);
       }
-
-      // Fetch tasks that need attention
-      try {
-        const tasksQuery = query(
-          collection(db, 'companyTasks'), 
-          where('companyId', '==', companyId),
-          where('status', '==', 'Needs attention')
-        );
-        const tasksSnapshot = await getDocs(tasksQuery);
-        const tasksList = tasksSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as CompanyTask[];
-
-        tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setAttentionTasks(tasksList);
-
-        // Fetch upcoming tasks
-        const upcomingQuery = query(
-          collection(db, 'companyTasks'),
-          where('companyId', '==', companyId),
-          where('status', '==', 'Upcoming')
-        );
-        const upcomingSnapshot = await getDocs(upcomingQuery);
-        const upcomingTasksList = upcomingSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as CompanyTask[];
-
-        upcomingTasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setUpcomingTasks(upcomingTasksList);
-
-        // Track which renewal types have tasks generated
-        const allTasks = [...tasksList, ...upcomingTasksList];
-        const generated = [...new Set(allTasks.map(task => task.renewalType))];
-        setGeneratedRenewals(generated);
-      } catch (error) {
-         console.error("Error fetching tasks:", error);
-      } finally {
-        setTasksLoading(false);
-      }
     };
 
     fetchCompanyData();
   }, [companyId]);
-
-  const handleCreateTasks = async (renewal: Renewal) => {
-    if (!companyId || !renewal.date) {
-      return;
-    }
-
-    const templatesQuery = query(collection(db, 'tasks'), where('policyType', '==', renewal.type));
-    const templatesSnapshot = await getDocs(templatesQuery);
-
-    if (templatesSnapshot.empty) {
-        toast({
-          variant: "destructive",
-          title: "No Templates Found",
-          description: `No task templates found for ${renewal.type}. Please create templates first in Settings > Task Settings.`,
-        });
-        return;
-    }
-
-    const batch = writeBatch(db);
-    const companyTasksCollection = collection(db, 'companyTasks');
-
-    const templates = templatesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Task }));
-
-    templates.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
-    templates.forEach((templateData) => {
-      const { id, ...restOfTemplateData } = templateData;
-      const newCompanyTaskRef = doc(companyTasksCollection);
-
-      // Tasks without dependencies should start with "Needs attention"
-      const hasDependencies = templateData.dependencies && templateData.dependencies.length > 0;
-      const initialStatus = hasDependencies ? 'Upcoming' : 'Needs attention';
-
-      const newCompanyTask = {
-        ...restOfTemplateData,
-        templateId: id,
-        companyId: companyId,
-        renewalType: renewal.type,
-        renewalDate: Timestamp.fromDate(renewal.date!),
-        status: initialStatus as const,
-      };
-      batch.set(newCompanyTaskRef, newCompanyTask);
-    });
-
-    try {
-        await batch.commit();
-        toast({
-          title: "Tasks Created",
-          description: `Successfully created ${templates.length} tasks for ${policyTypes.find(p => p.value === renewal.type)?.label || renewal.type}.`,
-        });
-
-        // Refresh tasks
-        const tasksQuery = query(
-          collection(db, 'companyTasks'),
-          where('companyId', '==', companyId),
-          where('status', '==', 'Needs attention')
-        );
-        const tasksSnapshot = await getDocs(tasksQuery);
-        const tasksList = tasksSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as CompanyTask[];
-
-        tasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setAttentionTasks(tasksList);
-
-        // Fetch upcoming tasks
-        const upcomingQuery = query(
-          collection(db, 'companyTasks'),
-          where('companyId', '==', companyId),
-          where('status', '==', 'Upcoming')
-        );
-        const upcomingSnapshot = await getDocs(upcomingQuery);
-        const upcomingTasksList = upcomingSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as CompanyTask[];
-
-        upcomingTasksList.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setUpcomingTasks(upcomingTasksList);
-
-        // Update generated renewals
-        const allTasks = [...tasksList, ...upcomingTasksList];
-        const generated = [...new Set(allTasks.map(task => task.renewalType))];
-        setGeneratedRenewals(generated);
-    } catch (error) {
-        console.error('Error creating company tasks:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to create tasks. Please try again.",
-        });
-    }
-  };
 
 
   if (isLoading) {
@@ -325,47 +178,6 @@ export default function CompanyDetailPage() {
   }
 
   const displayRenewals = company.renewals || [];
-  const activeRenewalType = attentionTasks.length > 0
-    ? policyTypes.find(p => p.value === attentionTasks[0].renewalType)?.label || attentionTasks[0].renewalType
-    : null;
-
-  // Get upcoming renewals (within 120 days)
-  const today = new Date();
-  const upcomingRenewals = displayRenewals.filter(r => {
-    if (!r.date) return false;
-    const daysUntilRenewal = differenceInCalendarDays(r.date, today);
-    return daysUntilRenewal >= 0 && daysUntilRenewal <= 120;
-  });
-
-  // Helper function to get upcoming tasks for a specific renewal type
-  const getUpcomingTasksForRenewalType = (renewalTypeLabel: string): CompanyTask[] => {
-    const renewalTypeValue = policyTypes.find(p => p.label === renewalTypeLabel)?.value || renewalTypeLabel.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    return upcomingTasks
-      .filter(task => {
-        const taskRenewalTypeLabel = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
-        return taskRenewalTypeLabel === renewalTypeLabel;
-      })
-      .slice(0, 5); // First 5 upcoming tasks
-  };
-
-  // Get all renewal types that have either attention or upcoming tasks
-  const getAllRenewalTypes = () => {
-    const renewalTypes = new Set<string>();
-    
-    // Add renewal types from attention tasks
-    attentionTasks.forEach(task => {
-      const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
-      renewalTypes.add(renewalType);
-    });
-    
-    // Add renewal types from upcoming tasks
-    upcomingTasks.forEach(task => {
-      const renewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
-      renewalTypes.add(renewalType);
-    });
-    
-    return Array.from(renewalTypes);
-  };
 
   return (
     <div className="mx-auto max-w-[672px] px-4 py-8 md:py-12">
@@ -393,16 +205,16 @@ export default function CompanyDetailPage() {
         </div>
 
         {company.description && (
-          <div className="mt-6 mb-8">
+          <div className="mt-6">
             <p className="text-muted-foreground">{company.description}</p>
           </div>
         )}
 
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-2 mb-8" style={{ marginTop: '12px' }}>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/companies/${company.id}/emails`}>
-              <Mail className="h-4 w-4 mr-2" />
-              Emails
+            <Link href={`/companies/${company.id}/documents`}>
+              <FileText className="h-4 w-4 mr-2" />
+              Documents
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
@@ -411,11 +223,9 @@ export default function CompanyDetailPage() {
               Artifacts
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/companies/${company.id}/documents`}>
-              <FileText className="h-4 w-4 mr-2" />
-              Documents
-            </Link>
+          <Button variant="outline" size="sm" disabled>
+            <Mail className="h-4 w-4 mr-2" />
+            Emails
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link href={`/companies/${company.id}/settings`}>
@@ -426,104 +236,109 @@ export default function CompanyDetailPage() {
         </div>
 
         <Timeline renewals={displayRenewals} startDate={timelineStartDate} />
-      </div>
-      
-      <div className="mt-12">
-        <h2 className="text-xl font-semibold mb-4">Tasks</h2>
 
-        {/* Show alerts for upcoming renewals without tasks */}
-        {!tasksLoading && upcomingRenewals.filter(renewal => !generatedRenewals.includes(renewal.type)).length > 0 && (
-          <div className="space-y-4 mb-6">
-            {upcomingRenewals.filter(renewal => !generatedRenewals.includes(renewal.type)).map(renewal => {
-              const renewalLabel = policyTypes.find(p => p.value === renewal.type)?.label || renewal.type;
-              return (
-                <Alert key={renewal.type}>
-                  <AlertDescription>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{renewalLabel} renewal upcoming</span>
-                        {renewal.date && (
-                          <span className="text-sm text-muted-foreground ml-2">
-                            ({format(renewal.date, 'PPP')})
-                          </span>
-                        )}
+        {/* Policy Workflow Blocks */}
+        <div className="mt-12 space-y-8">
+          {displayRenewals.map((renewal) => (
+            <Card key={renewal.id}>
+              <CardHeader>
+                <CardTitle>
+                  {policyTypes.find(pt => pt.value === renewal.type)?.label || renewal.type}
+                  {renewal.date && ` - Renewal: ${format(renewal.date, 'MMM d, yyyy')}`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* First Row: Submission -> Marketing -> Proposal */}
+                  <div className="flex items-start gap-6">
+                    {/* Submission */}
+                    <div className="flex-1 min-w-[140px]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Package className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold text-sm">Submission</h3>
                       </div>
-                      <Button onClick={() => handleCreateTasks(renewal)} size="sm">
-                        Create tasks
-                      </Button>
+                      <div className="flex flex-col gap-1.5">
+                        <Button asChild variant="outline" size="sm" className="whitespace-normal text-left justify-start">
+                          <Link href={`/companies/${company.id}/renewals/${renewal.type}/build-package`}>
+                            Build package
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
-                  </AlertDescription>
-                </Alert>
-              );
-            })}
-          </div>
-        )}
 
-        <div className="mt-4">
-          {tasksLoading ? (
-            <p>Loading tasks...</p>
-          ) : attentionTasks.length > 0 || upcomingTasks.length > 0 ? (
-            <div className="space-y-8">
-              {getAllRenewalTypes().map((renewalType) => {
-                const renewalTypeValue = policyTypes.find(p => p.label === renewalType)?.value || renewalType.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                const attentionTasksForType = attentionTasks.filter(task => {
-                  const taskRenewalType = policyTypes.find(p => p.value === task.renewalType)?.label || task.renewalType || 'Other';
-                  return taskRenewalType === renewalType;
-                });
-                const upcomingTasksForType = getUpcomingTasksForRenewalType(renewalType);
-
-                return (
-                  <div key={renewalType} className="border rounded-lg p-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">{renewalType}</h3>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/companies/${company.id}/renewals/${renewalTypeValue}`}>
-                          View all tasks
-                        </Link>
-                      </Button>
+                    {/* Marketing */}
+                    <div className="flex-1 min-w-[140px]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Megaphone className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="font-semibold text-sm text-muted-foreground">Marketing</h3>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Button variant="outline" size="sm" disabled className="whitespace-normal text-left justify-start">
+                          Identify carriers
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="whitespace-normal text-left justify-start">
+                          Track submissions
+                        </Button>
+                      </div>
                     </div>
-                    
-                    {attentionTasksForType.length > 0 && (
-                      <>
-                        <h4 className="text-base font-medium mb-4 mt-2">Needs Attention</h4>
-                        <ul className="divide-y mb-6">
-                          {attentionTasksForType.map((task) => (
-                            <li key={task.id} className="flex items-center justify-between p-4">
-                              <div className="flex items-center gap-4">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                                  {task.tag === 'ai' ? (
-                                    <Sparkles className="h-5 w-5 text-muted-foreground" />
-                                  ) : (
-                                    <User className="h-5 w-5 text-muted-foreground" />
-                                  )}
-                                </div>
-                                <div>
-                                  <p className="font-medium">{task.taskName || 'Unnamed Task'}</p>
-                                </div>
-                                <Badge variant="secondary">{task.phase}</Badge>
-                              </div>
-                              <Button asChild variant="outline" size="sm">
-                                <Link href={`/companies/${companyId}/tasks/${task.id}`}>
-                                  View
-                                </Link>
-                              </Button>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
+
+                    {/* Proposal */}
+                    <div className="flex-1 min-w-[140px]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <FileBarChart className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="font-semibold text-sm text-muted-foreground">Proposal</h3>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Button variant="outline" size="sm" disabled className="whitespace-normal text-left justify-start">
+                          Compare quotes
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="whitespace-normal text-left justify-start">
+                          Build proposal
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-lg p-6 text-center text-muted-foreground">
-              <p>No tasks currently need attention.</p>
-            </div>
-          )}
+
+                  {/* Second Row: Binding -> Policy Check */}
+                  <div className="flex items-start gap-6">
+                    {/* Binding */}
+                    <div className="flex-1 min-w-[140px]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="font-semibold text-sm text-muted-foreground">Binding</h3>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Button variant="outline" size="sm" disabled className="whitespace-normal text-left justify-start">
+                          Bind with carrier
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="whitespace-normal text-left justify-start">
+                          Issue client docs
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Policy checking */}
+                    <div className="flex-1 min-w-[140px]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <ClipboardCheck className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold text-sm">Policy Check</h3>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Button variant="outline" size="sm" className="whitespace-normal text-left justify-start">
+                          Compare policy
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Empty space to balance the layout */}
+                    <div className="flex-1 min-w-[140px]"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
-
     </div>
   );
 }

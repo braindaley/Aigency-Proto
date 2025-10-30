@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Save, X, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar as CalendarIcon, PlusCircle, Save, X, Trash2, AlertTriangle, ListTodo } from 'lucide-react';
 import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -327,6 +327,15 @@ export default function CompanySettingsPage() {
         <div>
           <p className="mb-2 font-bold uppercase text-base leading-4 text-muted-foreground">COMPANY SETTINGS</p>
           <h1 className="text-3xl font-bold">{company.name}</h1>
+        </div>
+
+        <div className="mt-4">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/companies/${company.id}/tasks`}>
+              <ListTodo className="h-4 w-4 mr-2" />
+              Tasks
+            </Link>
+          </Button>
         </div>
       </div>
 
