@@ -340,6 +340,16 @@ export default function CompanyDetailPage() {
             </Card>
           ))}
         </div>
+
+        {/* ChatGpt Agent Flow Link */}
+        <div className="mt-12 pt-6 border-t">
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/openai-agent-test">
+              ChatGpt Agent Flow
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );

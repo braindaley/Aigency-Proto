@@ -398,7 +398,7 @@ export function BuildPackageWorkflow({
                     <div
                       className={`rounded-lg p-4 ${
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground ml-12'
+                          ? 'bg-muted ml-12'
                           : 'bg-muted mr-12'
                       }`}
                     >
